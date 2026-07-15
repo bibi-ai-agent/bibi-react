@@ -22,7 +22,7 @@ export function cleanText(text) {
 }
 
 export async function speakElevenLabs(text, voiceId, onEnd) {
-  const res = await fetch("https://bibi-app-rho.vercel.app/api/tts", {
+  const res = await fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ voiceId, text })
