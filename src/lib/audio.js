@@ -1,10 +1,8 @@
-// ElevenLabs sesleri — Free plan ile çalışanlar
 export const ELEVENLABS_VOICES = [
   { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Erkek Ses", label: "Erkek — Türkçe", gender: "male" },
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Kadın Ses", label: "Kadın — Türkçe", gender: "female" },
 ]
 
-// Çocuğun cinsiyetine göre otomatik ses seç
 export function getVoiceForChild(child) {
   if (child?.gender === 'kız') return "EXAVITQu4vr4xnSDxMaL"
   return "TX3LPaxmHKxFdv7VOQHJ"
@@ -22,10 +20,18 @@ export function cleanText(text) {
 }
 
 export async function speakElevenLabs(text, voiceId, onEnd) {
-  const res = await fetch("/api/tts", {
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ voiceId, text })
+    headers: {
+      "Content-Type": "application/json",
+      "xi-api-key": "sk_fd5679c71c518b98f1549c7f8118da6710cf7943b971e84b"
+    },
+    body: JSON.stringify({
+      text,
+      model_id: "eleven_multilingual_v2",
+      voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.2, use_speaker_boost: true },
+      output_format: "mp3_44100_128"
+    })
   })
   if (!res.ok) throw new Error("TTS hatası: " + res.status)
   const blob = await res.blob()
