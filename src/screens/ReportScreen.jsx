@@ -23,10 +23,43 @@ export default function ReportScreen() {
   const [sessionsOpen, setSessionsOpen] = useState(false)
   const [generating, setGenerating] = useState(false)
 
+  // Şifremi unuttum
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotStep, setForgotStep] = useState(1) // 1: şifre gir, 2: yeni PIN gir
+  const [forgotPassword, setForgotPassword] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [newPinConfirm, setNewPinConfirm] = useState('')
+  const [forgotError, setForgotError] = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState(false)
+
   async function checkPin(currentPin) {
     const { data: parent } = await sb.from('parents').select('pin').eq('id', currentUser.id).single()
-   if (String(parent?.pin) === String(currentPin)) { setPinOk(true); loadData() }
+    if (String(parent?.pin) === String(currentPin)) { setPinOk(true); loadData() }
     else { setPinError('PIN hatalı!'); setPin('') }
+  }
+
+  async function verifyPasswordForReset() {
+    if (!forgotPassword) { setForgotError('Şifrenizi girin'); return }
+    const { error } = await sb.auth.signInWithPassword({ email: currentUser.email, password: forgotPassword })
+    if (error) { setForgotError('Şifre hatalı!'); return }
+    setForgotError('')
+    setForgotStep(2)
+  }
+
+  async function saveNewPin() {
+    if (newPin.length !== 4) { setForgotError('4 haneli PIN girin'); return }
+    if (newPin !== newPinConfirm) { setForgotError('PIN\'ler eşleşmiyor'); return }
+    await sb.from('parents').update({ pin: newPin }).eq('id', currentUser.id)
+    setForgotSuccess(true)
+    setTimeout(() => {
+      setShowForgot(false)
+      setForgotStep(1)
+      setForgotPassword('')
+      setNewPin('')
+      setNewPinConfirm('')
+      setForgotError('')
+      setForgotSuccess(false)
+    }, 2000)
   }
 
   async function loadData() {
@@ -54,6 +87,43 @@ export default function ReportScreen() {
     setAccordionOpen(true)
   }
 
+  const inp = { width:'100%', padding:'12px 14px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.08)', color:'white', fontSize:14, fontFamily:'Nunito,sans-serif', boxSizing:'border-box', marginBottom:10 }
+
+  // Şifremi unuttum modal
+  if (showForgot) return (
+    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div style={{width:'100%',maxWidth:340,textAlign:'center'}}>
+        {forgotSuccess ? (
+          <>
+            <div style={{fontSize:48,marginBottom:16}}>✅</div>
+            <div style={{color:'#4ade80',fontSize:18,fontWeight:900}}>PIN güncellendi!</div>
+          </>
+        ) : forgotStep === 1 ? (
+          <>
+            <div style={{fontSize:48,marginBottom:16}}>🔑</div>
+            <div style={{color:'white',fontSize:18,fontWeight:900,marginBottom:8}}>PIN Sıfırla</div>
+            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>Uygulamaya giriş şifrenizi girin</div>
+            <input type="password" placeholder="Giriş şifreniz" value={forgotPassword} onChange={e=>setForgotPassword(e.target.value)} style={inp}/>
+            {forgotError && <div style={{color:'#fca88a',fontSize:12,marginBottom:10}}>{forgotError}</div>}
+            <button onClick={verifyPasswordForReset} style={{width:'100%',padding:13,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10}}>Devam →</button>
+            <button onClick={()=>setShowForgot(false)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer'}}>← İptal</button>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:48,marginBottom:16}}>🔒</div>
+            <div style={{color:'white',fontSize:18,fontWeight:900,marginBottom:8}}>Yeni PIN Belirle</div>
+            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>4 haneli yeni PIN'inizi girin</div>
+            <input type="number" placeholder="Yeni PIN (4 hane)" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={inp}/>
+            <input type="number" placeholder="PIN tekrar" value={newPinConfirm} onChange={e=>setNewPinConfirm(e.target.value.slice(0,4))} style={inp}/>
+            {forgotError && <div style={{color:'#fca88a',fontSize:12,marginBottom:10}}>{forgotError}</div>}
+            <button onClick={saveNewPin} style={{width:'100%',padding:13,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10}}>Kaydet ✓</button>
+            <button onClick={()=>setForgotStep(1)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer'}}>← Geri</button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
   // PIN Ekranı
   if (!pinOk) return (
     <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
@@ -72,8 +142,9 @@ export default function ReportScreen() {
             }} style={{aspectRatio:'1',borderRadius:'50%',border:'none',background:d===''?'transparent':'rgba(255,255,255,.1)',color:'white',fontSize:20,fontWeight:700,cursor:d===''?'default':'pointer',fontFamily:'Nunito,sans-serif'}}>{d}</button>
           ))}
         </div>
-        {pinError&&<div style={{color:'#fca88a',fontSize:13}}>{pinError}</div>}
-        <button onClick={()=>setScreen('children')} style={{marginTop:16,background:'transparent',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer'}}>← Geri</button>
+        {pinError&&<div style={{color:'#fca88a',fontSize:13,marginBottom:8}}>{pinError}</div>}
+        <button onClick={()=>setShowForgot(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:12,cursor:'pointer',display:'block',margin:'0 auto 8px',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
+        <button onClick={()=>setScreen('children')} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer'}}>← Geri</button>
       </div>
     </div>
   )
@@ -102,8 +173,6 @@ export default function ReportScreen() {
 
   return (
     <div style={{minHeight:'100vh',background:'linear-gradient(160deg,#a8607a,#b87fa0,#8f6aaa,#7a8cc0,#7ab5c8,#8fbfa8)',backgroundSize:'300% 300%',animation:'gradShift 18s ease infinite',position:'relative',overflowX:'hidden'}}>
-
-      {/* Header */}
       <div style={{background:'rgba(100,60,100,0.88)',backdropFilter:'blur(20px)',padding:'18px 20px',position:'sticky',top:0,zIndex:10,boxShadow:'0 2px 12px rgba(0,0,0,.1)'}}>
         <div style={{maxWidth:520,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -118,8 +187,6 @@ export default function ReportScreen() {
       </div>
 
       <div style={{position:'relative',zIndex:1,maxWidth:520,margin:'0 auto',padding:'20px 16px 60px'}}>
-
-        {/* Stat kartları */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:14}}>
           {[{icon:"⏱️",val:totalMinutes,label:"Dakika",color:"#2563EB"},{icon:"💬",val:totalMessages,label:"Mesaj",color:"#0D9B7E"},{icon:"📖",val:sessions.length,label:"Sohbet",color:"#7C3AED"}].map(s=>(
             <div key={s.label} style={{background:'white',borderRadius:14,padding:'14px 8px',textAlign:'center',boxShadow:'0 2px 10px rgba(0,0,0,.07)'}}>
@@ -130,7 +197,6 @@ export default function ReportScreen() {
           ))}
         </div>
 
-        {/* Duygusal Denge */}
         <div style={card}>
           <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>💙 Duygusal Denge Skoru</div>
           {balanceScore!==null?(
@@ -161,7 +227,6 @@ export default function ReportScreen() {
           ):<div style={{textAlign:'center',color:'#9CA3AF',fontSize:13,padding:'12px 0'}}>😊 Duygu verisi henüz yok.</div>}
         </div>
 
-        {/* İlgi Alanları */}
         {topInterests.length>0&&(
           <div style={card}>
             <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>⭐ İlgi Alanları</div>
@@ -179,7 +244,6 @@ export default function ReportScreen() {
           </div>
         )}
 
-        {/* Karakter Gözlemleri */}
         {charHints.length>0&&(
           <div style={card}>
             <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:12}}>🧠 Karakter Gözlemleri</div>
@@ -191,7 +255,6 @@ export default function ReportScreen() {
           </div>
         )}
 
-        {/* Akademik Ustalık */}
         {mastery.length>0&&(
           <div style={card}>
             <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>📊 Akademik Ustalık</div>
@@ -208,16 +271,11 @@ export default function ReportScreen() {
                 <div style={{height:7,background:'#f3f4f6',borderRadius:8,overflow:'hidden'}}>
                   <div style={{height:'100%',width:`${m.score}%`,background:tColor[m.topic]||'#6B7280',borderRadius:8}}/>
                 </div>
-                <div style={{display:'flex',justifyContent:'space-between',marginTop:3}}>
-                  <span style={{fontSize:10,color:'#C4C4C4'}}>Başlangıç</span>
-                  <span style={{fontSize:10,color:'#C4C4C4'}}>Uzman</span>
-                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Son Sohbetler Accordion */}
         {sessions.length>0&&(
           <div style={{background:'white',borderRadius:16,overflow:'hidden',marginBottom:14,boxShadow:'0 2px 12px rgba(0,0,0,.08)'}}>
             <button onClick={()=>setSessionsOpen(!sessionsOpen)} style={{width:'100%',padding:'14px 18px',border:'none',background:'white',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
@@ -243,7 +301,6 @@ export default function ReportScreen() {
           </div>
         )}
 
-        {/* Gelişim Raporu Accordion */}
         <div style={{background:'white',borderRadius:16,overflow:'hidden',marginBottom:12,boxShadow:'0 2px 12px rgba(0,0,0,.08)'}}>
           <button onClick={()=>setAccordionOpen(!accordionOpen)} style={{width:'100%',padding:'16px 18px',border:'none',background:'linear-gradient(135deg,#1A2E2A,#243d38)',color:'white',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -262,15 +319,12 @@ export default function ReportScreen() {
           )}
         </div>
 
-        {/* Rapor Butonu */}
         <button onClick={generateReport} disabled={generating} style={{width:'100%',padding:15,borderRadius:16,border:'none',background:generating?'rgba(13,155,126,.5)':'linear-gradient(135deg,#0D9B7E,#7C3AED)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
           {generating?'⏳ Rapor hazırlanıyor...':lastReport?(reportFresh?`🔄 Raporu Yenile (${7-reportAge} gün kaldı)`:'🔄 Yeni Rapor Al'):'✨ İlk Gelişim Raporunu Oluştur'}
         </button>
       </div>
 
-      <style>{`
-        @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-      `}</style>
+      <style>{`@keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
     </div>
   )
 }

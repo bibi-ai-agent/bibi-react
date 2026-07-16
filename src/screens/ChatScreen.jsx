@@ -41,7 +41,7 @@ function getImageStyle(age) {
 }
 
 export default function ChatScreen() {
-  const { currentChild, setScreen, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled } = useApp()
+  const { currentChild, currentUser, setScreen, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled } = useApp()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState(null)
@@ -55,6 +55,16 @@ export default function ChatScreen() {
   const [showVoiceMenu, setShowVoiceMenu] = useState(false)
   const [contentCreator, setContentCreator] = useState(null)
   const [homeworkMode, setHomeworkMode] = useState(false)
+  const [showExitPin, setShowExitPin] = useState(false)
+  const [exitPin, setExitPin] = useState('')
+  const [exitPinError, setExitPinError] = useState('')
+  const [showForgotPin, setShowForgotPin] = useState(false)
+  const [forgotStep, setForgotStep] = useState(1)
+  const [forgotPassword, setForgotPassword] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [newPinConfirm, setNewPinConfirm] = useState('')
+  const [forgotError, setForgotError] = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState(false)
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
   const hwFileRef = useRef()
@@ -249,7 +259,7 @@ export default function ChatScreen() {
 
       {/* Header */}
       <div style={{ background:theme.header, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, flexShrink:0 }}>
-        <button onClick={()=>{if(currentAudio)currentAudio.pause();window.speechSynthesis?.cancel();setScreen('children')}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
+        <button onClick={()=>{if(currentAudio)currentAudio.pause();window.speechSynthesis?.cancel();setShowExitPin(true)}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ position:'relative' }}>
             <BibiFace expr={expr} size={44}/>
@@ -418,6 +428,83 @@ export default function ChatScreen() {
           <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18 }}>➤</button>
         </div>
       </div>
+
+      {showForgotPin && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.85)',backdropFilter:'blur(8px)',zIndex:201,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)',textAlign:'center' }}>
+            {forgotSuccess ? (
+              <>
+                <div style={{fontSize:48,marginBottom:12}}>✅</div>
+                <div style={{color:'#4ade80',fontSize:16,fontWeight:900}}>PIN güncellendi!</div>
+              </>
+            ) : forgotStep===1 ? (
+              <>
+                <div style={{fontSize:40,marginBottom:12}}>🔑</div>
+                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:6}}>PIN Sıfırla</div>
+                <div style={{color:'rgba(255,255,255,.4)',fontSize:12,marginBottom:16}}>Giriş şifrenizi girin</div>
+                <input type="password" placeholder="Uygulama şifreniz" value={forgotPassword} onChange={e=>setForgotPassword(e.target.value)} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
+                {forgotError&&<div style={{color:'#fca88a',fontSize:11,marginBottom:8}}>{forgotError}</div>}
+                <button onClick={async()=>{
+                  if(!forgotPassword){setForgotError('Şifre girin');return}
+                  const {error}=await sb.auth.signInWithPassword({email:currentUser.email,password:forgotPassword})
+                  if(error){setForgotError('Şifre hatalı!');return}
+                  setForgotError('');setForgotStep(2)
+                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Devam →</button>
+                <button onClick={()=>{setShowForgotPin(false);setForgotStep(1);setForgotPassword('');setForgotError('')}} style={{background:'none',border:'none',color:'rgba(255,255,255,.3)',fontSize:12,cursor:'pointer'}}>İptal</button>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:40,marginBottom:12}}>🔒</div>
+                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:6}}>Yeni PIN</div>
+                <div style={{color:'rgba(255,255,255,.4)',fontSize:12,marginBottom:16}}>4 haneli yeni PIN belirleyin</div>
+                <input type="number" placeholder="Yeni PIN" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
+                <input type="number" placeholder="PIN tekrar" value={newPinConfirm} onChange={e=>setNewPinConfirm(e.target.value.slice(0,4))} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
+                {forgotError&&<div style={{color:'#fca88a',fontSize:11,marginBottom:8}}>{forgotError}</div>}
+                <button onClick={async()=>{
+                  if(newPin.length!==4){setForgotError('4 haneli PIN girin');return}
+                  if(newPin!==newPinConfirm){setForgotError("PIN'ler eşleşmiyor");return}
+                  await sb.from('parents').update({pin:newPin}).eq('id',currentUser.id)
+                  setForgotSuccess(true)
+                  setTimeout(()=>{setShowForgotPin(false);setForgotStep(1);setForgotPassword('');setNewPin('');setNewPinConfirm('');setForgotError('');setForgotSuccess(false)},2000)
+                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Kaydet ✓</button>
+                <button onClick={()=>setForgotStep(1)} style={{background:'none',border:'none',color:'rgba(255,255,255,.3)',fontSize:12,cursor:'pointer'}}>← Geri</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showExitPin && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)' }}>
+            <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8,textAlign:'center' }}>🔒 Veli Doğrulaması</div>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20,textAlign:'center' }}>Çıkmak için PIN girin</div>
+            <div style={{ display:'flex',justifyContent:'center',gap:8,marginBottom:16 }}>
+              {[1,2,3,4].map(i=>(
+                <div key={i} style={{ width:14,height:14,borderRadius:'50%',background:exitPin.length>=i?'#4ade80':'rgba(255,255,255,.2)' }}/>
+              ))}
+            </div>
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12 }}>
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((d,i)=>(
+                <button key={i} onClick={async()=>{
+                  if(d==='⌫'){setExitPin(p=>p.slice(0,-1));setExitPinError('')}
+                  else if(d!==''&&exitPin.length<4){
+                    const np=exitPin+d;setExitPin(np)
+                    if(np.length===4){
+                      const {data:parent}=await sb.from('parents').select('pin').eq('id',currentUser.id).single()
+                      if(String(parent?.pin)===String(np)){setShowExitPin(false);setExitPin('');setScreen('children')}
+                      else{setExitPinError('PIN hatalı!');setExitPin('')}
+                    }
+                  }
+                }} style={{ padding:'14px 0',borderRadius:12,border:'none',background:d===''?'transparent':'rgba(255,255,255,.1)',color:'white',fontSize:18,fontWeight:700,cursor:d===''?'default':'pointer',fontFamily:'Nunito,sans-serif' }}>{d}</button>
+              ))}
+            </div>
+            {exitPinError&&<div style={{ color:'#fca88a',fontSize:12,textAlign:'center',marginBottom:8 }}>{exitPinError}</div>}
+            <button onClick={()=>setShowForgotPin(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:12,cursor:'pointer',display:'block',margin:'0 auto 8px',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
+            <button onClick={()=>{setShowExitPin(false);setExitPin('');setExitPinError('')}} style={{ width:'100%',padding:10,borderRadius:12,border:'none',background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.5)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>İptal</button>
+          </div>
+        </div>
+      )}
 
       {contentCreator && (
         <ContentCreator type={contentCreator} age={currentChild?.age||9} onClose={()=>setContentCreator(null)}
