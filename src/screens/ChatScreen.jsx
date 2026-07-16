@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { callAI, detectTopic, detectImageRequest, generateImageUrl } from '../lib/api'
+import { callAI, detectTopic, detectImageRequest } from '../lib/api'
 import { speakElevenLabs, speakBrowser, cleanText, getVoiceForChild, ELEVENLABS_VOICES } from '../lib/audio'
 import BibiFace from '../components/BibiFace'
 import ActionMenu from '../components/ActionMenu'
@@ -40,8 +40,11 @@ function getImageStyle(age) {
   return "realistic, professional illustration, detailed"
 }
 
+const TYPE_NAMES = { homework:'Birlikte Ödev', experiment:'Deney/Proje', quiz:'Bilgi Yarışması' }
+const TYPE_ICONS = { homework:'📚', experiment:'🔬', quiz:'🎯' }
+
 export default function ChatScreen() {
-  const { currentChild, currentUser, setScreen, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled } = useApp()
+  const { currentChild, currentUser, setScreen, setProjectFriend, setProjectType, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled } = useApp()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState(null)
@@ -65,6 +68,7 @@ export default function ChatScreen() {
   const [newPinConfirm, setNewPinConfirm] = useState('')
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState(false)
+  const [projectInvite, setProjectInvite] = useState(null)
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
   const hwFileRef = useRef()
@@ -72,10 +76,8 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!currentChild) return
-    // Çocuğun cinsiyetine göre otomatik ses seç
     const autoVoice = getVoiceForChild(currentChild)
     setSelectedVoiceId(autoVoice)
-
     const isYoung = currentChild.age <= 8
     setVoiceOn(isYoung)
     const opening = isYoung
@@ -85,6 +87,25 @@ export default function ChatScreen() {
       : `Selam ${currentChild.name}. Bugün ne konuşacağız?`
     addMsg('bibi', opening)
     if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
+
+    // Proje daveti dinle (Realtime)
+    const channel = sb.channel(`project-invites-${currentChild.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'project_invites'
+      }, async payload => {
+        const invite = payload.new
+        if (invite.status !== 'pending') return
+        if (invite.to_child_id !== currentChild.id) return
+        const { data: sender } = await sb.from('children_invite_lookup')
+          .select('id,name,age,avatar_emoji,avatar_photo,bibi_specialty')
+          .eq('id', invite.from_child_id).single()
+        setProjectInvite({ ...invite, sender })
+      })
+      .subscribe()
+
+    return () => sb.removeChannel(channel)
   }, [])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, isTyping])
@@ -98,15 +119,11 @@ export default function ChatScreen() {
     if (!voiceOn && !voiceId) return
     const clean = cleanText(text)
     if (!clean) return
-
-    // Önceki sesi durdur
     if (currentAudio) { currentAudio.pause(); setCurrentAudio(null) }
     window.speechSynthesis?.cancel()
     setSpeechPaused(false)
-
     setExpr('talking'); setStatus('Konuşuyor...')
     const vid = voiceId || selectedVoiceId || getVoiceForChild(currentChild)
-
     try {
       if (elevenLabsEnabled) {
         const audio = await speakElevenLabs(clean, vid, () => {
@@ -124,13 +141,9 @@ export default function ChatScreen() {
   function toggleSpeech() {
     if (currentAudio) {
       if (speechPaused) {
-        currentAudio.play()
-        setSpeechPaused(false)
-        setExpr('talking'); setStatus('Konuşuyor...')
+        currentAudio.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...')
       } else {
-        currentAudio.pause()
-        setSpeechPaused(true)
-        setExpr('idle'); setStatus('Duraklatıldı ⏸')
+        currentAudio.pause(); setSpeechPaused(true); setExpr('idle'); setStatus('Duraklatıldı ⏸')
       }
     } else {
       setVoiceOn(!voiceOn)
@@ -150,16 +163,13 @@ export default function ChatScreen() {
     addMsg('user', t)
     setExpr('thinking'); setStatus('Düşünüyor...'); setIsTyping(true)
     if (currentChild?.age<=8) { if(fromVoice) setVoiceOn(true); else setVoiceOn(false) }
-
     if (detectImageRequest(t)) {
       handleImageRequest(t)
       setIsTyping(false); setExpr('idle'); setStatus('Seninle burada!')
       return
     }
-
     const sid = await ensureSession()
     if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'user', content:t, topic:detectTopic(t), language:'tr'})
-
     try {
       const chatHistory = messages.slice(-20).map(m=>({role:m.role==='bibi'?'assistant':'user', content:m.text}))
       chatHistory.push({role:'user', content:t})
@@ -241,9 +251,19 @@ export default function ChatScreen() {
     try{rec.start()}catch{}
   }
 
-  async function loadHistory() {
-    const {data}=await sb.from('sessions').select('id,started_at,duration_mins,message_count').eq('child_id',currentChild.id).gt('message_count',0).order('started_at',{ascending:false}).limit(20)
-    return data||[]
+  async function acceptProjectInvite() {
+    if (!projectInvite) return
+    await sb.from('project_invites').update({status:'accepted'}).eq('id', projectInvite.id)
+    setProjectFriend(projectInvite.sender)
+    setProjectType(projectInvite.project_type)
+    setProjectInvite(null)
+    setScreen('project')
+  }
+
+  async function rejectProjectInvite() {
+    if (!projectInvite) return
+    await sb.from('project_invites').update({status:'rejected'}).eq('id', projectInvite.id)
+    setProjectInvite(null)
   }
 
   const theme = currentChild?.gender==='kız'&&currentChild?.age<=8
@@ -271,35 +291,25 @@ export default function ChatScreen() {
           </div>
         </div>
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          <button onClick={()=>{setShowHistory(!showHistory)}} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>🕐</button>
-          
-          {/* Ses kontrol butonu */}
+          <button onClick={()=>setShowHistory(!showHistory)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>🕐</button>
           <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
               {isSpeaking ? '⏸' : voiceOn ? '🔊' : '🔇'}
               {isSpeaking && <span onClick={e=>{e.stopPropagation();toggleSpeech()}} style={{fontSize:10}}>II</span>}
             </button>
-
-            {/* Ses menüsü */}
             {showVoiceMenu && (
               <>
                 <div style={{position:'fixed',inset:0,zIndex:98}} onClick={()=>setShowVoiceMenu(false)}/>
                 <div style={{ position:'absolute',top:44,right:0,zIndex:99,background:'rgba(20,30,28,.97)',backdropFilter:'blur(20px)',border:'1.5px solid rgba(255,255,255,.12)',borderRadius:16,padding:12,minWidth:220,boxShadow:'0 8px 32px rgba(0,0,0,.4)' }}>
                   <div style={{ color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',marginBottom:10 }}>SES AYARLARI</div>
-                  
-                  {/* Aç/Kapat */}
                   <button onClick={()=>{setVoiceOn(!voiceOn);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:'none',background:voiceOn?'rgba(13,155,126,.2)':'rgba(255,255,255,.05)',color:'white',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:8,fontFamily:'Nunito,sans-serif' }}>
                     {voiceOn?'🔊 Ses Açık — Kapat':'🔇 Ses Kapalı — Aç'}
                   </button>
-
                   <div style={{ color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',marginBottom:8 }}>SES SEÇ</div>
                   {ELEVENLABS_VOICES.map(v=>(
                     <button key={v.id} onClick={()=>{setSelectedVoiceId(v.id);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:`1.5px solid ${selectedVoiceId===v.id?'rgba(13,155,126,.5)':'rgba(255,255,255,.1)'}`,background:selectedVoiceId===v.id?'rgba(13,155,126,.2)':'transparent',color:selectedVoiceId===v.id?'#4ade80':'rgba(255,255,255,.7)',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:6,fontFamily:'Nunito,sans-serif',display:'flex',alignItems:'center',gap:8 }}>
                       <span>{v.gender==='female'?'👩':'👨'}</span>
-                      <div>
-                        <div>{v.name}</div>
-                        <div style={{fontSize:10,opacity:.5}}>{v.label}</div>
-                      </div>
+                      <div><div>{v.name}</div><div style={{fontSize:10,opacity:.5}}>{v.label}</div></div>
                       {selectedVoiceId===v.id&&<span style={{marginLeft:'auto',color:'#4ade80'}}>✓</span>}
                     </button>
                   ))}
@@ -312,15 +322,12 @@ export default function ChatScreen() {
 
       {/* Geçmiş panel */}
       {showHistory && (
-        <HistoryPanel
-          child={currentChild}
-          onClose={() => setShowHistory(false)}
+        <HistoryPanel child={currentChild} onClose={() => setShowHistory(false)}
           onLoadSession={async (sid) => {
             setShowHistory(false)
             const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', sid).order('created_at', { ascending: true })
             if (!msgs?.length) return
-            setSessionId(sid)
-            setMessages([])
+            setSessionId(sid); setMessages([])
             msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
           }}
         />
@@ -362,7 +369,6 @@ export default function ChatScreen() {
                 <div style={{ padding:'12px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',background:m.role==='user'?theme.bubble:'rgba(255,255,255,.92)',color:m.role==='user'?'white':'#1A2E2A',fontSize:15,lineHeight:1.5 }}>
                   {m.text}
                 </div>
-                {/* Bibi mesajında ▶️ butonu */}
                 {m.role==='bibi' && (
                   <button onClick={()=>speakMsg(m.text)} style={{ width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.2)',cursor:'pointer',color:'rgba(255,255,255,.6)',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>▶️</button>
                 )}
@@ -383,18 +389,14 @@ export default function ChatScreen() {
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Duraklat/Devam butonu — ses çalarken */}
+      {/* Duraklat/Devam */}
       {currentAudio && (
         <div style={{ padding:'6px 14px',background:'rgba(124,58,237,.2)',borderTop:'1px solid rgba(124,58,237,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
-          <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>
-            {speechPaused ? '⏸ Duraklatıldı' : '🔊 Konuşuyor...'}
-          </div>
+          <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>{speechPaused ? '⏸ Duraklatıldı' : '🔊 Konuşuyor...'}</div>
           <button onClick={toggleSpeech} style={{ padding:'5px 14px',borderRadius:10,border:'none',background:'rgba(124,58,237,.4)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
             {speechPaused ? '▶️ Devam Et' : '⏸ Duraklat'}
           </button>
-          <button onClick={()=>{currentAudio.pause();setCurrentAudio(null);setSpeechPaused(false);setExpr('idle');setStatus('Seninle burada!')}} style={{ padding:'5px 10px',borderRadius:10,border:'none',background:'rgba(239,68,68,.3)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
-            ⏹ Durdur
-          </button>
+          <button onClick={()=>{currentAudio.pause();setCurrentAudio(null);setSpeechPaused(false);setExpr('idle');setStatus('Seninle burada!')}} style={{ padding:'5px 10px',borderRadius:10,border:'none',background:'rgba(239,68,68,.3)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>⏹ Durdur</button>
         </div>
       )}
 
@@ -429,14 +431,31 @@ export default function ChatScreen() {
         </div>
       </div>
 
+      {/* Proje daveti bildirimi */}
+      {projectInvite && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
+            <div style={{ fontSize:48,marginBottom:12 }}>{TYPE_ICONS[projectInvite.project_type]||'🚀'}</div>
+            <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>
+              {projectInvite.sender?.name} seni davet etti!
+            </div>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>
+              {TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={rejectProjectInvite} style={{ flex:1,padding:12,borderRadius:12,border:'1.5px solid rgba(255,255,255,.15)',background:'transparent',color:'rgba(255,255,255,.5)',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>Reddet</button>
+              <button onClick={acceptProjectInvite} style={{ flex:2,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Kabul Et</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot PIN Modal */}
       {showForgotPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.85)',backdropFilter:'blur(8px)',zIndex:201,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)',textAlign:'center' }}>
             {forgotSuccess ? (
-              <>
-                <div style={{fontSize:48,marginBottom:12}}>✅</div>
-                <div style={{color:'#4ade80',fontSize:16,fontWeight:900}}>PIN güncellendi!</div>
-              </>
+              <><div style={{fontSize:48,marginBottom:12}}>✅</div><div style={{color:'#4ade80',fontSize:16,fontWeight:900}}>PIN güncellendi!</div></>
             ) : forgotStep===1 ? (
               <>
                 <div style={{fontSize:40,marginBottom:12}}>🔑</div>
@@ -474,15 +493,14 @@ export default function ChatScreen() {
         </div>
       )}
 
+      {/* Exit PIN Modal */}
       {showExitPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)' }}>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8,textAlign:'center' }}>🔒 Veli Doğrulaması</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20,textAlign:'center' }}>Çıkmak için PIN girin</div>
             <div style={{ display:'flex',justifyContent:'center',gap:8,marginBottom:16 }}>
-              {[1,2,3,4].map(i=>(
-                <div key={i} style={{ width:14,height:14,borderRadius:'50%',background:exitPin.length>=i?'#4ade80':'rgba(255,255,255,.2)' }}/>
-              ))}
+              {[1,2,3,4].map(i=>(<div key={i} style={{ width:14,height:14,borderRadius:'50%',background:exitPin.length>=i?'#4ade80':'rgba(255,255,255,.2)' }}/>))}
             </div>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12 }}>
               {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((d,i)=>(
