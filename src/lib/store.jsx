@@ -11,6 +11,8 @@ export function AppProvider({ children }) {
   const [elevenLabsEnabled, setElevenLabsEnabled] = useState(true)
   const [speechActive, setSpeechActive] = useState(false)
   const [speechPaused, setSpeechPaused] = useState(false)
+  const [projectFriend, setProjectFriend] = useState(null)
+  const [projectType, setProjectType] = useState(null)
 
   return (
     <AppContext.Provider value={{
@@ -22,6 +24,8 @@ export function AppProvider({ children }) {
       elevenLabsEnabled, setElevenLabsEnabled,
       speechActive, setSpeechActive,
       speechPaused, setSpeechPaused,
+      projectFriend, setProjectFriend,
+      projectType, setProjectType,
     }}>
       {children}
     </AppContext.Provider>

@@ -3,7 +3,7 @@ import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 
 export default function FriendsScreen() {
-  const { currentChild, setScreen } = useApp()
+  const { currentChild, setScreen, setProjectFriend } = useApp()
   const [friends, setFriends] = useState([])
   const [inviteCode, setInviteCode] = useState('')
   const [msg, setMsg] = useState('')
@@ -107,7 +107,7 @@ export default function FriendsScreen() {
                 <div style={{ color:'white', fontSize:15, fontWeight:800 }}>{friend.name}</div>
                 <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>{friend.age} yaş</div>
               </div>
-              <div style={{ width:10, height:10, borderRadius:'50%', background:'#6b7280' }}/>
+              <button onClick={() => { setProjectFriend(friend); setScreen('projectSelect') }} style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>🚀 Proje Yap</button>
             </div>
           )
         })}

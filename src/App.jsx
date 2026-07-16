@@ -7,6 +7,8 @@ import ChildrenScreen from './screens/ChildrenScreen'
 import ChatScreen from './screens/ChatScreen'
 import ReportScreen from './screens/ReportScreen'
 import FriendsScreen from './screens/FriendsScreen'
+import ProjectScreen from './screens/ProjectScreen'
+import ProjectSelectScreen from './screens/ProjectSelectScreen'
 
 export default function App() {
   const { screen, setScreen, setCurrentUser, currentUser } = useApp()
@@ -44,6 +46,8 @@ export default function App() {
     chat: <ChatScreen/>,
     report: <ReportScreen/>,
     friends: <FriendsScreen/>,
+    project: <ProjectScreen/>,
+    projectSelect: <ProjectSelectScreen/>,
   }
 
   return screens[screen] || <LoadingScreen/>
