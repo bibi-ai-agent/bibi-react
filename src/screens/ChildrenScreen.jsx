@@ -27,6 +27,8 @@ export default function ChildrenScreen() {
   const [avatarPhoto, setAvatarPhoto] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [editingChild, setEditingChild] = useState(null)
+  const [deletingChild, setDeletingChild] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const fileRef = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
@@ -74,6 +76,19 @@ export default function ChildrenScreen() {
     if (data) { setChildren(c => [...c, data]); setShowAddForm(false); resetForm() }
   }
 
+  async function deleteChild(child) {
+    setDeleteLoading(true)
+    await sb.from('messages').delete().eq('child_id', child.id)
+    await sb.from('sessions').delete().eq('child_id', child.id)
+    await sb.from('mastery').delete().eq('child_id', child.id)
+    await sb.from('emotion_logs').delete().eq('child_id', child.id)
+    await sb.from('chat_assets').delete().eq('child_id', child.id)
+    await sb.from('children').delete().eq('id', child.id)
+    setChildren(cs => cs.filter(c => c.id !== child.id))
+    setDeletingChild(null)
+    setDeleteLoading(false)
+  }
+
   function resetForm() {
     setNewName(''); setNewAge(''); setNewGender(''); setNewGrade('')
     setGradeOptions([]); setSelectedEmoji(''); setAvatarPhoto(null); setShowEmojiPicker(false)
@@ -118,7 +133,6 @@ export default function ChildrenScreen() {
         {children.map(c=>(
           <div key={c.id} style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border:'1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', animation:'fadeUp .3s ease' }}>
             
-            {/* Avatar — tıklayınca düzenle */}
             <div style={{ position:'relative', flexShrink:0 }}>
               <div onClick={()=>startChat(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
                 {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
@@ -129,11 +143,15 @@ export default function ChildrenScreen() {
             <div onClick={()=>startChat(c)} style={{ flex:1, cursor:'pointer' }}>
               <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
               <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
-              {c.bibi_specialty && <div style={{ fontSize:11, color:'#0D9B7E', fontWeight:700, marginTop:3 }}>{SPECIALTY_ICONS[c.bibi_specialty]||'⭐'} {c.bibi_specialty} Uzmanı Bibi</div>}
+              {c.bibi_specialty
+                ? <div style={{ fontSize:11, color:'#0D9B7E', fontWeight:700, marginTop:3 }}>{SPECIALTY_ICONS[c.bibi_specialty]||'⭐'} {c.bibi_specialty} Uzmanı Bibi</div>
+                : <div style={{ fontSize:11, color:'#9CA3AF', marginTop:3 }}>✨ {c.name} ile konuştukça Bibi gelişecek</div>
+              }
             </div>
 
             <button onClick={e=>{e.stopPropagation();openReport(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
             <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('friends')}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
+            <button onClick={e=>{e.stopPropagation();setDeletingChild(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#fee2e2', border:'1px solid #fca5a5', cursor:'pointer', fontSize:14 }}>🗑️</button>
           </div>
         ))}
 
@@ -191,8 +209,26 @@ export default function ChildrenScreen() {
         )}
       </div>
 
-      {/* Avatar düzenleme modal */}
       {editingChild && <EditAvatarModal child={editingChild} onClose={()=>setEditingChild(null)} onSave={handleAvatarSaved}/>}
+
+      {/* Profil silme onay modalı */}
+      {deletingChild && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'white', borderRadius:20, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center' }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🗑️</div>
+            <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A', marginBottom:8 }}>{deletingChild.name} profilini sil</div>
+            <div style={{ fontSize:13, color:'#6B7280', marginBottom:20, lineHeight:1.5 }}>
+              Bu işlem geri alınamaz. Tüm sohbet geçmişi, görseller ve veriler silinecek.
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setDeletingChild(null)} style={{ flex:1, padding:12, borderRadius:12, border:'1.5px solid #e0f0ec', background:'white', cursor:'pointer', fontWeight:700, color:'#6B7280', fontFamily:'Nunito,sans-serif' }}>İptal</button>
+              <button onClick={()=>deleteChild(deletingChild)} disabled={deleteLoading} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#DC2626', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                {deleteLoading ? 'Siliniyor...' : 'Sil'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
