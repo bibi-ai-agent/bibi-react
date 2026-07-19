@@ -9,27 +9,34 @@ import ReportScreen from './screens/ReportScreen'
 import FriendsScreen from './screens/FriendsScreen'
 import ProjectScreen from './screens/ProjectScreen'
 import ProjectSelectScreen from './screens/ProjectSelectScreen'
+import SubscriptionScreen from './screens/SubscriptionScreen'
 
 export default function App() {
-  const { screen, setScreen, setCurrentUser, currentUser } = useApp()
+  const { screen, setScreen, setCurrentUser, currentUser, setSubscription } = useApp()
+
+  async function loadSubscription(userId) {
+    const { data } = await sb.from('subscriptions').select('*').eq('parent_id', userId).single()
+    if (data) setSubscription(data)
+    else setSubscription({ plan: 'free', status: 'active' })
+  }
 
   useEffect(() => {
-    // Oturum kontrolü
     const timer = setTimeout(() => setScreen('auth'), 5000)
     sb.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timer)
       if (session?.user) {
         setCurrentUser(session.user)
+        loadSubscription(session.user.id)
         setScreen('children')
       } else {
         setScreen('auth')
       }
     }).catch(() => { clearTimeout(timer); setScreen('auth') })
 
-    // Auth state listener
     const { data: { subscription } } = sb.auth.onAuthStateChange((_, session) => {
       if (session?.user) {
         setCurrentUser(session.user)
+        loadSubscription(session.user.id)
         if (screen === 'auth') setScreen('children')
       } else {
         setCurrentUser(null)
@@ -48,7 +55,7 @@ export default function App() {
     friends: <FriendsScreen/>,
     project: <ProjectScreen/>,
     projectSelect: <ProjectSelectScreen/>,
+    subscription: <SubscriptionScreen/>,
   }
-
   return screens[screen] || <LoadingScreen/>
 }

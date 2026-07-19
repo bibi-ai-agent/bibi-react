@@ -13,6 +13,7 @@ export function AppProvider({ children }) {
   const [speechPaused, setSpeechPaused] = useState(false)
   const [projectFriend, setProjectFriend] = useState(null)
   const [projectType, setProjectType] = useState(null)
+  const [subscription, setSubscription] = useState({ plan: 'free', status: 'active' })
 
   return (
     <AppContext.Provider value={{
@@ -26,6 +27,7 @@ export function AppProvider({ children }) {
       speechPaused, setSpeechPaused,
       projectFriend, setProjectFriend,
       projectType, setProjectType,
+      subscription, setSubscription,
     }}>
       {children}
     </AppContext.Provider>
