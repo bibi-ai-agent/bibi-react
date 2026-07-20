@@ -192,9 +192,10 @@ export default function ReportScreen() {
           </select>
           <input placeholder="Mesleğiniz (isteğe bağlı)" value={profileForm.job} onChange={e=>setProfileForm(f=>({...f,job:e.target.value}))} style={inp}/>
           <button onClick={saveProfile} disabled={profileSaving||!profileForm.full_name||!profileForm.role}
-            style={{width:'100%',padding:14,borderRadius:14,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:'Nunito,sans-serif',opacity:!profileForm.full_name||!profileForm.role?0.5:1}}>
+            style={{width:'100%',padding:14,borderRadius:14,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:'Nunito,sans-serif',opacity:!profileForm.full_name||!profileForm.role?0.5:1,marginBottom:10}}>
             {profileSaving ? 'Kaydediliyor...' : 'Devam Et →'}
           </button>
+          <button onClick={()=>setScreen('children')} style={{width:'100%',padding:11,borderRadius:12,border:'none',background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>← Geri Dön</button>
         </div>
       </div>
     </div>
