@@ -510,7 +510,7 @@ export default function ChatScreen() {
               {limitLabels[showLimitModal]?.icon} {limitLabels[showLimitModal]?.label} hakkın ({limitLabels[showLimitModal]?.limit}) doldu.
             </div>
             <div style={{ color:'rgba(255,255,255,.35)',fontSize:12,marginBottom:24 }}>
-              Planını yükselt, {plan==='free'?'Bibi Go veya Pro':plan==='go'?'Bibi Pro':{}'ye geç} ve limitlerini artır!
+            <div style={{ color:'rgba(255,255,255,.35)',fontSize:12,marginBottom:24 }}>Planını yükselt ve limitlerini artır!</div>
             </div>
             <button onClick={()=>{setShowLimitModal(null);setScreen('subscription')}} style={{ width:'100%',padding:13,borderRadius:14,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10 }}>⭐ Planımı Yükselt</button>
             <button onClick={()=>setShowLimitModal(null)} style={{ background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer' }}>Kapat</button>
