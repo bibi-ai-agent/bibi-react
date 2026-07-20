@@ -14,6 +14,8 @@ const QUESTIONS = [
 
 export default function ChildrenScreen() {
   const { currentUser, setCurrentChild, setScreen, subscription } = useApp()
+  const plan = subscription?.plan || 'free'
+  const maxChildren = plan === 'pro' ? 3 : plan === 'go' ? 2 : 1
   const [children, setChildren] = useState([])
   const [parentName, setParentName] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -161,9 +163,24 @@ export default function ChildrenScreen() {
         ))}
 
         {!showAddForm ? (
-          <button onClick={()=>setShowAddForm(true)} style={{ width:'100%', padding:15, borderRadius:18, border:'2.5px dashed #b8ddd6', background:'rgba(255,255,255,.7)', color:'#0D9B7E', fontSize:15, fontWeight:800, cursor:'pointer' }}>
-            + Yeni Profil Ekle
-          </button>
+          children.length >= maxChildren ? (
+            <div style={{ background:'rgba(124,58,237,.08)', border:'1.5px dashed rgba(124,58,237,.3)', borderRadius:18, padding:'18px 20px', textAlign:'center' }}>
+              <div style={{ fontSize:24, marginBottom:6 }}>🔒</div>
+              <div style={{ color:'#7C3AED', fontSize:14, fontWeight:800, marginBottom:4 }}>
+                {plan === 'free' ? 'Ücretsiz planda 1 profil' : plan === 'go' ? 'Go planında 2 profil' : '3 profil limitine ulaştınız'}
+              </div>
+              <div style={{ color:'#6B7280', fontSize:12, marginBottom:12 }}>
+                {plan !== 'pro' ? 'Daha fazla profil için planı yükseltin.' : 'Pro planda maksimum 3 profil eklenebilir.'}
+              </div>
+              {plan !== 'pro' && (
+                <button onClick={()=>setScreen('subscription')} style={{ padding:'9px 22px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>⭐ Planı Yükselt</button>
+              )}
+            </div>
+          ) : (
+            <button onClick={()=>setShowAddForm(true)} style={{ width:'100%', padding:15, borderRadius:18, border:'2.5px dashed #b8ddd6', background:'rgba(255,255,255,.7)', color:'#0D9B7E', fontSize:15, fontWeight:800, cursor:'pointer' }}>
+              + Yeni Profil Ekle ({children.length}/{maxChildren})
+            </button>
+          )
         ) : (
           <div style={{ background:'rgba(255,255,255,0.85)', borderRadius:18, padding:'22px 20px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', backdropFilter:'blur(8px)' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#1A2E2A', marginBottom:16 }}>Yeni Profil Ekle</div>
