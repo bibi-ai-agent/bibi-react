@@ -93,6 +93,9 @@ export default function ChatScreen() {
   const [showVoiceMenu, setShowVoiceMenu] = useState(false)
   const [contentCreator, setContentCreator] = useState(null)
   const [homeworkMode, setHomeworkMode] = useState(false)
+  const [homeworkStep, setHomeworkStep] = useState('idle') // idle | analyzing | waiting_solution | checking | practice
+  const [homeworkQuestion, setHomeworkQuestion] = useState(null)
+  const [homeworkCount, setHomeworkCount] = useState(0)
   const [showExitPin, setShowExitPin] = useState(false)
   const [exitPin, setExitPin] = useState('')
   const [exitPinError, setExitPinError] = useState('')
@@ -148,11 +151,11 @@ export default function ChatScreen() {
   async function loadUsage() {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await sb.from('daily_usage')
-      .select('message_count,image_count,slide_count')
+      .select('message_count,image_count,slide_count,homework_count')
       .eq('child_id', currentChild.id)
       .eq('date', today)
       .maybeSingle()
-    if (data) setUsage(data)
+    if (data) { setUsage(data); setHomeworkCount(data.homework_count||0) }
   }
 
   async function incrementUsage(field) {
@@ -272,6 +275,44 @@ export default function ChatScreen() {
     } catch { addMsg('bibi','Görsel üretemedi 🙈') }
   }
 
+  const hwLimit = plan === 'pro' ? 10 : plan === 'go' ? 3 : 0
+
+  async function startHomework(base64) {
+    if (plan === 'free') { addMsg('bibi', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
+    if (homeworkCount >= hwLimit) { setShowLimitModal('homework'); return }
+    addMsg('bibi', '📸 Ödev fotoğrafın yüklendi, soruları analiz ediyorum...')
+    setHomeworkMode(true); setHomeworkStep('analyzing')
+    const res = await fetch('https://bibi-app-rho.vercel.app/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'user',content:[
+        {type:'image_url',image_url:{url:`data:image/jpeg;base64,${base64}`}},
+        {type:'text',text:`${currentChild?.age||9} yaşında çocuğun ödevi. 1) Ödevdeki TÜM soruları listele 2) En uygun 1 soruyu seç 3) Sokratik yöntemle ipucu ver - cevap verme 4) "Şimdi sen dene ve çözümünü fotoğraf çekip gönder! 📸" de. Türkçe.`}
+      ]}], max_tokens:1200 })
+    })
+    const d = await res.json()
+    const reply = d.choices?.[0]?.message?.content || 'Fotoğrafı okuyamadım 🙈'
+    addMsg('bibi', reply); setHomeworkQuestion(reply); setHomeworkStep('waiting_solution')
+    const today = new Date().toISOString().split('T')[0]
+    const newCount = homeworkCount + 1; setHomeworkCount(newCount)
+    await sb.from('daily_usage').upsert({ child_id: currentChild.id, date: today, homework_count: newCount }, { onConflict: 'child_id,date', ignoreDuplicates: false })
+  }
+
+  async function checkHomeworkSolution(base64) {
+    addMsg('user', '📸 Çözümümü gönderdim!'); addMsg('bibi', '🔍 Çözümünü inceliyorum...'); setHomeworkStep('checking')
+    const res = await fetch('https://bibi-app-rho.vercel.app/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'user',content:[
+        {type:'image_url',image_url:{url:`data:image/jpeg;base64,${base64}`}},
+        {type:'text',text:`Çocuk şu soruya cevap verdi: "${(homeworkQuestion||'').slice(0,200)}" Çözümü kontrol et: Doğruysa tebrik et ve benzer pratik sorusu sor "çöz bana yolla 📸" de. Yanlışsa nazikçe göster ve tekrar iste. ${currentChild?.age||9} yaş, Türkçe.`}
+      ]}], max_tokens:1000 })
+    })
+    const d = await res.json()
+    const reply = d.choices?.[0]?.message?.content || 'Kontrol edemedim 🙈'
+    addMsg('bibi', reply)
+    if (reply.includes('Tebrik') || reply.includes('doğru') || reply.includes('Harika') || reply.includes('bravo')) setHomeworkStep('practice')
+    else setHomeworkStep('waiting_solution')
+  }
+
   async function generatePDF({topic, contentType}) {
     const age = currentChild?.age||9
     const agePrompt = age<=8?"Çok basit, kısa paragraflar.":age<=12?"Açıklayıcı paragraflar.":"Akademik dil, detaylı."
@@ -353,6 +394,7 @@ export default function ChatScreen() {
     messages: { icon:'💬', label:'Günlük mesaj', limit:limits.messages },
     images: { icon:'🎨', label:'Günlük görsel', limit:limits.images },
     slides: { icon:'📊', label:'Günlük slayt', limit:limits.slides },
+    homework: { icon:'📚', label:'Günlük ödev fotoğrafı', limit:hwLimit },
   }
 
   return (
@@ -434,21 +476,27 @@ export default function ChatScreen() {
       {/* Ödev modu barı */}
       {homeworkMode && (
         <div style={{ padding:'8px 14px',background:'rgba(13,155,126,.15)',borderBottom:'1px solid rgba(13,155,126,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
-          <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>📚 Ödev modu aktif</div>
-          <button onClick={()=>hwFileRef.current.click()} style={{ padding:'6px 12px',borderRadius:8,border:'none',background:'#0D9B7E',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>📸 Ödevimi Göster</button>
-          <input ref={hwFileRef} type="file" accept="image/*" style={{display:'none'}} onChange={async e=>{
-            const file=e.target.files[0];if(!file)return
-            const reader=new FileReader()
-            reader.onload=async ev=>{
-              const base64=ev.target.result.split(',')[1]
-              addMsg('user','📸 Ödevimi yaptım, kontrol eder misin?')
-              const res=await fetch('https://bibi-app-rho.vercel.app/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:`data:image/jpeg;base64,${base64}`}},{type:'text',text:`Çocuk ödevini yaptı. ${currentChild?.age||9} yaş. Kontrol et, doğruları kutla, yanlışlar için ipucu ver. Türkçe.`}]}],max_tokens:1000})})
-              const d=await res.json()
-              addMsg('bibi',d.choices?.[0]?.message?.content||'Kontrol edemedim 🙈')
-            }
-            reader.readAsDataURL(file)
-          }}/>
-          <button onClick={()=>setHomeworkMode(false)} style={{ width:24,height:24,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'none',cursor:'pointer',color:'rgba(255,255,255,.5)',fontSize:12 }}>✕</button>
+          <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>
+            📚 {homeworkStep==='analyzing'?'Analiz ediliyor...':homeworkStep==='waiting_solution'?'Çözümünü gönder':homeworkStep==='checking'?'Kontrol ediliyor...':homeworkStep==='practice'?'Pratik soru':'Ödev modu'}
+          </div>
+          {(homeworkStep==='waiting_solution'||homeworkStep==='practice') && (
+            <button onClick={()=>{
+              const inp=document.createElement('input');inp.type='file';inp.accept='image/*'
+              inp.onchange=async e=>{
+                const file=e.target.files[0];if(!file)return
+                const reader=new FileReader()
+                reader.onload=async ev=>{
+                  const base64=ev.target.result.split(',')[1]
+                  await checkHomeworkSolution(base64)
+                }
+                reader.readAsDataURL(file)
+              }
+              inp.click()
+            }} style={{ padding:'6px 12px',borderRadius:8,border:'none',background:'#0D9B7E',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
+              📸 {homeworkStep==='practice'?'Pratik Cevabı Gönder':'Çözümü Gönder'}
+            </button>
+          )}
+          <button onClick={()=>{setHomeworkMode(false);setHomeworkStep('idle');setHomeworkQuestion(null)}} style={{ width:24,height:24,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'none',cursor:'pointer',color:'rgba(255,255,255,.5)',fontSize:12 }}>✕</button>
         </div>
       )}
 
@@ -505,18 +553,14 @@ export default function ChatScreen() {
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Bibi'ye yaz veya konuş..." style={{ flex:1,padding:'13px 18px',borderRadius:28,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:15,color:'white',fontFamily:'Nunito,sans-serif' }}/>
           <ActionMenu
             onImage={()=>setInput('Bana bir görsel çiz: ')}
-            onHomework={async()=>{
+            onHomework={()=>{
               const inp=document.createElement('input');inp.type='file';inp.accept='image/*'
               inp.onchange=async e=>{
                 const file=e.target.files[0];if(!file)return
                 const reader=new FileReader()
                 reader.onload=async ev=>{
                   const base64=ev.target.result.split(',')[1]
-                  addMsg('bibi','📸 Ödev fotoğrafın yüklendi, inceliyorum...')
-                  const res=await fetch('https://bibi-app-rho.vercel.app/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',messages:[{role:'user',content:[{type:'image_url',image_url:{url:`data:image/jpeg;base64,${base64}`}},{type:'text',text:`${currentChild?.age||9} yaşında çocuğun ödevi. Soruları listele, konuyu belirt, ilk soruyu Sokratik yöntemle öğret. Türkçe.`}]}],max_tokens:1200})})
-                  const d=await res.json()
-                  addMsg('bibi',d.choices?.[0]?.message?.content||'Fotoğrafı okuyamadım 🙈')
-                  setHomeworkMode(true)
+                  await startHomework(base64)
                 }
                 reader.readAsDataURL(file)
               }
