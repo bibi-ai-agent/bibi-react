@@ -3,7 +3,9 @@ import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 
 export default function FriendsScreen() {
-  const { currentChild, setScreen, setProjectFriend } = useApp()
+  const { currentChild, setScreen, setProjectFriend, subscription } = useApp()
+  const plan = subscription?.plan || 'free'
+  const hasFriends = plan === 'go' || plan === 'pro'
   const [friends, setFriends] = useState([])
   const [pending, setPending] = useState([])
   const [inviteCode, setInviteCode] = useState('')
@@ -104,6 +106,17 @@ export default function FriendsScreen() {
 
       <div style={{ flex:1, overflowY:'auto', padding:'20px 16px 80px', maxWidth:480, margin:'0 auto', width:'100%' }}>
 
+        {!hasFriends ? (
+          <div style={{ textAlign:'center', padding:'40px 20px' }}>
+            <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
+            <div style={{ color:'white', fontSize:18, fontWeight:900, marginBottom:8 }}>Arkadaş Sistemi</div>
+            <div style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginBottom:24, lineHeight:1.6 }}>
+              Arkadaş ekleme ve proje yapma özelliği Bibi Go ve Bibi Pro planlarında kullanılabilir.
+            </div>
+            <button onClick={()=>setScreen('subscription')} style={{ padding:'13px 28px', borderRadius:14, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>⭐ Planı Yükselt</button>
+          </div>
+        ) : (
+
         {/* Bekleyen istekler */}
         {pending.length > 0 && (
           <div style={{ marginBottom:20 }}>
@@ -175,6 +188,7 @@ export default function FriendsScreen() {
             <button onClick={() => { setProjectFriend(f.friendData); setScreen('projectSelect') }} style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>🚀 Proje Yap</button>
           </div>
         ))}
+        )}
       </div>
     </div>
   )
