@@ -16,6 +16,12 @@ const SPECIALTY_PROFILES = {
   Sanat: "Sanatta yaratıcısın. Resim, müzik, yaratıcı yazarlık senin dünyan.",
 }
 
+const PLAN_LIMITS = {
+  free: { messages: 30, images: 3, slides: 1, friends: false, report: false },
+  go:   { messages: 150, images: 10, slides: 5, friends: true, report: false },
+  pro:  { messages: Infinity, images: 50, slides: 15, friends: true, report: true },
+}
+
 function buildPrompt(child) {
   const age = child.age || 9
   const name = child.name || 'sevgili'
@@ -44,7 +50,7 @@ const TYPE_NAMES = { homework:'Birlikte Ödev', experiment:'Deney/Proje', quiz:'
 const TYPE_ICONS = { homework:'📚', experiment:'🔬', quiz:'🎯' }
 
 export default function ChatScreen() {
-  const { currentChild, currentUser, setScreen, setProjectFriend, setProjectType, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled } = useApp()
+  const { currentChild, currentUser, setScreen, setProjectFriend, setProjectType, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled, subscription } = useApp()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState(null)
@@ -69,13 +75,19 @@ export default function ChatScreen() {
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [projectInvite, setProjectInvite] = useState(null)
+  const [usage, setUsage] = useState({ message_count:0, image_count:0, slide_count:0 })
+  const [showLimitModal, setShowLimitModal] = useState(null) // 'messages' | 'images' | 'slides'
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
   const hwFileRef = useRef()
   let msgCounter = useRef(0)
 
+  const plan = subscription?.plan || 'free'
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free
+
   useEffect(() => {
     if (!currentChild) return
+    loadUsage()
     const autoVoice = getVoiceForChild(currentChild)
     setSelectedVoiceId(autoVoice)
     const isYoung = currentChild.age <= 8
@@ -88,13 +100,8 @@ export default function ChatScreen() {
     addMsg('bibi', opening)
     if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
 
-    // Proje daveti dinle (Realtime)
     const channel = sb.channel(`project-invites-${currentChild.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'project_invites'
-      }, async payload => {
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
         const invite = payload.new
         if (invite.status !== 'pending') return
         if (invite.to_child_id !== currentChild.id) return
@@ -104,11 +111,44 @@ export default function ChatScreen() {
         setProjectInvite({ ...invite, sender })
       })
       .subscribe()
-
     return () => sb.removeChannel(channel)
   }, [])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, isTyping])
+
+  async function loadUsage() {
+    const today = new Date().toISOString().split('T')[0]
+    const { data } = await sb.from('daily_usage')
+      .select('message_count,image_count,slide_count')
+      .eq('child_id', currentChild.id)
+      .eq('date', today)
+      .single()
+    if (data) setUsage(data)
+  }
+
+  async function incrementUsage(field) {
+    const today = new Date().toISOString().split('T')[0]
+    const newVal = (usage[field] || 0) + 1
+    setUsage(prev => ({ ...prev, [field]: newVal }))
+    await sb.from('daily_usage').upsert({
+      child_id: currentChild.id,
+      date: today,
+      [field]: newVal
+    }, { onConflict: 'child_id,date', ignoreDuplicates: false })
+  }
+
+  function checkLimit(type) {
+    const fieldMap = { messages:'message_count', images:'image_count', slides:'slide_count' }
+    const limitMap = { messages:'messages', images:'images', slides:'slides' }
+    const field = fieldMap[type]
+    const current = usage[field] || 0
+    const limit = limits[limitMap[type]]
+    if (current >= limit) {
+      setShowLimitModal(type)
+      return false
+    }
+    return true
+  }
 
   function addMsg(role, text, extra={}) {
     msgCounter.current++
@@ -159,6 +199,7 @@ export default function ChatScreen() {
 
   async function sendMessage(text, fromVoice=false) {
     const t = text.trim(); if(!t) return
+    if (!checkLimit('messages')) return
     setInput('')
     addMsg('user', t)
     setExpr('thinking'); setStatus('Düşünüyor...'); setIsTyping(true)
@@ -176,6 +217,7 @@ export default function ChatScreen() {
       const reply = await callAI(buildPrompt(currentChild), chatHistory, 1000)
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
       addMsg('bibi', reply)
+      await incrementUsage('message_count')
       if ((currentChild?.age<=8 && fromVoice) || (voiceOn && currentChild?.age>8)) speakMsg(reply)
       if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
       setTimeout(() => { setExpr('idle') }, 3000)
@@ -185,6 +227,7 @@ export default function ChatScreen() {
   }
 
   async function handleImageRequest(prompt) {
+    if (!checkLimit('images')) return
     const desc = await callAI("Sen Bibi'sin, kısa Türkçe yanıt ver.", [{role:'user',content:`"${prompt.slice(0,30)}" için 1 cümle heyecanlı yanıt ver.`}], 80)
     if(desc) addMsg('bibi', desc)
     try {
@@ -194,6 +237,7 @@ export default function ChatScreen() {
       const eng = (tr?.trim()||prompt).replace(/['"*]/g,'').trim()
       const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(eng+', '+style+', high quality')}&t=${Date.now()}`
       addMsg('image', '', {url, title:prompt.slice(0,40)})
+      await incrementUsage('image_count')
       const sid = await ensureSession()
       if(sid) await sb.from('chat_assets').insert({session_id:sid, child_id:currentChild.id, type:'image', title:prompt.slice(0,40), url})
     } catch { addMsg('bibi','Görsel üretemedi 🙈') }
@@ -214,6 +258,7 @@ export default function ChatScreen() {
   }
 
   async function generatePresentation({topic, slideCount}) {
+    if (!checkLimit('slides')) return
     const age = currentChild?.age||9
     addMsg('bibi',`📊 "${topic}" sunusu hazırlanıyor...`)
     const result = await callAI(null,[{role:'user',content:`"${topic}" hakkında ${slideCount} slaytlık detaylı Türkçe sunu. ${age<=8?'Basit, emoji kullan.':age<=12?'Açıklayıcı.':'Akademik.'}\nJSON (başka hiçbir şey yazma): {"title":"...","slides":[{"title":"...","points":["...","...","..."],"fun_fact":"..."}],"ending":"..."}`}],2000)
@@ -227,6 +272,7 @@ export default function ChatScreen() {
     const url=URL.createObjectURL(blob)
     const a=document.createElement('a');a.href=url;a.download=`${topic.slice(0,20)}-sunu.html`;a.click()
     URL.revokeObjectURL(url)
+    await incrementUsage('slide_count')
     addMsg('bibi',`✅ "${topic}" sunusu indirildi!`)
   }
 
@@ -274,8 +320,31 @@ export default function ChatScreen() {
 
   const isSpeaking = !!currentAudio && !speechPaused
 
+  const limitLabels = {
+    messages: { icon:'💬', label:'Günlük mesaj', limit:limits.messages },
+    images: { icon:'🎨', label:'Günlük görsel', limit:limits.images },
+    slides: { icon:'📊', label:'Günlük slayt', limit:limits.slides },
+  }
+
   return (
     <div style={{ minHeight:'100vh', background:theme.bg, display:'flex', flexDirection:'column', position:'relative' }}>
+
+      {/* Limit bar */}
+      {plan === 'free' && (
+        <div style={{ background:'rgba(0,0,0,.2)', padding:'6px 16px', display:'flex', gap:12, alignItems:'center', flexShrink:0 }}>
+          {[
+            { icon:'💬', used:usage.message_count||0, limit:limits.messages },
+            { icon:'🎨', used:usage.image_count||0, limit:limits.images },
+            { icon:'📊', used:usage.slide_count||0, limit:limits.slides },
+          ].map((item,i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, color:'rgba(255,255,255,.5)' }}>
+              <span>{item.icon}</span>
+              <span style={{ color: item.used >= item.limit ? '#fca88a' : 'rgba(255,255,255,.5)' }}>{item.used}/{item.limit}</span>
+            </div>
+          ))}
+          <button onClick={()=>setScreen('subscription')} style={{ marginLeft:'auto', padding:'3px 10px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontSize:10, fontWeight:800, cursor:'pointer' }}>⭐ Yükselt</button>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ background:theme.header, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, flexShrink:0 }}>
@@ -431,17 +500,31 @@ export default function ChatScreen() {
         </div>
       </div>
 
-      {/* Proje daveti bildirimi */}
+      {/* Limit aşıldı modal */}
+      {showLimitModal && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
+            <div style={{ fontSize:48,marginBottom:12 }}>🔒</div>
+            <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>Günlük Limit Doldu!</div>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:8 }}>
+              {limitLabels[showLimitModal]?.icon} {limitLabels[showLimitModal]?.label} hakkın ({limitLabels[showLimitModal]?.limit}) doldu.
+            </div>
+            <div style={{ color:'rgba(255,255,255,.35)',fontSize:12,marginBottom:24 }}>
+              Planını yükselt, {plan==='free'?'Bibi Go veya Pro':plan==='go'?'Bibi Pro':{}'ye geç} ve limitlerini artır!
+            </div>
+            <button onClick={()=>{setShowLimitModal(null);setScreen('subscription')}} style={{ width:'100%',padding:13,borderRadius:14,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10 }}>⭐ Planımı Yükselt</button>
+            <button onClick={()=>setShowLimitModal(null)} style={{ background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer' }}>Kapat</button>
+          </div>
+        </div>
+      )}
+
+      {/* Proje daveti */}
       {projectInvite && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
             <div style={{ fontSize:48,marginBottom:12 }}>{TYPE_ICONS[projectInvite.project_type]||'🚀'}</div>
-            <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>
-              {projectInvite.sender?.name} seni davet etti!
-            </div>
-            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>
-              {TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor
-            </div>
+            <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>{projectInvite.sender?.name} seni davet etti!</div>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>{TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor</div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={rejectProjectInvite} style={{ flex:1,padding:12,borderRadius:12,border:'1.5px solid rgba(255,255,255,.15)',background:'transparent',color:'rgba(255,255,255,.5)',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>Reddet</button>
               <button onClick={acceptProjectInvite} style={{ flex:2,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Kabul Et</button>
@@ -450,7 +533,7 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Forgot PIN Modal */}
+      {/* Forgot PIN */}
       {showForgotPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.85)',backdropFilter:'blur(8px)',zIndex:201,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)',textAlign:'center' }}>
@@ -493,7 +576,7 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Exit PIN Modal */}
+      {/* Exit PIN */}
       {showExitPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)' }}>
