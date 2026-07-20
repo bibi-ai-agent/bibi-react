@@ -13,53 +13,64 @@ const tColor = {Matematik:"#2563EB",Fen:"#16A34A","Yabancı Dil":"#9333EA",Tarih
 const tIcon  = {Matematik:"📐",Fen:"🔬","Yabancı Dil":"🌐",Tarih:"🏛️",Genel:"🌍"}
 
 export default function ReportScreen() {
-  const { currentChild, setScreen, currentUser } = useApp()
+  const { currentChild, setScreen, currentUser, subscription } = useApp()
+  const plan = subscription?.plan || 'free'
+
+  // PIN state
   const [pin, setPin] = useState('')
   const [pinOk, setPinOk] = useState(false)
   const [pinError, setPinError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState(null)
-  const [accordionOpen, setAccordionOpen] = useState(false)
-  const [sessionsOpen, setSessionsOpen] = useState(false)
-  const [generating, setGenerating] = useState(false)
 
   // Şifremi unuttum
   const [showForgot, setShowForgot] = useState(false)
-  const [forgotStep, setForgotStep] = useState(1) // 1: şifre gir, 2: yeni PIN gir
+  const [forgotStep, setForgotStep] = useState(1)
   const [forgotPassword, setForgotPassword] = useState('')
   const [newPin, setNewPin] = useState('')
   const [newPinConfirm, setNewPinConfirm] = useState('')
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState(false)
 
+  // Veli profil state
+  const [parentProfile, setParentProfile] = useState(null)
+  const [showProfileForm, setShowProfileForm] = useState(false)
+  const [profileForm, setProfileForm] = useState({ full_name:'', role:'', age_range:'', education:'', job:'' })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  // Rapor state
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState(null)
+  const [accordionOpen, setAccordionOpen] = useState(false)
+  const [sessionsOpen, setSessionsOpen] = useState(false)
+  const [generating, setGenerating] = useState(false)
+
   async function checkPin(currentPin) {
-    const { data: parent } = await sb.from('parents').select('pin').eq('id', currentUser.id).single()
-    if (String(parent?.pin) === String(currentPin)) { setPinOk(true); loadData() }
-    else { setPinError('PIN hatalı!'); setPin('') }
+    const { data: parent } = await sb.from('parents').select('*').eq('id', currentUser.id).single()
+    if (String(parent?.pin) === String(currentPin)) {
+      setParentProfile(parent)
+      setPinOk(true)
+      // Profil eksikse form göster
+      if (!parent?.full_name || !parent?.role) {
+        setProfileForm({ full_name: parent?.full_name||'', role: parent?.role||'', age_range: parent?.age_range||'', education: parent?.education||'', job: parent?.job||'' })
+        setShowProfileForm(true)
+      } else {
+        setShowWelcome(true)
+        setTimeout(() => { setShowWelcome(false); loadData() }, 2500)
+      }
+    } else {
+      setPinError('PIN hatalı!'); setPin('')
+    }
   }
 
-  async function verifyPasswordForReset() {
-    if (!forgotPassword) { setForgotError('Şifrenizi girin'); return }
-    const { error } = await sb.auth.signInWithPassword({ email: currentUser.email, password: forgotPassword })
-    if (error) { setForgotError('Şifre hatalı!'); return }
-    setForgotError('')
-    setForgotStep(2)
-  }
-
-  async function saveNewPin() {
-    if (newPin.length !== 4) { setForgotError('4 haneli PIN girin'); return }
-    if (newPin !== newPinConfirm) { setForgotError('PIN\'ler eşleşmiyor'); return }
-    await sb.from('parents').update({ pin: newPin }).eq('id', currentUser.id)
-    setForgotSuccess(true)
-    setTimeout(() => {
-      setShowForgot(false)
-      setForgotStep(1)
-      setForgotPassword('')
-      setNewPin('')
-      setNewPinConfirm('')
-      setForgotError('')
-      setForgotSuccess(false)
-    }, 2000)
+  async function saveProfile() {
+    if (!profileForm.full_name || !profileForm.role) { return }
+    setProfileSaving(true)
+    await sb.from('parents').update(profileForm).eq('id', currentUser.id)
+    setParentProfile({ ...parentProfile, ...profileForm })
+    setProfileSaving(false)
+    setShowProfileForm(false)
+    setShowWelcome(true)
+    setTimeout(() => { setShowWelcome(false); loadData() }, 2500)
   }
 
   async function loadData() {
@@ -80,29 +91,43 @@ export default function ReportScreen() {
     data.emotions.forEach(e=>{ ec[e.emotion]=(ec[e.emotion]||0)+1; ic.push(e.interest_area) })
     const dominant = Object.entries(ec).sort((a,b)=>b[1]-a[1])[0]?.[0]
     const hints = data.emotions.map(e=>e.character_hint).filter(Boolean).slice(0,5).join(', ')
-    const summary = await callAI(null,[{role:'user',content:`${currentChild.age} yaşındaki ${currentChild.name} için haftalık gelişim raporu yaz. Baskın duygu: ${dominant}. Duygu dağılımı: ${JSON.stringify(ec)}. Karakter: ${hints}. Şu başlıklar altında Türkçe, veliye hitap ederek: 1.💙 Duygusal Durum 2.⭐ İlgi Alanları 3.🌱 Karakter 4.⚠️ Dikkat 5.💡 Öneriler`}],1500)
+    const parentName = parentProfile?.full_name || 'Sayın Veli'
+    const summary = await callAI(null,[{role:'user',content:`${currentChild.age} yaşındaki ${currentChild.name} için aylık gelişim raporu yaz. Velinin adı: ${parentName}. Baskın duygu: ${dominant}. Duygu dağılımı: ${JSON.stringify(ec)}. Karakter: ${hints}. Şu başlıklar altında Türkçe, veliye ismiyle hitap ederek: 1.💙 Duygusal Durum 2.⭐ İlgi Alanları & Eğilimler 3.🌱 Karakter Analizi 4.📚 Öğrenme Profili 5.⚠️ Dikkat Edilmesi Gerekenler 6.💡 Ebeveyn Önerileri`}],1800)
     await sb.from('weekly_reports').upsert({ child_id:currentChild.id, week_start:new Date().toISOString().split('T')[0], summary, dominant_emotion:dominant })
     setData(d=>({...d,lastReport:{summary,created_at:new Date().toISOString()}}))
     setGenerating(false)
     setAccordionOpen(true)
   }
 
-  const inp = { width:'100%', padding:'12px 14px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.08)', color:'white', fontSize:14, fontFamily:'Nunito,sans-serif', boxSizing:'border-box', marginBottom:10 }
+  async function verifyPasswordForReset() {
+    if (!forgotPassword) { setForgotError('Şifrenizi girin'); return }
+    const { error } = await sb.auth.signInWithPassword({ email: currentUser.email, password: forgotPassword })
+    if (error) { setForgotError('Şifre hatalı!'); return }
+    setForgotError(''); setForgotStep(2)
+  }
 
-  // Şifremi unuttum modal
+  async function saveNewPin() {
+    if (newPin.length !== 4) { setForgotError('4 haneli PIN girin'); return }
+    if (newPin !== newPinConfirm) { setForgotError("PIN'ler eşleşmiyor"); return }
+    await sb.from('parents').update({ pin: newPin }).eq('id', currentUser.id)
+    setForgotSuccess(true)
+    setTimeout(() => { setShowForgot(false); setForgotStep(1); setForgotPassword(''); setNewPin(''); setNewPinConfirm(''); setForgotError(''); setForgotSuccess(false) }, 2000)
+  }
+
+  const inp = { width:'100%', padding:'12px 14px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.08)', color:'white', fontSize:14, fontFamily:'Nunito,sans-serif', boxSizing:'border-box', marginBottom:10 }
+  const inpLight = { width:'100%', padding:'12px 14px', borderRadius:12, border:'1.5px solid #e0f0ec', background:'#f9fafb', color:'#1A2E2A', fontSize:14, fontFamily:'Nunito,sans-serif', boxSizing:'border-box', marginBottom:10 }
+
+  // ── Şifremi unuttum ──
   if (showForgot) return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif'}}>
       <div style={{width:'100%',maxWidth:340,textAlign:'center'}}>
         {forgotSuccess ? (
-          <>
-            <div style={{fontSize:48,marginBottom:16}}>✅</div>
-            <div style={{color:'#4ade80',fontSize:18,fontWeight:900}}>PIN güncellendi!</div>
-          </>
+          <><div style={{fontSize:48,marginBottom:16}}>✅</div><div style={{color:'#4ade80',fontSize:18,fontWeight:900}}>PIN güncellendi!</div></>
         ) : forgotStep === 1 ? (
           <>
             <div style={{fontSize:48,marginBottom:16}}>🔑</div>
             <div style={{color:'white',fontSize:18,fontWeight:900,marginBottom:8}}>PIN Sıfırla</div>
-            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>Uygulamaya giriş şifrenizi girin</div>
+            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>Giriş şifrenizi girin</div>
             <input type="password" placeholder="Giriş şifreniz" value={forgotPassword} onChange={e=>setForgotPassword(e.target.value)} style={inp}/>
             {forgotError && <div style={{color:'#fca88a',fontSize:12,marginBottom:10}}>{forgotError}</div>}
             <button onClick={verifyPasswordForReset} style={{width:'100%',padding:13,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10}}>Devam →</button>
@@ -112,7 +137,6 @@ export default function ReportScreen() {
           <>
             <div style={{fontSize:48,marginBottom:16}}>🔒</div>
             <div style={{color:'white',fontSize:18,fontWeight:900,marginBottom:8}}>Yeni PIN Belirle</div>
-            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>4 haneli yeni PIN'inizi girin</div>
             <input type="number" placeholder="Yeni PIN (4 hane)" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={inp}/>
             <input type="number" placeholder="PIN tekrar" value={newPinConfirm} onChange={e=>setNewPinConfirm(e.target.value.slice(0,4))} style={inp}/>
             {forgotError && <div style={{color:'#fca88a',fontSize:12,marginBottom:10}}>{forgotError}</div>}
@@ -124,9 +148,9 @@ export default function ReportScreen() {
     </div>
   )
 
-  // PIN Ekranı
+  // ── PIN Ekranı ──
   if (!pinOk) return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif'}}>
       <div style={{width:'100%',maxWidth:340,textAlign:'center'}}>
         <div style={{fontSize:48,marginBottom:16}}>🔒</div>
         <div style={{color:'white',fontSize:20,fontWeight:900,marginBottom:8}}>Veli Doğrulama</div>
@@ -149,6 +173,63 @@ export default function ReportScreen() {
     </div>
   )
 
+  // ── Veli Profil Formu ──
+  if (showProfileForm) return (
+    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif'}}>
+      <div style={{width:'100%',maxWidth:400}}>
+        <div style={{textAlign:'center',marginBottom:24}}>
+          <div style={{fontSize:48,marginBottom:12}}>👋</div>
+          <div style={{color:'white',fontSize:20,fontWeight:900,marginBottom:6}}>Hoş Geldiniz!</div>
+          <div style={{color:'rgba(255,255,255,.5)',fontSize:13}}>Sizi tanımak için birkaç bilgi alabilir miyiz?</div>
+        </div>
+        <div style={{background:'rgba(255,255,255,.07)',borderRadius:20,padding:24}}>
+          <input placeholder="Ad Soyad *" value={profileForm.full_name} onChange={e=>setProfileForm(f=>({...f,full_name:e.target.value}))} style={inp}/>
+          <select value={profileForm.role} onChange={e=>setProfileForm(f=>({...f,role:e.target.value}))} style={{...inp, cursor:'pointer'}}>
+            <option value="">Çocukla ilişkiniz *</option>
+            {['anne','baba','abi','abla','anneanne','babaanne','dede','diger'].map(r=>(
+              <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>
+            ))}
+          </select>
+          <select value={profileForm.age_range} onChange={e=>setProfileForm(f=>({...f,age_range:e.target.value}))} style={{...inp, cursor:'pointer'}}>
+            <option value="">Yaş aralığınız</option>
+            {['18-25','26-35','36-45','46-55','55+'].map(a=><option key={a} value={a}>{a}</option>)}
+          </select>
+          <select value={profileForm.education} onChange={e=>setProfileForm(f=>({...f,education:e.target.value}))} style={{...inp, cursor:'pointer'}}>
+            <option value="">Öğrenim durumunuz</option>
+            {[['ilkokul','İlkokul'],['ortaokul','Ortaokul'],['lise','Lise'],['onlisans','Ön Lisans'],['lisans','Lisans'],['yukseklisans','Yüksek Lisans / Doktora']].map(([v,l])=>(
+              <option key={v} value={v}>{l}</option>
+            ))}
+          </select>
+          <input placeholder="Mesleğiniz (isteğe bağlı)" value={profileForm.job} onChange={e=>setProfileForm(f=>({...f,job:e.target.value}))} style={inp}/>
+          <button onClick={saveProfile} disabled={profileSaving||!profileForm.full_name||!profileForm.role} style={{width:'100%',padding:14,borderRadius:14,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:15,cursor:'pointer',fontFamily:'Nunito,sans-serif',opacity:!profileForm.full_name||!profileForm.role?0.5:1}}>
+            {profileSaving ? 'Kaydediliyor...' : 'Devam Et →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Hoş Geldin Ekranı ──
+  if (showWelcome) {
+    const name = parentProfile?.full_name || ''
+    const role = parentProfile?.role || ''
+    const isFemale = ['anne','abla','anneanne','babaanne'].includes(role)
+    const title = isFemale ? 'Sayın Bayan' : 'Sayın Bay'
+    return (
+      <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#1A2E2A,#243d38)',display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif'}}>
+        <div style={{textAlign:'center',animation:'fadeUp .5s ease'}}>
+          <div style={{fontSize:64,marginBottom:16}}>👋</div>
+          <div style={{color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:8}}>{title}</div>
+          <div style={{color:'white',fontSize:28,fontWeight:900,marginBottom:8}}>{name}</div>
+          <div style={{color:'rgba(255,255,255,.5)',fontSize:15,marginBottom:4}}>hoş geldiniz.</div>
+          <div style={{color:'#4ade80',fontSize:14,marginTop:12}}>{currentChild.name}'in gelişim raporu yükleniyor... ✨</div>
+        </div>
+        <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      </div>
+    )
+  }
+
+  // ── Loading ──
   if (loading||!data) return (
     <div style={{minHeight:'100vh',background:'#f8fafc',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:16}}>
       <div style={{animation:'bounce 1.5s ease-in-out infinite'}}><BibiFace expr="thinking" size={70}/></div>
@@ -167,12 +248,19 @@ export default function ReportScreen() {
   const posCount=Object.entries(emotionCounts).filter(([e])=>['happy','excited','curious','calm'].includes(e)).reduce((s,[,c])=>s+c,0)
   const balanceScore=totalEmotions>0?Math.round(posCount/totalEmotions*100):null
   const reportAge=lastReport?Math.floor((new Date()-new Date(lastReport.created_at))/(1000*60*60*24)):999
-  const reportFresh=reportAge<7
+  const reportFresh=reportAge<30
   const avatarEl=currentChild.avatar_photo?<img src={currentChild.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:<span style={{fontSize:22}}>{currentChild.avatar_emoji||(currentChild.gender==='kız'?'👧':'👦')}</span>
   const card={background:'white',borderRadius:16,padding:18,marginBottom:14,boxShadow:'0 2px 12px rgba(0,0,0,.08)'}
 
+  const parentName = parentProfile?.full_name || 'Veli'
+  const role = parentProfile?.role || ''
+  const isFemale = ['anne','abla','anneanne','babaanne'].includes(role)
+  const title = isFemale ? 'Bayan' : 'Bay'
+
   return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(160deg,#a8607a,#b87fa0,#8f6aaa,#7a8cc0,#7ab5c8,#8fbfa8)',backgroundSize:'300% 300%',animation:'gradShift 18s ease infinite',position:'relative',overflowX:'hidden'}}>
+    <div style={{minHeight:'100vh',background:'linear-gradient(160deg,#a8607a,#b87fa0,#8f6aaa,#7a8cc0,#7ab5c8,#8fbfa8)',backgroundSize:'300% 300%',animation:'gradShift 18s ease infinite',position:'relative',overflowX:'hidden',fontFamily:'Nunito,sans-serif'}}>
+
+      {/* Header */}
       <div style={{background:'rgba(100,60,100,0.88)',backdropFilter:'blur(20px)',padding:'18px 20px',position:'sticky',top:0,zIndex:10,boxShadow:'0 2px 12px rgba(0,0,0,.1)'}}>
         <div style={{maxWidth:520,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -180,6 +268,7 @@ export default function ReportScreen() {
             <div>
               <div style={{color:'rgba(255,255,255,.5)',fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase'}}>Gelişim Raporu</div>
               <div style={{color:'white',fontSize:18,fontWeight:900}}>{currentChild.name}</div>
+              <div style={{color:'rgba(255,255,255,.4)',fontSize:11}}>{title} {parentName}</div>
             </div>
           </div>
           <button onClick={()=>setScreen('children')} style={{background:'rgba(255,255,255,.12)',border:'1.5px solid rgba(255,255,255,.2)',borderRadius:20,padding:'8px 14px',color:'white',fontSize:12,fontWeight:700,cursor:'pointer'}}>← Geri</button>
@@ -187,6 +276,8 @@ export default function ReportScreen() {
       </div>
 
       <div style={{position:'relative',zIndex:1,maxWidth:520,margin:'0 auto',padding:'20px 16px 60px'}}>
+
+        {/* Stat kartları */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:14}}>
           {[{icon:"⏱️",val:totalMinutes,label:"Dakika",color:"#2563EB"},{icon:"💬",val:totalMessages,label:"Mesaj",color:"#0D9B7E"},{icon:"📖",val:sessions.length,label:"Sohbet",color:"#7C3AED"}].map(s=>(
             <div key={s.label} style={{background:'white',borderRadius:14,padding:'14px 8px',textAlign:'center',boxShadow:'0 2px 10px rgba(0,0,0,.07)'}}>
@@ -197,6 +288,16 @@ export default function ReportScreen() {
           ))}
         </div>
 
+        {/* Duygusal Denge - Sadece Pro */}
+        {plan !== 'pro' && (
+          <div style={{background:'rgba(124,58,237,.08)',border:'1.5px solid rgba(124,58,237,.2)',borderRadius:16,padding:'14px 18px',marginBottom:14,textAlign:'center'}}>
+            <div style={{fontSize:20,marginBottom:6}}>🔒</div>
+            <div style={{color:'#7C3AED',fontSize:13,fontWeight:800,marginBottom:4}}>Duygu Analizi, Karakter & İlgi Alanları — Pro Özelliği</div>
+            <div style={{color:'#6B7280',fontSize:12,marginBottom:10}}>Bu bölümler sadece Bibi Pro planında görüntülenebilir.</div>
+            <button onClick={()=>setScreen('subscription')} style={{padding:'8px 20px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:12,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>⭐ Pro'ya Geç</button>
+          </div>
+        )}
+        {plan === 'pro' && (<>
         <div style={card}>
           <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>💙 Duygusal Denge Skoru</div>
           {balanceScore!==null?(
@@ -224,12 +325,13 @@ export default function ReportScreen() {
                 ))}
               </div>
             </>
-          ):<div style={{textAlign:'center',color:'#9CA3AF',fontSize:13,padding:'12px 0'}}>😊 Duygu verisi henüz yok.</div>}
+          ):<div style={{textAlign:'center',color:'#9CA3AF',fontSize:13,padding:'12px 0'}}>😊 Duygu verisi henüz yok. Bibi ile sohbet ettikçe burada görünür.</div>}
         </div>
 
+        {/* İlgi Alanları */}
         {topInterests.length>0&&(
           <div style={card}>
-            <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>⭐ İlgi Alanları</div>
+            <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>⭐ İlgi Alanları & Eğilimler</div>
             {topInterests.map(([area,count])=>{const pct=Math.round(count/totalEmotions*100);return(
               <div key={area} style={{marginBottom:12}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
@@ -244,9 +346,10 @@ export default function ReportScreen() {
           </div>
         )}
 
+        {/* Karakter Gözlemleri */}
         {charHints.length>0&&(
           <div style={card}>
-            <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:12}}>🧠 Karakter Gözlemleri</div>
+            <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:12}}>🧠 Karakter Analizi</div>
             {[...new Set(charHints)].slice(0,4).map((h,i)=>(
               <div key={i} style={{display:'flex',gap:8,padding:'10px 12px',background:'#f0fdf4',borderRadius:10,borderLeft:'3px solid #0D9B7E',marginBottom:8}}>
                 <span>💙</span><span style={{fontSize:13,color:'#374151',lineHeight:1.5}}>{h}</span>
@@ -255,6 +358,7 @@ export default function ReportScreen() {
           </div>
         )}
 
+        {/* Akademik Ustalık */}
         {mastery.length>0&&(
           <div style={card}>
             <div style={{fontSize:14,fontWeight:800,color:'#111827',marginBottom:14}}>📊 Akademik Ustalık</div>
@@ -276,10 +380,13 @@ export default function ReportScreen() {
           </div>
         )}
 
+        )}
+
+        {/* Son Sohbetler - Tüm Planlarda */}
         {sessions.length>0&&(
           <div style={{background:'white',borderRadius:16,overflow:'hidden',marginBottom:14,boxShadow:'0 2px 12px rgba(0,0,0,.08)'}}>
             <button onClick={()=>setSessionsOpen(!sessionsOpen)} style={{width:'100%',padding:'14px 18px',border:'none',background:'white',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
-              <div style={{fontSize:14,fontWeight:800,color:'#111827'}}>🕐 Son Sohbetler <span style={{fontSize:12,color:'#9CA3AF',fontWeight:600}}>({sessions.length})</span></div>
+              <div style={{fontSize:14,fontWeight:800,color:'#111827'}}>🕐 Sohbet Geçmişi <span style={{fontSize:12,color:'#9CA3AF',fontWeight:600}}>({sessions.length} sohbet)</span></div>
               <span style={{fontSize:14,color:'#9CA3AF',transition:'transform .3s',display:'inline-block',transform:sessionsOpen?'rotate(180deg)':''}}>▼</span>
             </button>
             {sessionsOpen&&(
@@ -301,27 +408,40 @@ export default function ReportScreen() {
           </div>
         )}
 
+        {/* Aylık Rapor */}
         <div style={{background:'white',borderRadius:16,overflow:'hidden',marginBottom:12,boxShadow:'0 2px 12px rgba(0,0,0,.08)'}}>
           <button onClick={()=>setAccordionOpen(!accordionOpen)} style={{width:'100%',padding:'16px 18px',border:'none',background:'linear-gradient(135deg,#1A2E2A,#243d38)',color:'white',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <span style={{fontSize:18}}>✨</span>
               <div style={{textAlign:'left'}}>
-                <div style={{fontSize:14,fontWeight:800}}>Gelişim Raporu</div>
-                <div style={{fontSize:11,color:'rgba(255,255,255,.5)',marginTop:2}}>{lastReport?`${new Date(lastReport.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long'})} • ${reportFresh?`${7-reportAge} gün sonra yenilenir`:'Güncelleme mevcut'}`:'Henüz oluşturulmadı'}</div>
+                <div style={{fontSize:14,fontWeight:800}}>Aylık Gelişim Raporu</div>
+                <div style={{fontSize:11,color:'rgba(255,255,255,.5)',marginTop:2}}>{lastReport?`${new Date(lastReport.created_at).toLocaleDateString('tr-TR',{day:'numeric',month:'long'})} • ${reportFresh?`${30-reportAge} gün sonra yenilenir`:'Güncelleme mevcut'}`:'Henüz oluşturulmadı'}</div>
               </div>
             </div>
             <span style={{fontSize:16,transition:'transform .3s',flexShrink:0,display:'inline-block',transform:accordionOpen?'rotate(180deg)':''}}>▼</span>
           </button>
           {accordionOpen&&(
             <div style={{padding:'16px 18px',borderTop:'1px solid #f3f4f6'}}>
-              {lastReport?<div style={{color:'#374151',fontSize:13,lineHeight:1.8,whiteSpace:'pre-line'}}>{lastReport.summary}</div>:<div style={{color:'#9CA3AF',fontSize:13,textAlign:'center'}}>Henüz rapor oluşturulmadı.</div>}
+              {lastReport
+                ?<div style={{color:'#374151',fontSize:13,lineHeight:1.8,whiteSpace:'pre-line'}}>{lastReport.summary}</div>
+                :<div style={{color:'#9CA3AF',fontSize:13,textAlign:'center'}}>Henüz rapor oluşturulmadı.</div>}
             </div>
           )}
         </div>
 
-        <button onClick={generateReport} disabled={generating} style={{width:'100%',padding:15,borderRadius:16,border:'none',background:generating?'rgba(13,155,126,.5)':'linear-gradient(135deg,#0D9B7E,#7C3AED)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
-          {generating?'⏳ Rapor hazırlanıyor...':lastReport?(reportFresh?`🔄 Raporu Yenile (${7-reportAge} gün kaldı)`:'🔄 Yeni Rapor Al'):'✨ İlk Gelişim Raporunu Oluştur'}
-        </button>
+        {/* Rapor Butonu — sadece Pro'da aktif */}
+        {plan === 'pro' ? (
+          <button onClick={generateReport} disabled={generating} style={{width:'100%',padding:15,borderRadius:16,border:'none',background:generating?'rgba(13,155,126,.5)':'linear-gradient(135deg,#0D9B7E,#7C3AED)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',boxSizing:'border-box',fontFamily:'Nunito,sans-serif'}}>
+            {generating?'⏳ Rapor hazırlanıyor...':lastReport?(reportFresh?`🔄 Raporu Yenile (${30-reportAge} gün kaldı)`:'🔄 Yeni Rapor Al'):'✨ Aylık Gelişim Raporunu Oluştur'}
+          </button>
+        ) : (
+          <div style={{background:'rgba(124,58,237,.1)',border:'1.5px solid rgba(124,58,237,.3)',borderRadius:16,padding:'16px 18px',textAlign:'center'}}>
+            <div style={{fontSize:24,marginBottom:8}}>🔒</div>
+            <div style={{color:'#7C3AED',fontSize:14,fontWeight:800,marginBottom:4}}>Aylık Rapor — Pro Özelliği</div>
+            <div style={{color:'#6B7280',fontSize:12,marginBottom:12}}>Detaylı aylık gelişim raporları sadece Bibi Pro planında kullanılabilir.</div>
+            <button onClick={()=>setScreen('subscription')} style={{padding:'10px 24px',borderRadius:12,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>⭐ Pro'ya Geç</button>
+          </div>
+        )}
       </div>
 
       <style>{`@keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
