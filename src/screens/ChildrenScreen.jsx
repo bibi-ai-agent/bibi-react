@@ -13,7 +13,7 @@ const QUESTIONS = [
 ]
 
 export default function ChildrenScreen() {
-  const { currentUser, setCurrentChild, setScreen } = useApp()
+  const { currentUser, setCurrentChild, setScreen, subscription } = useApp()
   const [children, setChildren] = useState([])
   const [parentName, setParentName] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -123,7 +123,12 @@ export default function ChildrenScreen() {
             <div style={{ fontSize:22, fontWeight:900, color:'#1A2E2A' }}>Merhaba! 👋</div>
             <div style={{ fontSize:13, color:'#6B7280', marginTop:2 }}>{parentName||'Hoş geldiniz'}</div>
           </div>
-          <button onClick={signOut} style={{ padding:'8px 18px', borderRadius:20, background:'white', border:'1.5px solid #e0f0ec', color:'#6B7280', fontSize:13, fontWeight:700, cursor:'pointer' }}>Çıkış</button>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={()=>setScreen('subscription')} style={{ padding:'8px 16px', borderRadius:20, background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', border:'none', color:'white', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              {subscription?.plan === 'free' ? '⭐ Planı Yükselt' : `⭐ ${(subscription?.plan||'free').toUpperCase()}`}
+            </button>
+            <button onClick={signOut} style={{ padding:'8px 18px', borderRadius:20, background:'white', border:'1.5px solid #e0f0ec', color:'#6B7280', fontSize:13, fontWeight:700, cursor:'pointer' }}>Çıkış</button>
+          </div>
         </div>
       </div>
 
