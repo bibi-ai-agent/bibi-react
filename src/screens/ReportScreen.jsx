@@ -174,17 +174,17 @@ export default function ReportScreen() {
         </div>
         <div style={{background:'rgba(255,255,255,.07)',borderRadius:20,padding:24}}>
           <input placeholder="Ad Soyad *" value={profileForm.full_name} onChange={e=>setProfileForm(f=>({...f,full_name:e.target.value}))} style={inp}/>
-          <select value={profileForm.role} onChange={e=>setProfileForm(f=>({...f,role:e.target.value}))} style={{...inp,cursor:'pointer'}}>
+          <select value={profileForm.role} onChange={e=>setProfileForm(f=>({...f,role:e.target.value}))} style={{...inp,cursor:'pointer',background:'#1A2E2A',color:'white'}}>
             <option value="">Çocukla ilişkiniz *</option>
             {['anne','baba','abi','abla','anneanne','babaanne','dede','diger'].map(r=>(
               <option key={r} value={r}>{r.charAt(0).toUpperCase()+r.slice(1)}</option>
             ))}
           </select>
-          <select value={profileForm.age_range} onChange={e=>setProfileForm(f=>({...f,age_range:e.target.value}))} style={{...inp,cursor:'pointer'}}>
+          <select value={profileForm.age_range} onChange={e=>setProfileForm(f=>({...f,age_range:e.target.value}))} style={{...inp,cursor:'pointer',background:'#1A2E2A',color:'white'}}>
             <option value="">Yaş aralığınız</option>
             {['18-25','26-35','36-45','46-55','55+'].map(a=><option key={a} value={a}>{a}</option>)}
           </select>
-          <select value={profileForm.education} onChange={e=>setProfileForm(f=>({...f,education:e.target.value}))} style={{...inp,cursor:'pointer'}}>
+          <select value={profileForm.education} onChange={e=>setProfileForm(f=>({...f,education:e.target.value}))} style={{...inp,cursor:'pointer',background:'#1A2E2A',color:'white'}}>
             <option value="">Öğrenim durumunuz</option>
             {[['ilkokul','İlkokul'],['ortaokul','Ortaokul'],['lise','Lise'],['onlisans','Ön Lisans'],['lisans','Lisans'],['yukseklisans','Yüksek Lisans / Doktora']].map(([v,l])=>(
               <option key={v} value={v}>{l}</option>
