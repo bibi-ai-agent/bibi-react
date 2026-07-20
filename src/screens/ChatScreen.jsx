@@ -554,6 +554,8 @@ export default function ChatScreen() {
           <ActionMenu
             onImage={()=>setInput('Bana bir görsel çiz: ')}
             onHomework={()=>{
+              if (plan === 'free') { addMsg('bibi', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
+              if (homeworkCount >= hwLimit) { setShowLimitModal('homework'); return }
               const inp=document.createElement('input');inp.type='file';inp.accept='image/*'
               inp.onchange=async e=>{
                 const file=e.target.files[0];if(!file)return
