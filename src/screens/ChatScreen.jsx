@@ -107,7 +107,7 @@ export default function ChatScreen() {
         if (invite.to_child_id !== currentChild.id) return
         const { data: sender } = await sb.from('children_invite_lookup')
           .select('id,name,age,avatar_emoji,avatar_photo,bibi_specialty')
-          .eq('id', invite.from_child_id).single()
+          .eq('id', invite.from_child_id).maybeSingle()
         setProjectInvite({ ...invite, sender })
       })
       .subscribe()
@@ -122,7 +122,7 @@ export default function ChatScreen() {
       .select('message_count,image_count,slide_count')
       .eq('child_id', currentChild.id)
       .eq('date', today)
-      .single()
+      .maybeSingle()
     if (data) setUsage(data)
   }
 
@@ -192,7 +192,7 @@ export default function ChatScreen() {
 
   async function ensureSession() {
     if (sessionId) return sessionId
-    const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().single()
+    const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
     return data?.id
   }
@@ -592,7 +592,7 @@ export default function ChatScreen() {
                   else if(d!==''&&exitPin.length<4){
                     const np=exitPin+d;setExitPin(np)
                     if(np.length===4){
-                      const {data:parent}=await sb.from('parents').select('pin').eq('id',currentUser.id).single()
+                      const {data:parent}=await sb.from('parents').select('pin').eq('id',currentUser.id).maybeSingle()
                       if(String(parent?.pin)===String(np)){setShowExitPin(false);setExitPin('');setScreen('children')}
                       else{setExitPinError('PIN hatalı!');setExitPin('')}
                     }
