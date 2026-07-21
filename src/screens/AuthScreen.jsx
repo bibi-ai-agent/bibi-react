@@ -18,6 +18,7 @@ export default function AuthScreen() {
   const [forgotMsg, setForgotMsg] = useState('')
   const [forgotSent, setForgotSent] = useState(false)
   const [forgotLoading, setForgotLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function doLogin() {
     if (!email || !password) return setMsg('E-posta ve şifre gerekli')
@@ -116,8 +117,13 @@ export default function AuthScreen() {
             <input placeholder="Ad Soyad" value={fullName} onChange={e=>setFullName(e.target.value)} style={inp}/>
           )}
           <input placeholder="E-posta" type="email" value={email} onChange={e=>setEmail(e.target.value)} style={inp}/>
-          <input placeholder="Şifre" type="password" value={password} onChange={e=>setPassword(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&doLogin()} style={inp}/>
+          <div style={{ position:'relative' }}>
+            <input placeholder="Şifre" type={showPassword?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&doLogin()} style={{...inp, paddingRight:44}}/>
+            <button onClick={()=>setShowPassword(!showPassword)} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,.4)', fontSize:18 }}>
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
           {tab === 'register' && (
             <>
               <input placeholder="Telefon (opsiyonel)" value={phone} onChange={e=>setPhone(e.target.value)} style={inp}/>
