@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { sb } from './lib/supabase'
 import { useApp } from './lib/store'
 import LoadingScreen from './screens/LoadingScreen'
@@ -10,9 +10,11 @@ import FriendsScreen from './screens/FriendsScreen'
 import ProjectScreen from './screens/ProjectScreen'
 import ProjectSelectScreen from './screens/ProjectSelectScreen'
 import SubscriptionScreen from './screens/SubscriptionScreen'
+import ResetPasswordScreen from './screens/ResetPasswordScreen'
 
 export default function App() {
   const { screen, setScreen, setCurrentUser, currentUser, setSubscription } = useApp()
+  const [resetMode, setResetMode] = useState(false)
 
   async function loadSubscription(userId) {
     const { data } = await sb.from('subscriptions').select('*').eq('parent_id', userId).single()
@@ -21,6 +23,13 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Şifre sıfırlama linki kontrolü
+    const hash = window.location.hash
+    if (hash.includes('type=recovery') || hash.includes('access_token')) {
+      setResetMode(true)
+      return
+    }
+
     const timer = setTimeout(() => setScreen('auth'), 5000)
     sb.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timer)
@@ -33,7 +42,11 @@ export default function App() {
       }
     }).catch(() => { clearTimeout(timer); setScreen('auth') })
 
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setResetMode(true)
+        return
+      }
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
@@ -45,6 +58,8 @@ export default function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  if (resetMode) return <ResetPasswordScreen onDone={() => { setResetMode(false); setScreen('auth') }}/>
 
   const screens = {
     loading: <LoadingScreen/>,
