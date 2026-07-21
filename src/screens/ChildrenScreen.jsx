@@ -31,6 +31,9 @@ export default function ChildrenScreen() {
   const [editingChild, setEditingChild] = useState(null)
   const [deletingChild, setDeletingChild] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [pinChild, setPinChild] = useState(null)
+  const [entryPin, setEntryPin] = useState('')
+  const [entryPinError, setEntryPinError] = useState('')
   const fileRef = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
@@ -101,7 +104,20 @@ export default function ChildrenScreen() {
     setEditingChild(null)
   }
 
-  function startChat(child) { setCurrentChild(child); setScreen('chat') }
+  function startChat(child) { setPinChild(child); setEntryPin(''); setEntryPinError('') }
+
+  async function checkEntryPin(pin) {
+    const { data: parent } = await sb.from('parents').select('pin').eq('id', currentUser.id).single()
+    if (String(parent?.pin) === String(pin)) {
+      setCurrentChild(pinChild)
+      setPinChild(null)
+      setEntryPin('')
+      setScreen('chat')
+    } else {
+      setEntryPinError('PIN hatalı!')
+      setEntryPin('')
+    }
+  }
   function openReport(child) { setCurrentChild(child); setScreen('report') }
   async function signOut() { await sb.auth.signOut() }
 
@@ -230,6 +246,35 @@ export default function ChildrenScreen() {
           </div>
         )}
       </div>
+
+      {/* Giriş PIN Modalı */}
+      {pinChild && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, boxShadow:'0 8px 40px rgba(0,0,0,.4)', textAlign:'center' }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', overflow:'hidden', background:'#0D9B7E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 12px' }}>
+              {pinChild.avatar_photo ? <img src={pinChild.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : pinChild.avatar_emoji || '👤'}
+            </div>
+            <div style={{ color:'white', fontSize:17, fontWeight:900, marginBottom:4 }}>{pinChild.name}</div>
+            <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginBottom:20 }}>Veli PIN'ini gir</div>
+            <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:16 }}>
+              {[1,2,3,4].map(i => <div key={i} style={{ width:14, height:14, borderRadius:'50%', background:entryPin.length>=i?'#4ade80':'rgba(255,255,255,.2)' }}/>)}
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:12 }}>
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((d,i) => (
+                <button key={i} onClick={async()=>{
+                  if(d==='⌫'){setEntryPin(p=>p.slice(0,-1));setEntryPinError('')}
+                  else if(d!==''&&entryPin.length<4){
+                    const np=entryPin+d; setEntryPin(np)
+                    if(np.length===4) await checkEntryPin(np)
+                  }
+                }} style={{ padding:'14px 0', borderRadius:12, border:'none', background:d===''?'transparent':'rgba(255,255,255,.1)', color:'white', fontSize:18, fontWeight:700, cursor:d===''?'default':'pointer', fontFamily:'Nunito,sans-serif' }}>{d}</button>
+              ))}
+            </div>
+            {entryPinError && <div style={{ color:'#fca88a', fontSize:12, marginBottom:8 }}>{entryPinError}</div>}
+            <button onClick={()=>{setPinChild(null);setEntryPin('');setEntryPinError('')}} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.5)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>İptal</button>
+          </div>
+        </div>
+      )}
 
       {editingChild && <EditAvatarModal child={editingChild} onClose={()=>setEditingChild(null)} onSave={handleAvatarSaved}/>}
 
