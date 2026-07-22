@@ -11,11 +11,14 @@ const QUESTIONS = [
   "Bu hafta birlikte güldünüz mü? 😊","Onun bir başarısını kutladın mı? 🌟",
   "Bugün onu kucakladın mı? 🤗","Hayalleri hakkında konuştunuz mu? ✨",
 ]
+const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
+const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
 
 export default function ChildrenScreen() {
-  const { currentUser, setCurrentChild, setScreen, subscription } = useApp()
+  const { currentUser, setCurrentChild, setScreen, subscription, setProjectFriend, setProjectType } = useApp()
   const plan = subscription?.plan || 'free'
   const maxChildren = plan === 'pro' ? 3 : plan === 'go' ? 2 : 1
+
   const [children, setChildren] = useState([])
   const [parentName, setParentName] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -34,9 +37,27 @@ export default function ChildrenScreen() {
   const [pinChild, setPinChild] = useState(null)
   const [entryPin, setEntryPin] = useState('')
   const [entryPinError, setEntryPinError] = useState('')
+  const [projectInvite, setProjectInvite] = useState(null)
   const fileRef = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
+
+  useEffect(() => {
+    if (!children.length) return
+    const childIds = children.map(c => c.id)
+    const channel = sb.channel('children-project-invites-' + currentUser.id)
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
+        const invite = payload.new
+        if (invite.status !== 'pending') return
+        if (!childIds.includes(invite.to_child_id)) return
+        const { data: sender } = await sb.from('children_invite_lookup')
+          .select('id,name,age,avatar_emoji,avatar_photo,bibi_specialty')
+          .eq('id', invite.from_child_id).single()
+        setProjectInvite({ ...invite, sender })
+      })
+      .subscribe()
+    return () => sb.removeChannel(channel)
+  }, [children])
 
   async function loadChildren() {
     const { data } = await sb.from('children').select('*').eq('parent_id', currentUser.id)
@@ -109,15 +130,28 @@ export default function ChildrenScreen() {
   async function checkEntryPin(pin) {
     const { data: parent } = await sb.from('parents').select('pin').eq('id', currentUser.id).single()
     if (String(parent?.pin) === String(pin)) {
-      setCurrentChild(pinChild)
-      setPinChild(null)
-      setEntryPin('')
-      setScreen('chat')
-    } else {
-      setEntryPinError('PIN hatalı!')
-      setEntryPin('')
+      setCurrentChild(pinChild); setPinChild(null); setEntryPin(''); setScreen('chat')
+    } else { setEntryPinError('PIN hatalı!'); setEntryPin('') }
+  }
+
+  async function acceptProjectInvite() {
+    if (!projectInvite) return
+    await sb.from('project_invites').update({ status:'accepted' }).eq('id', projectInvite.id)
+    const toChild = children.find(c => c.id === projectInvite.to_child_id)
+    if (toChild) {
+      setCurrentChild(toChild)
+      setProjectFriend(projectInvite.sender)
+      setProjectType(projectInvite.project_type)
+      setProjectInvite(null)
+      setScreen('project')
     }
   }
+
+  async function rejectProjectInvite() {
+    await sb.from('project_invites').update({ status:'rejected' }).eq('id', projectInvite.id)
+    setProjectInvite(null)
+  }
+
   function openReport(child) { setCurrentChild(child); setScreen('report') }
   async function signOut() { await sb.auth.signOut() }
 
@@ -154,15 +188,13 @@ export default function ChildrenScreen() {
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
-          <div key={c.id} style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border:'1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', animation:'fadeUp .3s ease' }}>
-            
+          <div key={c.id} style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border:'1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)' }}>
             <div style={{ position:'relative', flexShrink:0 }}>
               <div onClick={()=>startChat(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
                 {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
               </div>
               <button onClick={e=>{e.stopPropagation();setEditingChild(c)}} style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
             </div>
-
             <div onClick={()=>startChat(c)} style={{ flex:1, cursor:'pointer' }}>
               <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
               <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
@@ -171,7 +203,6 @@ export default function ChildrenScreen() {
                 : <div style={{ fontSize:11, color:'#9CA3AF', marginTop:3 }}>✨ {c.name} ile konuştukça Bibi gelişecek</div>
               }
             </div>
-
             <button onClick={e=>{e.stopPropagation();openReport(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
             <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('friends')}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
             <button onClick={e=>{e.stopPropagation();setDeletingChild(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#fee2e2', border:'1px solid #fca5a5', cursor:'pointer', fontSize:14 }}>🗑️</button>
@@ -200,7 +231,6 @@ export default function ChildrenScreen() {
         ) : (
           <div style={{ background:'rgba(255,255,255,0.85)', borderRadius:18, padding:'22px 20px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', backdropFilter:'blur(8px)' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#1A2E2A', marginBottom:16 }}>Yeni Profil Ekle</div>
-            
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:16, gap:10 }}>
               <div style={{ width:80, height:80, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', border:'2.5px solid #0D9B7E', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }} onClick={()=>setShowEmojiPicker(!showEmojiPicker)}>
                 {avatarPreview}
@@ -220,7 +250,6 @@ export default function ChildrenScreen() {
                 </div>
               )}
             </div>
-
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <input placeholder="Çocuğun adı" value={newName} onChange={e=>setNewName(e.target.value)} style={inp}/>
               <select value={newAge} onChange={e=>{setNewAge(e.target.value);updateGradeOptions(e.target.value)}} style={inp}>
@@ -247,7 +276,25 @@ export default function ChildrenScreen() {
         )}
       </div>
 
-      {/* Giriş PIN Modalı */}
+      {/* Proje Daveti Popup */}
+      {projectInvite && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center', boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>{TYPE_ICONS[projectInvite.project_type]||'🚀'}</div>
+            <div style={{ color:'white', fontSize:18, fontWeight:900, marginBottom:8 }}>{projectInvite.sender?.name} seni davet etti!</div>
+            <div style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginBottom:6 }}>{TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor</div>
+            <div style={{ color:'rgba(255,255,255,.35)', fontSize:12, marginBottom:24 }}>
+              {children.find(c => c.id === projectInvite.to_child_id)?.name} adına gelen davet
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={rejectProjectInvite} style={{ flex:1, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'transparent', color:'rgba(255,255,255,.5)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Reddet</button>
+              <button onClick={acceptProjectInvite} style={{ flex:2, padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>✓ Kabul Et</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PIN Modal */}
       {pinChild && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, boxShadow:'0 8px 40px rgba(0,0,0,.4)', textAlign:'center' }}>
@@ -278,15 +325,12 @@ export default function ChildrenScreen() {
 
       {editingChild && <EditAvatarModal child={editingChild} onClose={()=>setEditingChild(null)} onSave={handleAvatarSaved}/>}
 
-      {/* Profil silme onay modalı */}
       {deletingChild && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'white', borderRadius:20, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center' }}>
             <div style={{ fontSize:40, marginBottom:12 }}>🗑️</div>
             <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A', marginBottom:8 }}>{deletingChild.name} profilini sil</div>
-            <div style={{ fontSize:13, color:'#6B7280', marginBottom:20, lineHeight:1.5 }}>
-              Bu işlem geri alınamaz. Tüm sohbet geçmişi, görseller ve veriler silinecek.
-            </div>
+            <div style={{ fontSize:13, color:'#6B7280', marginBottom:20, lineHeight:1.5 }}>Bu işlem geri alınamaz. Tüm veriler silinecek.</div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setDeletingChild(null)} style={{ flex:1, padding:12, borderRadius:12, border:'1.5px solid #e0f0ec', background:'white', cursor:'pointer', fontWeight:700, color:'#6B7280', fontFamily:'Nunito,sans-serif' }}>İptal</button>
               <button onClick={()=>deleteChild(deletingChild)} disabled={deleteLoading} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#DC2626', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
