@@ -13,6 +13,9 @@ export function AppProvider({ children }) {
   const [speechPaused, setSpeechPaused] = useState(false)
   const [projectFriend, setProjectFriend] = useState(null)
   const [projectType, setProjectType] = useState(null)
+  const [projectInviteId, setProjectInviteId] = useState(null)
+  const [isProjectHost, setIsProjectHost] = useState(false)
+  const [projectSessionId, setProjectSessionId] = useState(null)
   const [subscription, setSubscription] = useState({ plan: 'free', status: 'active' })
 
   return (
@@ -27,6 +30,9 @@ export function AppProvider({ children }) {
       speechPaused, setSpeechPaused,
       projectFriend, setProjectFriend,
       projectType, setProjectType,
+      projectInviteId, setProjectInviteId,
+      isProjectHost, setIsProjectHost,
+      projectSessionId, setProjectSessionId,
       subscription, setSubscription,
     }}>
       {children}

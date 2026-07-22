@@ -3,7 +3,7 @@ import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 
 export default function FriendsScreen() {
-  const { currentChild, setScreen, setProjectFriend, subscription } = useApp()
+  const { currentChild, setScreen, setProjectFriend, setProjectType, setIsProjectHost, subscription } = useApp()
   const plan = subscription?.plan || 'free'
   const hasFriends = plan === 'go' || plan === 'pro'
 
@@ -85,6 +85,25 @@ export default function FriendsScreen() {
     setLoading(false)
   }
 
+  async function startProject(friendData, type) {
+    // Davet oluştur
+    const { data: invite } = await sb.from('project_invites').insert({
+      from_child_id: currentChild.id,
+      to_child_id: friendData.id,
+      project_type: type,
+      status: 'pending',
+      expires_at: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+    }).select().single()
+
+    // Host olarak proje ekranına geç
+    setProjectFriend(friendData)
+    setProjectType(type)
+    setIsProjectHost(true)
+    setScreen('project')
+  }
+
+  const [showProjectMenu, setShowProjectMenu] = useState(null)
+
   return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
 
@@ -109,7 +128,6 @@ export default function FriendsScreen() {
           </div>
         ) : (
           <div>
-            {/* Bekleyen istekler */}
             {pending.length > 0 && (
               <div style={{ marginBottom:20 }}>
                 <div style={{ color:'#fbbf24', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase', marginBottom:10 }}>
@@ -133,7 +151,6 @@ export default function FriendsScreen() {
               </div>
             )}
 
-            {/* Arkadaş Ekle */}
             <div style={{ background:'rgba(255,255,255,.06)', border:'1.5px solid rgba(255,255,255,.1)', borderRadius:16, padding:18, marginBottom:20 }}>
               <div style={{ color:'white', fontSize:14, fontWeight:800, marginBottom:12 }}>🤝 Arkadaş Ekle</div>
               <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, marginBottom:10 }}>Arkadaşının davet kodunu gir:</div>
@@ -147,14 +164,12 @@ export default function FriendsScreen() {
               {msg && <div style={{ color:msg.includes('!')? '#4ade80':'#fca88a', fontSize:12, marginTop:8 }}>{msg}</div>}
             </div>
 
-            {/* Kendi davet kodu */}
             <div style={{ background:'rgba(13,155,126,.1)', border:'1.5px solid rgba(13,155,126,.2)', borderRadius:16, padding:16, marginBottom:20 }}>
               <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, marginBottom:6 }}>SENİN DAVET KODUN</div>
               <div style={{ color:'white', fontSize:28, fontWeight:900, letterSpacing:6 }}>{currentChild.invite_code}</div>
               <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:4 }}>Arkadaşlarına bu kodu ver</div>
             </div>
 
-            {/* Arkadaş listesi */}
             <div style={{ color:'rgba(255,255,255,.45)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase', marginBottom:12 }}>
               Arkadaşlar ({friends.length})
             </div>
@@ -164,16 +179,31 @@ export default function FriendsScreen() {
                 <div style={{ fontSize:14 }}>Henüz arkadaş yok.<br/>Davet kodu ile ekle!</div>
               </div>
             ) : friends.map(f => (
-              <div key={f.id} style={{ background:'rgba(255,255,255,.06)', border:'1.5px solid rgba(255,255,255,.1)', borderRadius:16, padding:'14px 16px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:48, height:48, borderRadius:'50%', overflow:'hidden', background:'rgba(255,255,255,.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
-                  {f.friendData?.avatar_photo ? <img src={f.friendData.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : f.friendData?.avatar_emoji || '👤'}
+              <div key={f.id} style={{ background:'rgba(255,255,255,.06)', border:'1.5px solid rgba(255,255,255,.1)', borderRadius:16, padding:'14px 16px', marginBottom:10 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:showProjectMenu===f.id?12:0 }}>
+                  <div style={{ width:48, height:48, borderRadius:'50%', overflow:'hidden', background:'rgba(255,255,255,.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+                    {f.friendData?.avatar_photo ? <img src={f.friendData.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : f.friendData?.avatar_emoji || '👤'}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ color:'white', fontSize:15, fontWeight:800 }}>{f.friendData?.name}</div>
+                    <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>{f.friendData?.age} yaş</div>
+                    {f.friendData?.bibi_specialty && <div style={{ color:'#4ade80', fontSize:11, marginTop:2 }}>⭐ {f.friendData.bibi_specialty} Uzmanı</div>}
+                  </div>
+                  <button onClick={() => setShowProjectMenu(showProjectMenu === f.id ? null : f.id)}
+                    style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>
+                    🚀 Proje Yap
+                  </button>
                 </div>
-                <div style={{ flex:1 }}>
-                  <div style={{ color:'white', fontSize:15, fontWeight:800 }}>{f.friendData?.name}</div>
-                  <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>{f.friendData?.age} yaş</div>
-                  {f.friendData?.bibi_specialty && <div style={{ color:'#4ade80', fontSize:11, marginTop:2 }}>⭐ {f.friendData.bibi_specialty} Uzmanı</div>}
-                </div>
-                <button onClick={() => { setProjectFriend(f.friendData); setScreen('projectSelect') }} style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>🚀 Proje Yap</button>
+                {showProjectMenu === f.id && (
+                  <div style={{ display:'flex', gap:8 }}>
+                    {[{type:'homework',icon:'📚',label:'Ödev'},{type:'experiment',icon:'🔬',label:'Deney'},{type:'quiz',icon:'🎯',label:'Yarışma'}].map(p => (
+                      <button key={p.type} onClick={() => { setShowProjectMenu(null); startProject(f.friendData, p.type) }}
+                        style={{ flex:1, padding:'10px 8px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.06)', color:'white', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                        {p.icon} {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -15,7 +15,7 @@ const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
 
 export default function ChildrenScreen() {
-  const { currentUser, setCurrentChild, setScreen, subscription, setProjectFriend, setProjectType } = useApp()
+  const { currentUser, setCurrentChild, setScreen, subscription, setProjectFriend, setProjectType, setIsProjectHost } = useApp()
   const plan = subscription?.plan || 'free'
   const maxChildren = plan === 'pro' ? 3 : plan === 'go' ? 2 : 1
 
@@ -142,6 +142,7 @@ export default function ChildrenScreen() {
       setCurrentChild(toChild)
       setProjectFriend(projectInvite.sender)
       setProjectType(projectInvite.project_type)
+      setIsProjectHost(false)
       setProjectInvite(null)
       setScreen('project')
     }
