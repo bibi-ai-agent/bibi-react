@@ -22,41 +22,41 @@ const LEARN_STEPS = [
 const PRACTICE_POSITIONS = [
   {
     title: 'Vezirle Mat',
-    desc: 'Beyaz vezirle siyah şahı mat et! Vezir e7'ye git.',
+    desc: 'Beyaz vezirle siyah şahı mat et! Vezir e7`ye git.',
     fen: '4k3/8/8/8/8/8/8/4K2Q w - - 0 1',
-    hint: 'Veziri e7'ye taşı — Qe7#',
+    hint: 'Veziri e7`ye taşı — Qe7#',
     bestMove: { from:'h1', to:'e8' },
     tip: 'Vezir çok güçlü! Şahı köşeye sıkıştırınca mat olur.'
   },
   {
     title: 'Kaleyle Mat',
-    desc: 'Kaleyle mat pozisyonu. Kale a8'e git!',
+    desc: 'Kaleyle mat pozisyonu. Kale a8`e git!',
     fen: '8/8/8/8/8/8/R7/4K1k1 w - - 0 1',
-    hint: 'Kaleyi a8'e taşı — Ra8#',
+    hint: 'Kaleyi a8`e taşı — Ra8#',
     bestMove: { from:'a2', to:'a8' },
     tip: 'Kale, siyah şahı üst sıraya kapatır ve mat eder!'
   },
   {
     title: 'Çatal Hamlesi',
-    desc: 'At iki taşa aynı anda saldırabilir! f3'e git.',
+    desc: 'At iki taşa aynı anda saldırabilir! f3`e git.',
     fen: 'r3k3/8/8/8/8/8/8/4K1N1 w - - 0 1',
-    hint: 'Atı f3'e taşı — hem kaleye hem şaha çatal!',
+    hint: 'Atı f3`e taşı — hem kaleye hem şaha çatal!',
     bestMove: { from:'g1', to:'f3' },
     tip: 'At L şeklinde hareket eder ve aynı anda 2 taşa saldırabilir!'
   },
   {
     title: 'Fil Diyagonali',
-    desc: 'Fil çapraz hareket eder. h7'deki piyonu ye!',
+    desc: 'Fil çapraz hareket eder. h7`deki piyonu ye!',
     fen: '7p/8/8/8/8/8/8/B3K3 w - - 0 1',
-    hint: 'Fili h8'e taşı — Ah8',
+    hint: 'Fili h8`e taşı — Ah8',
     bestMove: { from:'a1', to:'h8' },
     tip: 'Fil çapraz şeritte güçlüdür — uzun mesafelere ulaşır!'
   },
   {
     title: 'Piyon Terfisi',
-    desc: 'Piyon son sıraya ulaşırsa vezir olur! e8'e git.',
+    desc: 'Piyon son sıraya ulaşırsa vezir olur! e8`e git.',
     fen: '8/4P3/8/8/8/8/8/4K2k w - - 0 1',
-    hint: 'Piyonu e8'e taşı — vezir olur!',
+    hint: 'Piyonu e8`e taşı — vezir olur!',
     bestMove: { from:'e7', to:'e8' },
     tip: 'Piyon son sıraya ulaşınca istediğin taşa dönüşür!'
   },
