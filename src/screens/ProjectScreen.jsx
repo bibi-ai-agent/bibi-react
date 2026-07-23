@@ -27,7 +27,7 @@ export default function ProjectScreen() {
   const [finalScores, setFinalScores] = useState(null)
   const [waitingFriend, setWaitingFriend] = useState(false)
   const [waitingAccept, setWaitingAccept] = useState(false)
-  const [gameReady, setGameReady] = useState(!isProjectHost)
+  const [gameReady, setGameReady] = useState(!isProjectHost || !projectFriend)
   const [mathScore, setMathScore] = useState(null)
   const [mathFinished, setMathFinished] = useState(false)
   const [memoryResult, setMemoryResult] = useState(null)
