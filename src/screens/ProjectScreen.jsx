@@ -6,6 +6,7 @@ import MathGame from './games/MathGame'
 import MemoryGame from './games/MemoryGame'
 import MarketGame from './games/MarketGame'
 import ChessGame from './games/ChessGame'
+import RiddleGame from './games/RiddleGame'
 
 const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
@@ -44,6 +45,7 @@ export default function ProjectScreen() {
   const [marketFinished, setMarketFinished] = useState(false)
   const [chessResult, setChessResult] = useState(null)
   const [chessFinished, setChessFinished] = useState(false)
+  const [riddleFinished, setRiddleFinished] = useState(false)
 
   const messagesEndRef = useRef(null)
   const stateRef = useRef({ messages: [] })
@@ -266,6 +268,20 @@ export default function ProjectScreen() {
       <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>{GAME_NAMES[projectType]}</div>
       <div style={{ color:'#4ade80', fontSize:15, marginBottom:8 }}>{projectFriend?.name} ile başlıyor! 🎉</div>
       <div style={{ color:'rgba(255,255,255,.4)', fontSize:13 }}>Hazırlanıyor...</div>
+    </div>
+  )
+
+  // ── Akıl Oyunları ──
+  if (projectType === 'riddle') return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>Akıl Oyunları</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🧠 {currentChild.name}</div>
+        </div>
+        <button onClick={() => setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      </div>
+      <RiddleGame currentChild={currentChild} onFinish={(score) => { setRiddleFinished(true); setScreen('children') }}/>
     </div>
   )
 
