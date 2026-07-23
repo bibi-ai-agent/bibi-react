@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import { callAI } from '../lib/api'
+import MathGame from './games/MathGame'
 
 const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
@@ -250,9 +251,60 @@ JSON formatında yaz (başka hiçbir şey yazma):
     return <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', alignItems:'center', justifyContent:'center', color:'white' }}>Proje bulunamadı</div>
   }
 
+  const [mathSessionId, setMathSessionId] = useState(null)
+  const [mathScore, setMathScore] = useState(null)
+  const [mathFriendScore, setMathFriendScore] = useState(null)
+  const [mathFinished, setMathFinished] = useState(false)
+
   const currentQ = quizSession ? quizSession.questions?.[quizSession.current_question] : null
   const myScore = finalScores?.[currentChild.id] || 0
   const friendScore = finalScores?.[projectFriend.id] || 0
+
+  // Math oyunu için özel ekran
+  if (projectType === 'math') return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Matematik Yarışması</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>➕ {currentChild.name} vs {projectFriend.name}</div>
+        </div>
+        <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      </div>
+      {!mathFinished ? (
+        <MathGame
+          currentChild={currentChild}
+          projectFriend={projectFriend}
+          sessionId={mathSessionId}
+          isHost={isProjectHost}
+          onFinish={(score) => { setMathScore(score); setMathFinished(true) }}
+        />
+      ) : (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
+            {mathScore > (mathFriendScore||0) ? (
+              <><div style={{ fontSize:56, marginBottom:12 }}>🏆</div><div style={{ color:'#fbbf24', fontSize:22, fontWeight:900, marginBottom:8 }}>Tebrikler {currentChild.name}!</div></>
+            ) : mathScore < (mathFriendScore||0) ? (
+              <><div style={{ fontSize:56, marginBottom:12 }}>🌟</div><div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>Harika mücadele!</div></>
+            ) : (
+              <><div style={{ fontSize:56, marginBottom:12 }}>🤝</div><div style={{ color:'#4ade80', fontSize:20, fontWeight:900, marginBottom:8 }}>Berabere!</div></>
+            )}
+            <div style={{ display:'flex', justifyContent:'space-around', background:'rgba(255,255,255,.08)', borderRadius:14, padding:16, marginBottom:20 }}>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ color:'#4ade80', fontSize:32, fontWeight:900 }}>{mathScore}</div>
+                <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{currentChild.name}</div>
+              </div>
+              <div style={{ color:'rgba(255,255,255,.3)', fontSize:20, alignSelf:'center' }}>vs</div>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ color:'#a78bfa', fontSize:32, fontWeight:900 }}>{mathFriendScore ?? '?'}</div>
+                <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{projectFriend.name}</div>
+              </div>
+            </div>
+            <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
