@@ -35,10 +35,13 @@ export default function ChildrenScreen() {
   const [deletingChild, setDeletingChild] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [pinChild, setPinChild] = useState(null)
+  const [longPressChild, setLongPressChild] = useState(null)
+  const longPressTimer = useRef(null)
   const [entryPin, setEntryPin] = useState('')
   const [entryPinError, setEntryPinError] = useState('')
   const [projectInvite, setProjectInvite] = useState(null)
   const fileRef = useRef()
+  const longPressTimer = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
 
@@ -127,6 +130,16 @@ export default function ChildrenScreen() {
 
   function startChat(child) { setPinChild(child); setEntryPin(''); setEntryPinError('') }
 
+  function onLongPressStart(child) {
+    longPressTimer.current = setTimeout(() => {
+      setLongPressChild(child.id)
+    }, 600)
+  }
+
+  function onLongPressEnd() {
+    clearTimeout(longPressTimer.current)
+  }
+
   async function checkEntryPin(pin) {
     const { data: parent } = await sb.from('parents').select('pin').eq('id', currentUser.id).single()
     if (String(parent?.pin) === String(pin)) {
@@ -185,11 +198,21 @@ export default function ChildrenScreen() {
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
+      <div onClick={() => setLongPressChild(null)} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
-          <div key={c.id} style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border:'1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)' }}>
+          <div key={c.id}
+            onMouseDown={() => onLongPressStart(c)}
+            onMouseUp={onLongPressEnd}
+            onMouseLeave={onLongPressEnd}
+            onTouchStart={() => onLongPressStart(c)}
+            onTouchEnd={onLongPressEnd}
+            style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border: longPressChild===c.id ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', position:'relative', transition:'border .2s' }}>
+            {longPressChild === c.id && (
+              <button onClick={e=>{e.stopPropagation();setLongPressChild(null);setDeletingChild(c)}}
+                style={{ position:'absolute', top:-10, right:-10, width:28, height:28, borderRadius:'50%', background:'#ef4444', border:'2px solid white', cursor:'pointer', fontSize:14, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,.2)' }}>✕</button>
+            )}
             <div style={{ position:'relative', flexShrink:0 }}>
               <div onClick={()=>startChat(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
                 {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
@@ -207,7 +230,6 @@ export default function ChildrenScreen() {
             <button onClick={e=>{e.stopPropagation();openReport(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
             <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('friends')}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
             <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('story')}} style={{ width:32, height:32, borderRadius:'50%', background:'#fef3c7', border:'1px solid #fde68a', cursor:'pointer', fontSize:14 }}>📖</button>
-            <button onClick={e=>{e.stopPropagation();setDeletingChild(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#fee2e2', border:'1px solid #fca5a5', cursor:'pointer', fontSize:14 }}>🗑️</button>
           </div>
         ))}
 
