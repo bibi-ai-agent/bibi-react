@@ -152,48 +152,28 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
     return () => cancelAnimationFrame(animRef.current)
   }, [phase])
 
-  // Klavye dinleyici
-  useEffect(() => {
-    if (phase !== 'playing') return
-    const keyMap = { 'a':0, 's':1, 'd':2, 'f':3 }
-    function onKey(e) {
-      const lane = keyMap[e.key.toLowerCase()]
-      if (lane === undefined) return
-      hitLane(lane)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [phase])
 
-  function hitLane(lane) {
-    const hitZoneTop = BOARD_H - HIT_ZONE_Y - NOTE_H
-    const hitZoneBot = BOARD_H - HIT_ZONE_Y + NOTE_H
 
-    // Flash efekti
+  function hitNote(noteId, lane) {
     setLaneFlash(prev => { const n=[...prev]; n[lane]=true; return n })
-    setTimeout(() => setLaneFlash(prev => { const n=[...prev]; n[lane]=false; return n }), 100)
+    setTimeout(() => setLaneFlash(prev => { const n=[...prev]; n[lane]=false; return n }), 120)
 
-    // Hit kontrol
-    let hit = false
     notesRef.current = notesRef.current.map(n => {
-      if (n.hit || n.miss || n.lane !== lane) return n
-      if (n.y >= hitZoneTop && n.y <= hitZoneBot) {
-        hit = true
-        const diff = Math.abs(n.y - (BOARD_H - HIT_ZONE_Y))
-        const perfect = diff < 20
-        const pts = perfect ? 100 : 60
-        scoreRef.current += pts * (1 + Math.floor(comboRef.current/5))
-        comboRef.current++
-        hitsRef.current++
-        setScore(scoreRef.current)
-        setCombo(comboRef.current)
-        setHits(hitsRef.current)
-        if (comboRef.current > maxCombo) setMaxCombo(comboRef.current)
-        setHitFeedback({ text: perfect ? 'MÜKEMMEL! ✨' : 'İYİ! 👍', lane })
-        setTimeout(() => setHitFeedback(null), 400)
-        return { ...n, hit: true }
-      }
-      return n
+      if (n.id !== noteId || n.hit || n.miss) return n
+      const hitZoneTop = BOARD_H - HIT_ZONE_Y - NOTE_H * 1.5
+      const hitZoneBot = BOARD_H - HIT_ZONE_Y + NOTE_H * 1.5
+      const perfect = n.y >= hitZoneTop && n.y <= hitZoneBot
+      const pts = perfect ? 100 : 60
+      scoreRef.current += pts * (1 + Math.floor(comboRef.current / 5))
+      comboRef.current++
+      hitsRef.current++
+      setScore(scoreRef.current)
+      setCombo(comboRef.current)
+      setHits(hitsRef.current)
+      if (comboRef.current > maxCombo) setMaxCombo(comboRef.current)
+      setHitFeedback({ text: perfect ? 'MÜKEMMEL! ✨' : 'İYİ! 👍', lane })
+      setTimeout(() => setHitFeedback(null), 400)
+      return { ...n, hit: true }
     })
   }
 
@@ -243,9 +223,7 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
       <div style={{ color: inst?.color, fontSize:96, fontWeight:900, lineHeight:1 }}>
         {countdown === 0 ? 'BAŞLA!' : countdown}
       </div>
-      <div style={{ color:'rgba(255,255,255,.3)', fontSize:13, marginTop:32 }}>
-        Klavye: A S D F tuşlarını kullan
-      </div>
+      <div style={{ color:'rgba(255,255,255,.3)', fontSize:13, marginTop:32 }}>Düşen notlara dokun!</div>
     </div>
   )
 
@@ -273,11 +251,7 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
           ))}
         </div>
 
-        <div style={{ background:`${inst?.color}20`, border:`1px solid ${inst?.color}44`, borderRadius:12, padding:'10px 14px', marginBottom:20, color:inst?.color, fontSize:13 }}>
-          🎵 {inst?.name} ilgin kaydedildi! Veli raporunda görünecek.
-        </div>
-
-        <div style={{ display:'flex', gap:10 }}>
+<div style={{ display:'flex', gap:10 }}>
           <button onClick={() => { setPhase('select'); setSelectedInstrument(null) }}
             style={{ flex:1, padding:12, borderRadius:12, border:`1.5px solid ${inst?.color}44`, background:'transparent', color:'white', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
             🔄 Tekrar
@@ -312,22 +286,23 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
             <div key={i} style={{ position:'absolute', left: i * LANE_W, top:0, width:1, height:'100%', background:'rgba(255,255,255,.06)' }}/>
           ))}
 
-          {/* Notalar */}
-          {notes.filter(n => !n.miss).map(n => (
-            <div key={n.id} style={{
-              position:'absolute',
-              left: n.lane * LANE_W + 8,
-              top: n.y,
-              width: LANE_W - 16,
-              height: NOTE_H,
-              borderRadius: 8,
-              background: n.hit ? 'rgba(255,255,255,.1)' : inst?.noteColor,
-              opacity: n.hit ? 0 : 1,
-              boxShadow: n.hit ? 'none' : `0 0 12px ${inst?.noteColor}88`,
-              transition: n.hit ? 'opacity 0.1s' : 'none',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontWeight:800, fontSize:13, color:'rgba(0,0,0,.6)',
-            }}>
+          {/* Notalar — tıklanabilir */}
+          {notes.filter(n => !n.miss && !n.hit).map(n => (
+            <div key={n.id}
+              onPointerDown={(e) => { e.stopPropagation(); hitNote(n.id, n.lane) }}
+              style={{
+                position:'absolute',
+                left: n.lane * LANE_W + 8,
+                top: n.y,
+                width: LANE_W - 16,
+                height: NOTE_H,
+                borderRadius: 8,
+                background: inst?.noteColor,
+                boxShadow: `0 0 12px ${inst?.noteColor}88`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontWeight:800, fontSize:13, color:'rgba(0,0,0,.6)',
+                cursor:'pointer', touchAction:'none',
+              }}>
               {visual?.laneLabels[n.lane]}
             </div>
           ))}
@@ -352,21 +327,19 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
           {/* Hit zone çizgisi */}
           <div style={{ position:'absolute', bottom: HIT_ZONE_Y - NOTE_H/2, left:0, right:0, height:2, background:`${inst?.color}88` }}/>
 
-          {/* Lane butonları */}
-          <div style={{ position:'absolute', bottom:0, left:0, right:0, display:'flex', height: HIT_ZONE_Y }}>
+          {/* Lane göstergeleri — sadece görsel */}
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, display:'flex', height: HIT_ZONE_Y, pointerEvents:'none' }}>
             {[0,1,2,3].map(i => (
-              <div key={i} onPointerDown={() => hitLane(i)}
-                style={{
-                  flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-                  background: laneFlash[i] ? `${inst?.color}60` : `${inst?.color}18`,
-                  border:`2px solid ${inst?.color}${laneFlash[i]?'ff':'44'}`,
-                  borderRadius: i===0?'8px 0 0 8px':i===3?'0 8px 8px 0':'0',
-                  cursor:'pointer', transition:'background .05s',
-                  flexDirection:'column', gap:4
-                }}>
-                <div style={{ fontSize:20 }}>{inst?.emoji}</div>
-                <div style={{ color:inst?.color, fontSize:11, fontWeight:800 }}>{visual?.laneLabels[i]}</div>
-                <div style={{ color:'rgba(255,255,255,.3)', fontSize:10 }}>{inst?.keys[i].toUpperCase()}</div>
+              <div key={i} style={{
+                flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+                background: laneFlash[i] ? `${inst?.color}50` : `${inst?.color}15`,
+                border:`2px solid ${inst?.color}${laneFlash[i]?'cc':'33'}`,
+                borderRadius: i===0?'8px 0 0 8px':i===3?'0 8px 8px 0':'0',
+                transition:'background .08s',
+                flexDirection:'column', gap:4
+              }}>
+                <div style={{ fontSize:22 }}>{inst?.emoji}</div>
+                <div style={{ color:inst?.color, fontSize:12, fontWeight:800 }}>{visual?.laneLabels[i]}</div>
               </div>
             ))}
           </div>
