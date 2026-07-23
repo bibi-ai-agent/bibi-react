@@ -15,6 +15,7 @@ const GAME_TYPES = [
   { id:"market", icon:"🛒", name:"Market Kasiyeri",  desc:"Para hesapla, üstü doğru ver!" },
   { id:"chess",  icon:"♟️", name:"Satranç",          desc:"Klasik satranç oyunu" },
   { id:"riddle", icon:"🧠", name:"Akıl Oyunları",   desc:"Bulmaca ve mantık soruları" },
+  { id:"rhythm", icon:"🎵", name:"Ritim Oyunu",     desc:"Enstrüman seç, ritmi tut!" },
 ]
 
 export default function ProjectSelectScreen() {
