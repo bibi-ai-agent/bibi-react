@@ -27,45 +27,52 @@ function buildPrompt(child) {
   const name = child.name || 'sevgili'
   const gender = child.gender === 'kız' ? 'kız' : 'erkek'
   const specialty = child.bibi_specialty
-
   const specialtyText = specialty && SPECIALTY_PROFILES[specialty]
     ? `\nUZMANLIK: ${name} seninle en çok ${specialty} konusunda konuştu. ${SPECIALTY_PROFILES[specialty]}`
     : `\nHenüz uzmanlık alanın belli değil. Her konuya eşit merakla yaklaş.`
 
-  let ageProfile, characterRule
+  const profileText = child.profile_completed ? `
+KİŞİSEL PROFİL (daha önce öğrendiklerin):
+${child.sport_team ? `• Tuttuğu takım: ${child.sport_team} — maç günleri mutlaka sor!` : ''}
+${child.music_interest ? `• Müzik ilgisi: ${child.music_interest}` : ''}
+${child.hobbies ? `• Hobileri: ${child.hobbies}` : ''}
+${child.dream ? `• Hayali: ${child.dream}` : ''}
+${child.best_friend ? `• En iyi arkadaşı: ${child.best_friend}` : ''}
+Bu bilgileri sohbete doğal yansıt. Takımın maçı varsa sor, hobisiyle ilgili soru sor.` : `
+İLK OTURUM — TANIŞMA MODU:
+Bu ${name} ile ilk konuşman! Sıcak karşılama yap, sonra şu bilgileri DOĞAL tek tek sor (bir seferde sadece 1 soru):
+1. Hangi sporla ilgileniyorsun veya hangi takımı tutuyorsun?
+2. Müzikle ilgin var mı, enstrüman çalıyor musun?
+3. Boş zamanında en çok ne yaparsın?
+4. Büyüyünce ne olmak istiyorsun?
+5. En iyi arkadaşının adı ne?
+5. sorudan sonra "Artık seni daha iyi tanıyorum, çok yakında iyi arkadaş olacağız!" de ve normal sohbete geç.`
 
+  let ageProfile
   if (age <= 8) {
-    ageProfile = `DİL TARZI (6-8 YAŞ):\n• Cümleler çok kısa — en fazla 2 cümle\n• Kelimeler basit, somut, günlük hayattan\n• Her mesajda 1-2 emoji kullan\n• Övgü ver: "Vay be! Harikasın!"\n• Merak uyandır: "Biliyor musun ki...?"\n• Asla karmaşık kelime kullanma`
-    characterRule = `Her 4-5 mesajda bir eğlenceli soru sor: "En çok ne yapmayı seversin? Oyun mu, müzik mi, spor mu?" Cevabını hatırla ve konuşmaya yansıt.`
+    ageProfile = `DİL TARZI (6-8 YAŞ):\n• Cümleler çok kısa — en fazla 2 cümle\n• Kelimeler basit, somut\n• Her mesajda 1-2 emoji\n• Övgü ver: "Vay be! Harikasın!"\n• Asla karmaşık kelime kullanma`
   } else if (age <= 12) {
-    ageProfile = `DİL TARZI (9-12 YAŞ):\n• Cümleler 2-3 cümle, anlaşılır\n• Gerçek hayat örnekleri kullan\n• 1 emoji yeterli\n• Arkadaşça ama öğretici ton\n• Merak kışkırt: "Peki sence neden böyle olur?"`
-    characterRule = `Her 5-6 mesajda bir doğal soru sor: "Boş zamanlarında en çok ne yaparsın?", "Gelecekte ne olmak istiyorsun?", "En iyi olduğunu düşündüğün şey ne?"`
+    ageProfile = `DİL TARZI (9-12 YAŞ):\n• Cümleler 2-3 cümle\n• Gerçek hayat örnekleri\n• 1 emoji yeterli\n• Arkadaşça ama öğretici ton`
   } else {
-    ageProfile = `DİL TARZI (13-15 YAŞ):\n• Akran gibi konuş — samimi, doğal\n• Emoji çok az — gerekirse 1 tane\n• Derin ve analitik açıklamalar yap\n• Eleştirel düşünmeyi teşvik et`
-    characterRule = `Her 6-7 mesajda bir düşündürücü soru sor: "Seni en çok ne motive eder?", "Hangi alanda kendini geliştirmek istiyorsun?"`
+    ageProfile = `DİL TARZI (13-15 YAŞ):\n• Akran gibi konuş — samimi\n• Emoji çok az\n• Derin ve analitik açıklamalar\n• Eleştirel düşünmeyi teşvik et`
   }
 
-  return `Sen Bibi'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı ve yol arkadaşısın.
+  return `Sen Bibi'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı.
 Sınıfı: ${child.grade || '?'}
 ${specialtyText}
-
-KİMLİĞİN: ${name}'in hem arkadaşı, hem öğreticisi, hem yol arkadaşısın. Samimi, sıcak, destekleyicisin. "Ben bir yapay zekayım" deme.
-
+${profileText}
+KİMLİĞİN: ${name}'in hem arkadaşı, hem öğreticisi. Samimi, sıcak, destekleyici. "Ben bir yapay zekayım" deme.
 ${ageProfile}
-
 ÖĞRETME TARZI:
 • Net ve kısa — en doğruyu en kısa yoldan ver
 • Ödev sorularında direkt cevap verme — Sokratik yöntemle yönlendir
 • Yanlışlarda "Yanlış!" deme — "Yaklaştın!", "Neredeyse!" de
 • Her cevabın sonunda bir soru sor
-
-KİŞİLİK & İLGİ ANALİZİ:
-• ${characterRule}
-• Müzik, spor, oyun, yazılım, sanat, bilim ilgilerini tespit et ve konuşmaya yansıt
-• Duygu durumunu takip et — üzgün görünürse "Seninle buradayım, anlatmak ister misin?" de
-
+DUYGU TAKİBİ:
+• Üzgün görünürse "Seninle buradayım, anlatmak ister misin?" de
+• Profil tamamsa takım/hobi konularını doğal konuşmaya dahil et
 DİL KURALI — KRİTİK:
-• %100 Türkçe konuş — İngilizce dahil hiçbir yabancı dil YASAK
+• %100 Türkçe konuş — hiçbir yabancı dil YASAK
 • ${name} başka dilde yazsa bile sen Türkçe cevap ver`
 }
 
@@ -93,7 +100,7 @@ export default function ChatScreen() {
   const [showVoiceMenu, setShowVoiceMenu] = useState(false)
   const [contentCreator, setContentCreator] = useState(null)
   const [homeworkMode, setHomeworkMode] = useState(false)
-  const [homeworkStep, setHomeworkStep] = useState('idle') // idle | analyzing | waiting_solution | checking | practice
+  const [homeworkStep, setHomeworkStep] = useState('idle')
   const [homeworkQuestion, setHomeworkQuestion] = useState(null)
   const [homeworkCount, setHomeworkCount] = useState(0)
   const [showExitPin, setShowExitPin] = useState(false)
@@ -108,12 +115,10 @@ export default function ChatScreen() {
   const [forgotSuccess, setForgotSuccess] = useState(false)
   const [projectInvite, setProjectInvite] = useState(null)
   const [usage, setUsage] = useState({ message_count:0, image_count:0, slide_count:0 })
-  const [showLimitModal, setShowLimitModal] = useState(null) // 'messages' | 'images' | 'slides'
+  const [showLimitModal, setShowLimitModal] = useState(null)
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
-  const hwFileRef = useRef()
   let msgCounter = useRef(0)
-
   const plan = subscription?.plan || 'free'
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free
 
@@ -124,14 +129,19 @@ export default function ChatScreen() {
     setSelectedVoiceId(autoVoice)
     const isYoung = currentChild.age <= 8
     setVoiceOn(isYoung)
-    const opening = isYoung
-      ? `Heyyyy ${currentChild.name}! 🎉 Seninle konuşmak çok güzel! Mikrofon butonuna bas! 🎤`
-      : currentChild.age<=12
-      ? `Merhaba ${currentChild.name}! Bugün ne keşfetmek istersin?`
-      : `Selam ${currentChild.name}. Bugün ne konuşacağız?`
+    const opening = currentChild.profile_completed
+      ? (isYoung
+          ? `Heyyyy ${currentChild.name}! 🎉 Tekrar görüştük! Bugün ne keşfediyoruz?`
+          : currentChild.age<=12
+          ? `Merhaba ${currentChild.name}! Bugün ne konuşacağız?`
+          : `Selam ${currentChild.name}. Bugün ne var?`)
+      : (isYoung
+          ? `Heyyyy! Ben Bibi! 🎉 Seninle tanışmak çok güzel! Adın ne?`
+          : currentChild.age<=12
+          ? `Merhaba! Ben Bibi, senin öğrenme arkadaşın! Seni tanımak istiyorum, biraz kendinden bahseder misin?`
+          : `Selam! Ben Bibi. Seninle tanışmak istiyorum — kendinden biraz bahseder misin?`)
     addMsg('bibi', opening)
     if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
-
     const channel = sb.channel(`project-invites-${currentChild.id}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
         const invite = payload.new
@@ -152,9 +162,7 @@ export default function ChatScreen() {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await sb.from('daily_usage')
       .select('message_count,image_count,slide_count,homework_count')
-      .eq('child_id', currentChild.id)
-      .eq('date', today)
-      .maybeSingle()
+      .eq('child_id', currentChild.id).eq('date', today).maybeSingle()
     if (data) { setUsage(data); setHomeworkCount(data.homework_count||0) }
   }
 
@@ -163,22 +171,16 @@ export default function ChatScreen() {
     const newVal = (usage[field] || 0) + 1
     setUsage(prev => ({ ...prev, [field]: newVal }))
     await sb.from('daily_usage').upsert({
-      child_id: currentChild.id,
-      date: today,
-      [field]: newVal
+      child_id: currentChild.id, date: today, [field]: newVal
     }, { onConflict: 'child_id,date', ignoreDuplicates: false })
   }
 
   function checkLimit(type) {
     const fieldMap = { messages:'message_count', images:'image_count', slides:'slide_count' }
     const limitMap = { messages:'messages', images:'images', slides:'slides' }
-    const field = fieldMap[type]
-    const current = usage[field] || 0
+    const current = usage[fieldMap[type]] || 0
     const limit = limits[limitMap[type]]
-    if (current >= limit) {
-      setShowLimitModal(type)
-      return false
-    }
+    if (current >= limit) { setShowLimitModal(type); return false }
     return true
   }
 
@@ -212,14 +214,9 @@ export default function ChatScreen() {
 
   function toggleSpeech() {
     if (currentAudio) {
-      if (speechPaused) {
-        currentAudio.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...')
-      } else {
-        currentAudio.pause(); setSpeechPaused(true); setExpr('idle'); setStatus('Duraklatıldı ⏸')
-      }
-    } else {
-      setVoiceOn(!voiceOn)
-    }
+      if (speechPaused) { currentAudio.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...') }
+      else { currentAudio.pause(); setSpeechPaused(true); setExpr('idle'); setStatus('Duraklatıldı ⏸') }
+    } else { setVoiceOn(!voiceOn) }
   }
 
   async function ensureSession() {
@@ -227,6 +224,35 @@ export default function ChatScreen() {
     const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
     return data?.id
+  }
+
+  async function extractAndSaveProfile(userText) {
+    const fields = {
+      sport_team: ['takım', 'futbol', 'basketbol', 'spor', 'tutuyorum', 'taraftar', 'voleybol', 'tenis', 'galatasaray', 'fenerbahçe', 'beşiktaş', 'trabzonspor'],
+      music_interest: ['müzik', 'enstrüman', 'çalıyorum', 'şarkı', 'gitar', 'piyano', 'davul', 'keman', 'flüt', 'bağlama'],
+      hobbies: ['boş zaman', 'severim', 'hobim', 'oyun oynamak', 'kitap', 'resim', 'satranç', 'dans', 'yüzme', 'bisiklet'],
+      dream: ['olmak istiyorum', 'hayalim', 'büyüyünce', 'doktor', 'mühendis', 'öğretmen', 'pilot', 'sporcu', 'sanatçı', 'yazılımcı'],
+      best_friend: ['arkadaşım', 'en iyi arkadaş', 'bff', 'okul arkadaşım'],
+    }
+    const updates = {}
+    for (const [field, keywords] of Object.entries(fields)) {
+      if (!currentChild[field] && keywords.some(k => userText.toLowerCase().includes(k))) {
+        try {
+          const extracted = await callAI(null, [{
+            role: 'user',
+            content: `Kullanıcı şunu dedi: "${userText}". Sadece "${field}" bilgisini çıkar ve yaz. Başka hiçbir şey yazma. Örnek cevap: "Galatasaray" veya "Gitar" veya "Kitap okumak". Bulamazsan tamamen boş bırak.`
+          }], 30)
+          if (extracted?.trim() && extracted.trim().length < 60) updates[field] = extracted.trim()
+        } catch {}
+      }
+    }
+    const allFields = ['sport_team', 'music_interest', 'hobbies', 'dream', 'best_friend']
+    const merged = { ...currentChild, ...updates }
+    if (allFields.every(f => merged[f])) updates.profile_completed = true
+    if (Object.keys(updates).length > 0) {
+      await sb.from('children').update(updates).eq('id', currentChild.id)
+      Object.assign(currentChild, updates)
+    }
   }
 
   async function sendMessage(text, fromVoice=false) {
@@ -252,6 +278,7 @@ export default function ChatScreen() {
       await incrementUsage('message_count')
       if ((currentChild?.age<=8 && fromVoice) || (voiceOn && currentChild?.age>8)) speakMsg(reply)
       if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
+      if (!currentChild.profile_completed) extractAndSaveProfile(t)
       setTimeout(() => { setExpr('idle') }, 3000)
     } catch {
       setIsTyping(false); addMsg('bibi','Bağlantı sorunu 🙈'); setExpr('idle')
@@ -263,8 +290,7 @@ export default function ChatScreen() {
     const desc = await callAI("Sen Bibi'sin, kısa Türkçe yanıt ver.", [{role:'user',content:`"${prompt.slice(0,30)}" için 1 cümle heyecanlı yanıt ver.`}], 80)
     if(desc) addMsg('bibi', desc)
     try {
-      const age = currentChild?.age||9
-      const style = getImageStyle(age)
+      const style = getImageStyle(currentChild?.age||9)
       const tr = await callAI("Translate Turkish to English for image prompt, max 15 words.", [{role:'user',content:prompt}], 50)
       const eng = (tr?.trim()||prompt).replace(/['"*]/g,'').trim()
       const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(eng+', '+style+', high quality')}&t=${Date.now()}`
@@ -303,7 +329,7 @@ export default function ChatScreen() {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'user',content:[
         {type:'image_url',image_url:{url:`data:image/jpeg;base64,${base64}`}},
-        {type:'text',text:`Çocuk şu soruya cevap verdi: "${(homeworkQuestion||'').slice(0,200)}" Çözümü kontrol et: Doğruysa tebrik et ve benzer pratik sorusu sor "çöz bana yolla 📸" de. Yanlışsa nazikçe göster ve tekrar iste. ${currentChild?.age||9} yaş, Türkçe.`}
+        {type:'text',text:`Çocuk şu soruya cevap verdi: "${(homeworkQuestion||'').slice(0,200)}" Çözümü kontrol et: Doğruysa tebrik et ve benzer pratik sorusu sor. Yanlışsa nazikçe göster ve tekrar iste. ${currentChild?.age||9} yaş, Türkçe.`}
       ]}], max_tokens:1000 })
     })
     const d = await res.json()
@@ -319,7 +345,7 @@ export default function ChatScreen() {
     addMsg('bibi', `📄 "${topic}" için ${contentType} hazırlanıyor...`)
     const content = await callAI(null,[{role:'user',content:`"${topic}" konusunda Türkçe ${contentType} yaz. Yaş: ${age} — ${agePrompt} Format: Başlık, giriş, 3-5 bölüm (## ile), sonuç. 400-600 kelime.`}],1500)
     if(!content){addMsg('bibi','İçerik üretilemedi 🙈');return}
-    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#0D9B7E;border-bottom:2px solid #0D9B7E;padding-bottom:8px}h2{color:#1A2E2A;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}@media print{body{margin:20px}}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;if(t.startsWith('**')&&t.endsWith('**'))return `<h3>${t.replace(/\*\*/g,'')}</h3>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Bibi ile öğrenmek eğlenceli!</div></body></html>`
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#0D9B7E;border-bottom:2px solid #0D9B7E;padding-bottom:8px}h2{color:#1A2E2A;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Bibi ile öğrenmek eğlenceli!</div></body></html>`
     const blob=new Blob([html],{type:'text/html;charset=utf-8'})
     const url=URL.createObjectURL(blob)
     const w=window.open(url,'_blank')
@@ -337,7 +363,7 @@ export default function ChatScreen() {
     const colors=age<=8?['#c0392b','#e67e22','#27ae60','#2980b9','#8e44ad']:age<=12?['#1a3a5c','#1a4a2a','#3d1a5c','#1a3a4a','#4a2a1a']:['#0f1f35','#0f2818','#1f0f35','#0f2535','#2a1208']
     const slideHTML=parsed.slides.map((s,i)=>`<div class="slide" style="background:${colors[i%colors.length]}"><div class="slide-num">${parsed.title} — ${i+1}/${parsed.slides.length}</div><h2>${s.title||''}</h2><ul>${(s.points||[]).map(p=>`<li>${p}</li>`).join('')}</ul>${s.fun_fact?`<div class="fun-fact">💡 ${s.fun_fact}</div>`:''}</div>`).join('')
     const sc='<'+'/script>'
-    const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${parsed.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}.slide{display:none;height:100vh;padding:50px 60px;flex-direction:column;justify-content:center}.slide.active{display:flex}.slide-num{font-size:10px;opacity:.4;margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}h1{font-size:${age<=8?'52px':'42px'};font-weight:900;margin-bottom:16px;text-align:center}h2{font-size:${age<=8?'28px':'22px'};font-weight:900;margin-bottom:18px;border-bottom:2px solid rgba(255,255,255,.2);padding-bottom:12px}ul{list-style:none;display:flex;flex-direction:column;gap:12px}li{font-size:${age<=8?'19px':'16px'};line-height:1.5;display:flex;gap:8px}li::before{content:"▸";opacity:.6;flex-shrink:0}.fun-fact{margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:10px;border-left:3px solid rgba(255,255,255,.4);font-size:13px}.cover{text-align:center;align-items:center;justify-content:center}.cover p{opacity:.5;font-size:16px;margin-top:12px}.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:20px}button{padding:7px 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.counter{color:rgba(255,255,255,.5);font-size:12px;min-width:70px;text-align:center}@keyframes fi{from{opacity:0}to{opacity:1}}.slide.active{animation:fi .4s ease}</style></head><body><div class="slide cover active" style="background:${colors[0]}"><h1>${parsed.title}</h1><p>${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR')} • Bibi ile hazırlandı</p></div>${slideHTML}<div class="slide" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><div style="font-size:56px;margin-bottom:16px">${age<=8?'🌟':'✅'}</div><h2 style="border:none">${age<=8?'Harika İş!':age<=12?'Tebrikler!':'Sunum Tamamlandı'}</h2><p style="opacity:.5;margin-top:8px">${parsed.ending||''}</p></div><div class="nav"><button onclick="p()">← Önceki</button><span class="counter" id="c">1 / ${parsed.slides.length+2}</span><button onclick="n()">Sonraki →</button></div><script>var i=0,sl=document.querySelectorAll('.slide');function show(x){sl.forEach(function(e){e.classList.remove('active')});sl[x].classList.add('active');document.getElementById('c').textContent=(x+1)+' / '+sl.length;}function n(){if(i<sl.length-1){i++;show(i);}}function p(){if(i>0){i--;show(i);}}document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')n();if(e.key==='ArrowLeft')p();});${sc}</body></html>`
+    const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${parsed.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}.slide{display:none;height:100vh;padding:50px 60px;flex-direction:column;justify-content:center}.slide.active{display:flex}.slide-num{font-size:10px;opacity:.4;margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}h2{font-size:${age<=8?'28px':'22px'};font-weight:900;margin-bottom:18px;border-bottom:2px solid rgba(255,255,255,.2);padding-bottom:12px}ul{list-style:none;display:flex;flex-direction:column;gap:12px}li{font-size:${age<=8?'19px':'16px'};line-height:1.5;display:flex;gap:8px}li::before{content:"▸";opacity:.6;flex-shrink:0}.fun-fact{margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:10px;font-size:13px}.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:20px}button{padding:7px 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.counter{color:rgba(255,255,255,.5);font-size:12px;min-width:70px;text-align:center}</style></head><body><div class="slide active" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none;font-size:36px">${parsed.title}</h2><p style="opacity:.5;margin-top:12px">${currentChild?.name||''} • Bibi ile hazırlandı</p></div>${slideHTML}<div class="slide" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none">✅ Sunum Tamamlandı</h2><p style="opacity:.5;margin-top:8px">${parsed.ending||''}</p></div><div class="nav"><button onclick="p()">← Önceki</button><span class="counter" id="c">1 / ${parsed.slides.length+2}</span><button onclick="n()">Sonraki →</button></div><script>var i=0,sl=document.querySelectorAll('.slide');function show(x){sl.forEach(function(e){e.classList.remove('active')});sl[x].classList.add('active');document.getElementById('c').textContent=(x+1)+' / '+sl.length;}function n(){if(i<sl.length-1){i++;show(i);}}function p(){if(i>0){i--;show(i);}}document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')n();if(e.key==='ArrowLeft')p();});${sc}</body></html>`
     const blob=new Blob([html],{type:'text/html;charset=utf-8'})
     const url=URL.createObjectURL(blob)
     const a=document.createElement('a');a.href=url;a.download=`${topic.slice(0,20)}-sunu.html`;a.click()
@@ -389,7 +415,6 @@ export default function ChatScreen() {
     :{bg:'linear-gradient(135deg,#1a2e2a,#0f2535)',header:'linear-gradient(135deg,#0D9B7E,#0369a1)',bubble:'#0D9B7E'}
 
   const isSpeaking = !!currentAudio && !speechPaused
-
   const limitLabels = {
     messages: { icon:'💬', label:'Günlük mesaj', limit:limits.messages },
     images: { icon:'🎨', label:'Günlük görsel', limit:limits.images },
@@ -399,8 +424,6 @@ export default function ChatScreen() {
 
   return (
     <div style={{ minHeight:'100vh', background:theme.bg, display:'flex', flexDirection:'column', position:'relative' }}>
-
-      {/* Limit bar */}
       {plan === 'free' && (
         <div style={{ background:'rgba(0,0,0,.2)', padding:'6px 16px', display:'flex', gap:12, alignItems:'center', flexShrink:0 }}>
           {[
@@ -417,7 +440,6 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ background:theme.header, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, flexShrink:0 }}>
         <button onClick={()=>{if(currentAudio)currentAudio.pause();window.speechSynthesis?.cancel();setShowExitPin(true)}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -435,7 +457,6 @@ export default function ChatScreen() {
           <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
               {isSpeaking ? '⏸' : voiceOn ? '🔊' : '🔇'}
-              {isSpeaking && <span onClick={e=>{e.stopPropagation();toggleSpeech()}} style={{fontSize:10}}>II</span>}
             </button>
             {showVoiceMenu && (
               <>
@@ -460,7 +481,6 @@ export default function ChatScreen() {
         </div>
       </div>
 
-      {/* Geçmiş panel */}
       {showHistory && (
         <HistoryPanel child={currentChild} onClose={() => setShowHistory(false)}
           onLoadSession={async (sid) => {
@@ -473,7 +493,6 @@ export default function ChatScreen() {
         />
       )}
 
-      {/* Ödev modu barı */}
       {homeworkMode && (
         <div style={{ padding:'8px 14px',background:'rgba(13,155,126,.15)',borderBottom:'1px solid rgba(13,155,126,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
           <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>
@@ -485,10 +504,7 @@ export default function ChatScreen() {
               inp.onchange=async e=>{
                 const file=e.target.files[0];if(!file)return
                 const reader=new FileReader()
-                reader.onload=async ev=>{
-                  const base64=ev.target.result.split(',')[1]
-                  await checkHomeworkSolution(base64)
-                }
+                reader.onload=async ev=>{await checkHomeworkSolution(ev.target.result.split(',')[1])}
                 reader.readAsDataURL(file)
               }
               inp.click()
@@ -500,7 +516,6 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Mesajlar */}
       <div style={{ flex:1,overflowY:'auto',padding:'16px 16px 8px' }}>
         {messages.map(m=>(
           <div key={m.id} style={{ display:'flex',marginBottom:14,justifyContent:m.role==='user'?'flex-end':'flex-start',gap:8,alignItems:'flex-end' }}>
@@ -535,7 +550,6 @@ export default function ChatScreen() {
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Duraklat/Devam */}
       {currentAudio && (
         <div style={{ padding:'6px 14px',background:'rgba(124,58,237,.2)',borderTop:'1px solid rgba(124,58,237,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
           <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>{speechPaused ? '⏸ Duraklatıldı' : '🔊 Konuşuyor...'}</div>
@@ -546,7 +560,6 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Input */}
       <div style={{ padding:'10px 14px 18px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
         <div style={{ display:'flex',gap:8,alignItems:'center' }}>
           <button onClick={toggleMic} style={{ width:46,height:46,borderRadius:'50%',flexShrink:0,cursor:'pointer',background:isListening?'rgba(239,68,68,.4)':currentChild?.age<=8?'rgba(74,222,128,.3)':'rgba(255,255,255,.12)',border:`1.5px solid ${isListening?'rgba(239,68,68,.6)':'rgba(255,255,255,.2)'}`,boxShadow:isListening?'0 0 16px rgba(239,68,68,.5)':'none',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>🎤</button>
@@ -560,10 +573,7 @@ export default function ChatScreen() {
               inp.onchange=async e=>{
                 const file=e.target.files[0];if(!file)return
                 const reader=new FileReader()
-                reader.onload=async ev=>{
-                  const base64=ev.target.result.split(',')[1]
-                  await startHomework(base64)
-                }
+                reader.onload=async ev=>{await startHomework(ev.target.result.split(',')[1])}
                 reader.readAsDataURL(file)
               }
               inp.click()
@@ -575,17 +585,13 @@ export default function ChatScreen() {
         </div>
       </div>
 
-      {/* Limit aşıldı modal */}
       {showLimitModal && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
             <div style={{ fontSize:48,marginBottom:12 }}>🔒</div>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>Günlük Limit Doldu!</div>
-            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:8 }}>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>
               {limitLabels[showLimitModal]?.icon} {limitLabels[showLimitModal]?.label} hakkın ({limitLabels[showLimitModal]?.limit}) doldu.
-            </div>
-            <div style={{ color:'rgba(255,255,255,.35)',fontSize:12,marginBottom:24 }}>
-            <div style={{ color:'rgba(255,255,255,.35)',fontSize:12,marginBottom:24 }}>Planını yükselt ve limitlerini artır!</div>
             </div>
             <button onClick={()=>{setShowLimitModal(null);setScreen('subscription')}} style={{ width:'100%',padding:13,borderRadius:14,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10 }}>⭐ Planımı Yükselt</button>
             <button onClick={()=>setShowLimitModal(null)} style={{ background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer' }}>Kapat</button>
@@ -593,10 +599,9 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Proje daveti */}
       {projectInvite && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center',boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
             <div style={{ fontSize:48,marginBottom:12 }}>{TYPE_ICONS[projectInvite.project_type]||'🚀'}</div>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>{projectInvite.sender?.name} seni davet etti!</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>{TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor</div>
@@ -608,17 +613,15 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Forgot PIN */}
       {showForgotPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.85)',backdropFilter:'blur(8px)',zIndex:201,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)',textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,textAlign:'center' }}>
             {forgotSuccess ? (
               <><div style={{fontSize:48,marginBottom:12}}>✅</div><div style={{color:'#4ade80',fontSize:16,fontWeight:900}}>PIN güncellendi!</div></>
             ) : forgotStep===1 ? (
               <>
                 <div style={{fontSize:40,marginBottom:12}}>🔑</div>
-                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:6}}>PIN Sıfırla</div>
-                <div style={{color:'rgba(255,255,255,.4)',fontSize:12,marginBottom:16}}>Giriş şifrenizi girin</div>
+                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:16}}>PIN Sıfırla</div>
                 <input type="password" placeholder="Uygulama şifreniz" value={forgotPassword} onChange={e=>setForgotPassword(e.target.value)} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
                 {forgotError&&<div style={{color:'#fca88a',fontSize:11,marginBottom:8}}>{forgotError}</div>}
                 <button onClick={async()=>{
@@ -632,8 +635,7 @@ export default function ChatScreen() {
             ) : (
               <>
                 <div style={{fontSize:40,marginBottom:12}}>🔒</div>
-                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:6}}>Yeni PIN</div>
-                <div style={{color:'rgba(255,255,255,.4)',fontSize:12,marginBottom:16}}>4 haneli yeni PIN belirleyin</div>
+                <div style={{color:'white',fontSize:16,fontWeight:900,marginBottom:16}}>Yeni PIN</div>
                 <input type="number" placeholder="Yeni PIN" value={newPin} onChange={e=>setNewPin(e.target.value.slice(0,4))} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
                 <input type="number" placeholder="PIN tekrar" value={newPinConfirm} onChange={e=>setNewPinConfirm(e.target.value.slice(0,4))} style={{width:'100%',padding:'11px 14px',borderRadius:10,border:'1.5px solid rgba(255,255,255,.2)',background:'rgba(255,255,255,.08)',color:'white',fontSize:13,fontFamily:'Nunito,sans-serif',boxSizing:'border-box',marginBottom:8}}/>
                 {forgotError&&<div style={{color:'#fca88a',fontSize:11,marginBottom:8}}>{forgotError}</div>}
@@ -651,10 +653,9 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Exit PIN */}
       {showExitPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,boxShadow:'0 8px 40px rgba(0,0,0,.4)' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300 }}>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8,textAlign:'center' }}>🔒 Veli Doğrulaması</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20,textAlign:'center' }}>Çıkmak için PIN girin</div>
             <div style={{ display:'flex',justifyContent:'center',gap:8,marginBottom:16 }}>
