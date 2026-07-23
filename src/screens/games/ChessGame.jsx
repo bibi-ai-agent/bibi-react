@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
+import { callAI } from '../../lib/api'
 
 const LEVELS = {
   young:  [{ id:'easy', name:'Kolay', depth:1 }, { id:'medium', name:'Orta', depth:2 }, { id:'hard', name:'Zor', depth:3 }],
@@ -73,7 +74,33 @@ export default function ChessGame({ currentChild, onFinish }) {
   const [thinking, setThinking] = useState(false)
   const [moveCount, setMoveCount] = useState(0)
 
-  function startGame(level) {
+  const [knowsChess, setKnowsChess] = useState(null) // null=sorulmadı, true=biliyor, false=bilmiyor
+  const [learnStep, setLearnStep] = useState(0)
+  const [learnMessages, setLearnMessages] = useState([])
+  const [learnInput, setLearnInput] = useState('')
+  const [learnTyping, setLearnTyping] = useState(false)
+
+  const LEARN_STEPS = [
+    { title:'Taşları Tanıyalım', icon:'♟️', msg:`Merhaba ${currentChild?.name}! Satranç öğrenmek çok eğlenceli! 🎉\n\nSatranç tahtası 8x8 = 64 kareden oluşur. Her oyuncunun 16 taşı var:\n\n♔ Şah — En değerli taş, 1 kare hareket eder\n♕ Vezir — En güçlü taş, her yöne hareket eder\n♖ Kale — Yatay ve dikey hareket eder\n♗ Fil — Çapraz hareket eder\n♘ At — L şeklinde atlar, taşların üzerinden geçer\n♙ Piyon — Öne 1 kare gider, çapraz yer` },
+    { title:'Oyunun Amacı', icon:'🎯', msg:`Oyunun amacı rakibinin ŞAH'ını MAT etmek!\n\nŞah = Şahın tehdit altında olması ⚠️\nMat = Şahın kaçacak yeri kalmamış olması 🏆\n\nBazı önemli kurallar:\n• Beyazlar her zaman ilk hamleyi yapar\n• Şahın üzerine giremezsin\n• Mat olunca oyun biter` },
+    { title:'İlk Hamle Taktikleri', icon:'💡', msg:`Başlangıç için altın kurallar:\n\n1️⃣ Merkezi kontrol et — e4 veya d4 hamlesi yap\n2️⃣ Atları ve filleri çabuk çıkar\n3️⃣ Şahı kale arkasına al (rok)\n4️⃣ Aynı taşı arka arkaya oynatma\n5️⃣ Taş kaybetmemeye dikkat et\n\nŞimdi AI ile pratik yapmaya hazır mısın? 🚀` },
+  ]
+
+  async function askBibi(userMsg) {
+    setLearnTyping(true)
+    const msgs = [...learnMessages, { role:'user', text:userMsg }]
+    setLearnMessages(msgs)
+    setLearnInput('')
+    try {
+      const reply = await callAI(
+        `Sen Bibi'sin, ${currentChild?.name}'e satranç öğretiyorsun. Yaşı: ${currentChild?.age}. Kısa, eğlenceli, Türkçe cevap ver. Somut örnekler kullan.`,
+        msgs.map(m => ({ role: m.role==='user'?'user':'assistant', content: m.text })),
+        400
+      )
+      setLearnMessages(p => [...p, { role:'bibi', text:reply }])
+    } catch { setLearnMessages(p => [...p, { role:'bibi', text:'Bir sorun oluştu 😅' }]) }
+    setLearnTyping(false)
+  }
     setSelectedLevel(level)
     const g = new Chess() // Chess.js default'u beyaz başlar
     if (g.turn() !== 'w') g.reset() // güvenlik
@@ -201,6 +228,81 @@ export default function ChessGame({ currentChild, onFinish }) {
       </div>
     )
   }
+
+  // Biliyor musun popup'ı
+  if (knowsChess === null) return (
+    <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+      <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:320, width:'100%', textAlign:'center' }}>
+        <div style={{ fontSize:56, marginBottom:16 }}>♟️</div>
+        <div style={{ color:'white', fontSize:19, fontWeight:900, marginBottom:8 }}>Satranç oynamayı biliyor musun?</div>
+        <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:24 }}>Dürüst olabilirsin, Bibi sana öğretir! 😊</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <button onClick={() => setKnowsChess(true)}
+            style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(74,222,128,.4)', background:'rgba(74,222,128,.15)', color:'#4ade80', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+            ✅ Evet, biliyorum!
+          </button>
+          <button onClick={() => { setKnowsChess(false); setLearnMessages([{ role:'bibi', text: LEARN_STEPS[0].msg }]) }}
+            style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(167,139,250,.4)', background:'rgba(167,139,250,.15)', color:'#a78bfa', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+            📚 Öğrenmek istiyorum
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Öğretici mod
+  if (knowsChess === false) return (
+    <div style={{ flex:1, display:'flex', flexDirection:'column' }}>
+      <div style={{ display:'flex', justifyContent:'center', gap:8, padding:'12px 16px' }}>
+        {LEARN_STEPS.map((s, i) => (
+          <div key={i} onClick={() => { setLearnStep(i); setLearnMessages([{ role:'bibi', text:s.msg }]) }}
+            style={{ flex:1, padding:'8px 4px', borderRadius:10, background: learnStep===i?'rgba(167,139,250,.3)':'rgba(255,255,255,.06)', border: learnStep===i?'1.5px solid #a78bfa':'1.5px solid transparent', textAlign:'center', cursor:'pointer' }}>
+            <div style={{ fontSize:16 }}>{s.icon}</div>
+            <div style={{ color: learnStep===i?'#a78bfa':'rgba(255,255,255,.4)', fontSize:9, fontWeight:700, marginTop:2 }}>{s.title}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 16px 8px' }}>
+        {learnMessages.map((m, i) => (
+          <div key={i} style={{ display:'flex', marginBottom:10, justifyContent: m.role==='user'?'flex-end':'flex-start' }}>
+            {m.role==='bibi' ? (
+              <div style={{ maxWidth:'85%', background:'rgba(255,255,255,.9)', borderRadius:'4px 18px 18px 18px', padding:'11px 14px', color:'#1A2E2A', fontSize:13, lineHeight:1.6, whiteSpace:'pre-line' }}>{m.text}</div>
+            ) : (
+              <div style={{ maxWidth:'75%', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', borderRadius:'18px 4px 18px 18px', padding:'11px 14px', color:'white', fontSize:13, lineHeight:1.6 }}>{m.text}</div>
+            )}
+          </div>
+        ))}
+        {learnTyping && (
+          <div style={{ display:'flex', gap:5, padding:'12px 14px', background:'rgba(255,255,255,.1)', borderRadius:'4px 18px 18px 18px', width:'fit-content' }}>
+            {[0,1,2].map(i => <span key={i} style={{ width:7, height:7, borderRadius:'50%', background:'#4ade80', display:'block', animation:`dotPulse 1.2s ease ${i*0.2}s infinite` }}/>)}
+          </div>
+        )}
+      </div>
+      <div style={{ padding:'8px 16px 12px', background:'rgba(0,0,0,.3)' }}>
+        {learnStep < LEARN_STEPS.length - 1 ? (
+          <button onClick={() => { const next=learnStep+1; setLearnStep(next); setLearnMessages([{ role:'bibi', text:LEARN_STEPS[next].msg }]) }}
+            style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#7C3AED', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>
+            Sonraki Konu →
+          </button>
+        ) : (
+          <button onClick={() => setKnowsChess(true)}
+            style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>
+            🎮 Oynamaya Hazırım!
+          </button>
+        )}
+        <div style={{ display:'flex', gap:8 }}>
+          <input value={learnInput} onChange={e=>setLearnInput(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&learnInput.trim()&&askBibi(learnInput)}
+            placeholder="Bibi'ye soru sor..." style={{ flex:1, padding:'10px 14px', borderRadius:20, border:'1.5px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.08)', color:'white', fontSize:13, fontFamily:'Nunito,sans-serif' }}/>
+          <button onClick={()=>learnInput.trim()&&askBibi(learnInput)}
+            style={{ width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,.15)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <style>{'@keyframes dotPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}'}</style>
+    </div>
+  )
 
   if (!selectedLevel) return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24 }}>
