@@ -4,6 +4,7 @@ import { useApp } from '../lib/store'
 import { callAI } from '../lib/api'
 import MathGame from './games/MathGame'
 import MemoryGame from './games/MemoryGame'
+import MarketGame from './games/MarketGame'
 
 const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
@@ -258,6 +259,8 @@ JSON formatında yaz (başka hiçbir şey yazma):
   const [mathFinished, setMathFinished] = useState(false)
   const [memoryResult, setMemoryResult] = useState(null)
   const [memoryFinished, setMemoryFinished] = useState(false)
+  const [marketScore, setMarketScore] = useState(null)
+  const [marketFinished, setMarketFinished] = useState(false)
 
   const currentQ = quizSession ? quizSession.questions?.[quizSession.current_question] : null
   const myScore = finalScores?.[currentChild.id] || 0
@@ -302,6 +305,32 @@ JSON formatında yaz (başka hiçbir şey yazma):
                 <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{projectFriend.name}</div>
               </div>
             </div>
+            <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (projectType === 'market') return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Market Kasiyeri</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🛒 {currentChild.name} vs {projectFriend.name}</div>
+        </div>
+        <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      </div>
+      {!marketFinished ? (
+        <MarketGame currentChild={currentChild} projectFriend={projectFriend}
+          onFinish={(score) => { setMarketScore(score); setMarketFinished(true) }}/>
+      ) : (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
+            <div style={{ fontSize:56, marginBottom:12 }}>🛒</div>
+            <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Harika!</div>
+            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:12 }}>{marketScore} puan kazandın!</div>
+            <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>Para hesaplama hayat boyu işe yarar! 💰</div>
             <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
           </div>
         </div>
