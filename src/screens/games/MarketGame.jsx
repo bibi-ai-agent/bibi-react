@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const PRODUCTS = {
   young: [
@@ -8,23 +8,23 @@ const PRODUCTS = {
     { name:'🍌 Muz', price: 7 }, { name:'🧀 Peynir', price: 18 },
   ],
   middle: [
-    { name:'🍕 Pizza', price: 45.50 }, { name:'📚 Kitap', price: 75.00 },
-    { name:'🎮 Oyun', price: 120.00 }, { name:'👟 Ayakkabı', price: 250.00 },
-    { name:'🎒 Çanta', price: 180.00 }, { name:'🖊️ Kalem Seti', price: 35.50 },
-    { name:'🧸 Oyuncak', price: 95.00 }, { name:'🎨 Boya Seti', price: 65.00 },
+    { name:'🍕 Pizza', price: 45 }, { name:'📚 Kitap', price: 75 },
+    { name:'🎮 Oyun', price: 120 }, { name:'👟 Ayakkabı', price: 250 },
+    { name:'🎒 Çanta', price: 180 }, { name:'🖊️ Kalem Seti', price: 35 },
+    { name:'🧸 Oyuncak', price: 95 }, { name:'🎨 Boya Seti', price: 65 },
   ],
   teen: [
-    { name:'💻 Mouse', price: 349.99 }, { name:'🎧 Kulaklık', price: 549.99 },
-    { name:'📱 Kılıf', price: 129.99 }, { name:'⌨️ Klavye', price: 449.00 },
-    { name:'🖥️ Webcam', price: 679.90 }, { name:'🎮 Joystick', price: 899.00 },
-    { name:'📷 Tripod', price: 275.50 }, { name:'🔋 Powerbank', price: 399.00 },
+    { name:'💻 Mouse', price: 350 }, { name:'🎧 Kulaklık', price: 550 },
+    { name:'📱 Kılıf', price: 130 }, { name:'⌨️ Klavye', price: 450 },
+    { name:'🖥️ Webcam', price: 680 }, { name:'🎮 Joystick', price: 900 },
+    { name:'📷 Tripod', price: 275 }, { name:'🔋 Powerbank', price: 400 },
   ]
 }
 
 const BILLS = {
-  young:  [10, 20, 50],
-  middle: [50, 100, 200],
-  teen:   [100, 200, 500, 1000],
+  young:  [10, 20, 50, 100],
+  middle: [50, 100, 200, 500],
+  teen:   [500, 1000, 2000],
 }
 
 function generateQuestion(age) {
@@ -39,51 +39,65 @@ function generateQuestion(age) {
     if (!used.has(i)) { used.add(i); selected.push(products[i]) }
   }
   const total = selected.reduce((s, p) => s + p.price, 0)
-  const bill = bills.find(b => b >= total) || bills[bills.length-1]
-  const change = parseFloat((bill - total).toFixed(2))
-  return { products: selected, total: parseFloat(total.toFixed(2)), bill, change }
+  const bill = bills.find(b => b > total) || bills[bills.length-1]
+  const change = bill - total
+  return { products: selected, total, bill, change }
 }
 
-function generateOptions(correct) {
+function makeOptions(correct) {
   const opts = new Set([correct])
-  while(opts.size < 4) {
-    const fake = parseFloat((correct + (Math.floor(Math.random()*10)-5)).toFixed(2))
+  let tries = 0
+  while(opts.size < 4 && tries < 50) {
+    tries++
+    const fake = correct + (Math.floor(Math.random() * 20) - 10)
     if (fake >= 0 && fake !== correct) opts.add(fake)
   }
-  return [...opts].sort(() => Math.random()-0.5)
+  return [...opts].sort(() => Math.random() - 0.5)
 }
 
 const TOTAL_Q = 5
 
 export default function MarketGame({ currentChild, onFinish }) {
   const age = currentChild.age || 9
-  const [questions] = useState(() => Array.from({length:TOTAL_Q}, () => generateQuestion(age)))
-  const [options] = useState(() => questions.map(q => generateOptions(q.change)))
+
+  const [questions] = useState(() => Array.from({length: TOTAL_Q}, () => generateQuestion(age)))
+  const [allOptions] = useState(() => {
+    return Array.from({length: TOTAL_Q}, (_, i) => {
+      const q = questions[i] // questions is captured from outer scope via closure
+      return {
+        totalOpts: makeOptions(q.total),
+        changeOpts: makeOptions(q.change)
+      }
+    })
+  })
+
   const [current, setCurrent] = useState(0)
   const [score, setScore] = useState(0)
   const [answered, setAnswered] = useState(null)
-  const [finished, setFinished] = useState(false)
   const [step, setStep] = useState('total') // total | change
+  const [finished, setFinished] = useState(false)
 
   const q = questions[current]
+  const opts = step === 'total' ? allOptions[current].totalOpts : allOptions[current].changeOpts
+  const correctAnswer = step === 'total' ? q.total : q.change
 
   function handleAnswer(chosen) {
     if (answered !== null) return
     setAnswered(chosen)
-    const correct = step === 'total' ? q.total : q.change
-    const isCorrect = chosen === correct
+    const isCorrect = chosen === correctAnswer
 
     setTimeout(() => {
       if (step === 'total') {
+        if (isCorrect) setScore(s => s + 1)
         setStep('change')
         setAnswered(null)
-        if (isCorrect) setScore(s => s + 1)
       } else {
-        if (isCorrect) setScore(s => s + 1)
+        const newScore = score + (isCorrect ? 1 : 0)
+        if (isCorrect) setScore(newScore)
         const next = current + 1
         if (next >= TOTAL_Q) {
           setFinished(true)
-          onFinish(score + (isCorrect ? 1 : 0))
+          onFinish(newScore)
         } else {
           setCurrent(next)
           setStep('total')
@@ -100,12 +114,6 @@ export default function MarketGame({ currentChild, onFinish }) {
     </div>
   )
 
-  const currentOptions = step === 'total'
-    ? generateOptions(q.total)
-    : options[current]
-
-  const correctAnswer = step === 'total' ? q.total : q.change
-
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'16px', overflowY:'auto' }}>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:12 }}>
@@ -113,34 +121,29 @@ export default function MarketGame({ currentChild, onFinish }) {
         <div style={{ color:'#fbbf24', fontSize:13, fontWeight:700 }}>Puan: {score}</div>
       </div>
 
-      {/* Ürünler */}
       <div style={{ background:'rgba(255,255,255,.06)', borderRadius:16, padding:16, marginBottom:12 }}>
         <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, marginBottom:10 }}>🛒 ALIŞVERİŞ SEPETİ</div>
         {q.products.map((p, i) => (
           <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom: i < q.products.length-1 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>
             <span style={{ color:'white', fontSize:14 }}>{p.name}</span>
-            <span style={{ color:'#4ade80', fontSize:14, fontWeight:700 }}>₺{p.price.toFixed(2)}</span>
+            <span style={{ color:'#4ade80', fontSize:14, fontWeight:700 }}>₺{p.price}</span>
           </div>
         ))}
       </div>
 
-      {/* Soru */}
       <div style={{ background:'rgba(124,58,237,.15)', border:'1.5px solid rgba(124,58,237,.3)', borderRadius:14, padding:14, marginBottom:16, textAlign:'center' }}>
         {step === 'total' ? (
-          <div style={{ color:'white', fontSize:15, fontWeight:800 }}>💰 Toplam tutar ne kadar?</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:800 }}>💰 Toplam tutar ne kadar? (₺)</div>
         ) : (
           <div>
-            <div style={{ color:'white', fontSize:14, fontWeight:700, marginBottom:4 }}>
-              Müşteri ₺{q.bill} verdi
-            </div>
-            <div style={{ color:'white', fontSize:15, fontWeight:800 }}>🪙 Üstü ne kadar?</div>
+            <div style={{ color:'#4ade80', fontSize:14, fontWeight:700, marginBottom:4 }}>Toplam: ₺{q.total} | Verilen: ₺{q.bill}</div>
+            <div style={{ color:'white', fontSize:15, fontWeight:800 }}>🪙 Üstü ne kadar? (₺)</div>
           </div>
         )}
       </div>
 
-      {/* Şıklar */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-        {generateOptions(correctAnswer).map((opt, i) => {
+        {opts.map((opt, i) => {
           let bg = 'rgba(255,255,255,.08)'
           let border = 'rgba(255,255,255,.15)'
           if (answered !== null) {
@@ -149,8 +152,8 @@ export default function MarketGame({ currentChild, onFinish }) {
           }
           return (
             <button key={i} onClick={() => handleAnswer(opt)}
-              style={{ padding:'16px 8px', borderRadius:12, border:`1.5px solid ${border}`, background:bg, color:'white', fontSize:16, fontWeight:800, cursor: answered !== null ? 'default' : 'pointer', fontFamily:'Nunito,sans-serif' }}>
-              ₺{opt.toFixed(2)}
+              style={{ padding:'18px 8px', borderRadius:12, border:`1.5px solid ${border}`, background:bg, color:'white', fontSize:18, fontWeight:800, cursor: answered !== null ? 'default' : 'pointer', fontFamily:'Nunito,sans-serif' }}>
+              ₺{opt}
             </button>
           )
         })}
