@@ -240,14 +240,48 @@ export default function ChessGame({ currentChild, onFinish }) {
         <div style={{ color:'white', fontSize:19, fontWeight:900, marginBottom:8 }}>Satranç oynamayı biliyor musun?</div>
         <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:24 }}>Dürüst olabilirsin, Bibi sana öğretir! 😊</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          <button onClick={() => setKnowsChess(true)} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(74,222,128,.4)', background:'rgba(74,222,128,.15)', color:'#4ade80', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>✅ Evet, biliyorum!</button>
+          <button onClick={() => { setKnowsChess(true); startPractice() }} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(74,222,128,.4)', background:'rgba(74,222,128,.15)', color:'#4ade80', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>✅ Evet, biliyorum!</button>
           <button onClick={() => { setKnowsChess(false); setLearnMessages([{ role:'bibi', text:LEARN_STEPS[0].msg }]) }} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(167,139,250,.4)', background:'rgba(167,139,250,.15)', color:'#a78bfa', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>📚 Öğrenmek istiyorum</button>
         </div>
       </div>
     </div>
   )
 
-  // ── 2. Öğretici mod ──
+  // ── 2. Pratik modu — öğretici moddan ÖNCE kontrol et ──
+  if (practiceMode) {
+    const pos = PRACTICE_POSITIONS[practiceStep]
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'12px 16px', fontFamily:'Nunito,sans-serif' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+          <div style={{ color:'#a78bfa', fontSize:12, fontWeight:700 }}>PRATİK {practiceStep+1}/{PRACTICE_POSITIONS.length}</div>
+          <div style={{ display:'flex', gap:4 }}>
+            {PRACTICE_POSITIONS.map((_,i) => <div key={i} style={{ width:20, height:4, borderRadius:2, background:i<=practiceStep?'#a78bfa':'rgba(255,255,255,.15)' }}/>)}
+          </div>
+        </div>
+        <div style={{ background:'rgba(167,139,250,.12)', border:'1.5px solid rgba(167,139,250,.3)', borderRadius:12, padding:'10px 14px', marginBottom:10 }}>
+          <div style={{ color:'#a78bfa', fontSize:14, fontWeight:800, marginBottom:3 }}>{pos.title}</div>
+          <div style={{ color:'rgba(255,255,255,.6)', fontSize:12 }}>{pos.desc}</div>
+          {!practiceDone && <div style={{ color:'rgba(255,255,255,.35)', fontSize:11, marginTop:4 }}>💡 İpucu: {pos.hint}</div>}
+        </div>
+        {practiceGame && (
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
+            <Board game={practiceGame} selected={practiceSelected} validMoves={practiceValidMoves} onClick={handlePracticeClick} size={boardSize}/>
+          </div>
+        )}
+        {practiceMsg
+          ? <div style={{ background:'rgba(74,222,128,.12)', border:'1px solid rgba(74,222,128,.3)', borderRadius:12, padding:'12px 14px', marginBottom:12, color:'#4ade80', fontSize:13, lineHeight:1.5 }}>{practiceMsg}</div>
+          : <div style={{ color:'rgba(255,255,255,.3)', fontSize:12, textAlign:'center', marginBottom:12 }}>Taşa bas → yeşil karelere oyna</div>
+        }
+        {practiceDone && (
+          <button onClick={nextPractice} style={{ width:'100%', padding:13, borderRadius:12, border:'none', background:practiceStep<PRACTICE_POSITIONS.length-1?'#7C3AED':'#0D9B7E', color:'white', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+            {practiceStep < PRACTICE_POSITIONS.length-1 ? 'Sonraki Pozisyon →' : '🎮 Gerçek Oyuna Geç!'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // ── 3. Öğretici mod ──
   if (knowsChess === false) return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       <div style={{ display:'flex', gap:6, padding:'10px 14px' }}>
