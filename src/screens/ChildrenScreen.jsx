@@ -277,7 +277,7 @@ export default function ChildrenScreen() {
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
+      <div onClick={() => setLongPressChild(null)} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
