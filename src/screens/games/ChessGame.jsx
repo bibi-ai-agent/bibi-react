@@ -99,20 +99,22 @@ export default function ChessGame({ currentChild, onFinish }) {
     if (selected) {
       if (validMoves.includes(sq)) {
         const g = new Chess(game.fen())
-        g.move({ from: selected, to: sq, promotion: 'q' })
+        const moveResult = g.move({ from: selected, to: sq, promotion: 'q' })
+        if (!moveResult) { setSelected(null); setValidMoves([]); return }
         setGame(g); setSelected(null); setValidMoves([])
         setMoveCount(m => m+1)
         if (checkOver(g)) return
-        // AI hamlesi
+        // AI hamlesi — thinking true olana kadar tıklamayı engelle
         setThinking(true)
+        setStatus('AI düşünüyor... 🤔')
         setTimeout(() => {
           const ag = new Chess(g.fen())
+          if (ag.turn() !== 'b') { setThinking(false); return } // güvenlik kontrolü
           const best = getBestMove(ag, selectedLevel.depth)
           if (best) { ag.move(best); setGame(ag); setMoveCount(m => m+1); checkOver(ag) }
           setThinking(false)
         }, 400)
       } else {
-        // Başka taş seç
         const piece = game.get(sq)
         if (piece && piece.color === 'w') {
           setSelected(sq)
