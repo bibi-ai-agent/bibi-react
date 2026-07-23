@@ -8,6 +8,10 @@ import MarketGame from './games/MarketGame'
 
 const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
+const GAME_ICONS = { quiz:'🎯', math:'➕', memory:'🧩', market:'🛒', chess:'♟️', riddle:'🧠', homework:'📚', experiment:'🔬' }
+const GAME_NAMES = { quiz:'Bilgi Yarışması', math:'Matematik Oyunu', memory:'Eşleştirme Oyunu', market:'Market Kasiyeri', chess:'Satranç', riddle:'Akıl Oyunları', homework:'Birlikte Ödev', experiment:'Deney/Proje' }
+
+
 
 export default function ProjectScreen() {
   const { currentChild, projectFriend, projectType, projectSessionId, setProjectSessionId, isProjectHost, setScreen } = useApp()
@@ -25,6 +29,11 @@ export default function ProjectScreen() {
   const [finalScores, setFinalScores] = useState(null)
   const [waitingFriend, setWaitingFriend] = useState(false)
 
+  // Bekleme state — arkadaş kabul edene kadar
+  const [waitingAccept, setWaitingAccept] = useState(false)
+  const [inviteId, setInviteId] = useState(null)
+  const [gameReady, setGameReady] = useState(!isProjectHost) // guest direkt hazır
+
   // Game states — tüm hooks en üstte!
   const [mathScore, setMathScore] = useState(null)
   const [mathFinished, setMathFinished] = useState(false)
@@ -39,6 +48,48 @@ export default function ProjectScreen() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
+
+  // Host: davet gönder ve kabul bekle
+  useEffect(() => {
+    if (!isProjectHost || !projectFriend || !projectType) return
+    if (!['math','memory','market','chess','riddle','quiz'].includes(projectType)) return
+
+    // En son gönderilen daveti bul ve dinle
+    const listenInvite = async () => {
+      const { data } = await sb.from('project_invites')
+        .select('id, status')
+        .eq('from_child_id', currentChild.id)
+        .eq('to_child_id', projectFriend.id)
+        .eq('project_type', projectType)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!data) return
+      setInviteId(data.id)
+      if (data.status === 'accepted') { setGameReady(true); return }
+
+      setWaitingAccept(true)
+      const channel = sb.channel(`invite-${data.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'project_invites',
+          filter: `id=eq.${data.id}`
+        }, payload => {
+          if (payload.new.status === 'accepted') {
+            setWaitingAccept(false)
+            setGameReady(true)
+            sb.removeChannel(channel)
+          } else if (payload.new.status === 'rejected') {
+            setWaitingAccept(false)
+            setScreen('friends')
+            sb.removeChannel(channel)
+          }
+        })
+        .subscribe()
+      return () => sb.removeChannel(channel)
+    }
+    listenInvite()
+  }, [])
 
   useEffect(() => {
     if (!currentChild || !projectType) return
@@ -184,6 +235,36 @@ export default function ProjectScreen() {
   const friendScore = finalScores?.[projectFriend?.id] || 0
 
   const friendName = projectFriend?.name || 'Arkadaşın'
+
+  // Arkadaş kabul etmeyi bekle
+  if (waitingAccept && isProjectHost) return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif', padding:24 }}>
+      <div style={{ fontSize:56, marginBottom:16, animation:'pulse 1.5s ease-in-out infinite' }}>
+        {GAME_ICONS[projectType] || '🎮'}
+      </div>
+      <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8, textAlign:'center' }}>
+        {GAME_NAMES[projectType] || projectType}
+      </div>
+      <div style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginBottom:32, textAlign:'center' }}>
+        {projectFriend?.name} kabul etmeyi bekliyor...
+      </div>
+      <div style={{ display:'flex', gap:8, marginBottom:32 }}>
+        {[0,1,2].map(i => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background:'#4ade80', animation:`dotPulse 1.2s ease ${i*0.2}s infinite` }}/>)}
+      </div>
+      <button onClick={() => setScreen('friends')} style={{ padding:'10px 24px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'transparent', color:'rgba(255,255,255,.4)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>İptal</button>
+      <style>{'@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}} @keyframes dotPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}'}</style>
+    </div>
+  )
+
+  // Oyun hazır değilse (guest henüz bağlanmadı)
+  if (!gameReady && !isProjectHost) return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif', padding:24 }}>
+      <div style={{ fontSize:56, marginBottom:16 }}>{GAME_ICONS[projectType] || '🎮'}</div>
+      <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>{GAME_NAMES[projectType]}</div>
+      <div style={{ color:'#4ade80', fontSize:15, marginBottom:8 }}>{projectFriend?.name} ile başlıyor! 🎉</div>
+      <div style={{ color:'rgba(255,255,255,.4)', fontSize:13 }}>Hazırlanıyor...</div>
+    </div>
+  )
 
   // ── Matematik Oyunu ──
   if (projectType === 'math') return (
