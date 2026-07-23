@@ -363,6 +363,11 @@ export default function ChildrenScreen() {
         )}
       </div>
 
+      {/* Long press overlay — herhangi yere basınca X kapanır */}
+      {longPressChild && (
+        <div onClick={() => setLongPressChild(null)} style={{ position:'fixed', inset:0, zIndex:5 }}/>
+      )}
+
       {/* Proje Daveti Popup */}
       {projectInvite && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
