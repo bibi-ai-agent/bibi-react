@@ -7,6 +7,7 @@ import MemoryGame from './games/MemoryGame'
 import MarketGame from './games/MarketGame'
 import ChessGame from './games/ChessGame'
 import RiddleGame from './games/RiddleGame'
+import RhythmGame from './games/RhythmGame'
 
 const TYPE_NAMES = { homework:"Birlikte Ödev", experiment:"Deney/Proje", quiz:"Bilgi Yarışması" }
 const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
@@ -46,6 +47,7 @@ export default function ProjectScreen() {
   const [chessResult, setChessResult] = useState(null)
   const [chessFinished, setChessFinished] = useState(false)
   const [riddleFinished, setRiddleFinished] = useState(false)
+  const [rhythmFinished, setRhythmFinished] = useState(false)
 
   const messagesEndRef = useRef(null)
   const stateRef = useRef({ messages: [] })
@@ -268,6 +270,20 @@ export default function ProjectScreen() {
       <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>{GAME_NAMES[projectType]}</div>
       <div style={{ color:'#4ade80', fontSize:15, marginBottom:8 }}>{projectFriend?.name} ile başlıyor! 🎉</div>
       <div style={{ color:'rgba(255,255,255,.4)', fontSize:13 }}>Hazırlanıyor...</div>
+    </div>
+  )
+
+  // ── Ritim Oyunu ──
+  if (projectType === 'rhythm') return (
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ background:'rgba(0,0,0,.4)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>Ritim Oyunu</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🎵 {currentChild.name}</div>
+        </div>
+        <button onClick={() => setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      </div>
+      <RhythmGame currentChild={currentChild} projectFriend={projectFriend} onFinish={() => { setRhythmFinished(true); setScreen('children') }}/>
     </div>
   )
 
