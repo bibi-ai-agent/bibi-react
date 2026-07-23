@@ -75,11 +75,11 @@ export default function ChessGame({ currentChild, onFinish }) {
 
   function startGame(level) {
     setSelectedLevel(level)
-    const g = new Chess()
+    const g = new Chess() // Chess.js default'u beyaz başlar
+    if (g.turn() !== 'w') g.reset() // güvenlik
     setGame(g)
-    setSelected(null)
-    setValidMoves([])
-    setStatus('Senin sıran — Beyazları oynuyorsun')
+    setSelected(null); setValidMoves([])
+    setStatus('Senin sıran — Beyazları oynuyorsun ♙')
     setGameOver(false); setResult(null); setMoveCount(0)
   }
 
@@ -139,28 +139,65 @@ export default function ChessGame({ currentChild, onFinish }) {
     if (!game) return null
     const board = game.board()
     const files = ['a','b','c','d','e','f','g','h']
-    const size = Math.min(320, window.innerWidth - 40)
-    const sq = size / 8
+    const size = Math.min(window.innerWidth - 16, window.innerHeight - 200)
+    const sq = Math.floor(size / 8)
+    const actualSize = sq * 8
 
     return (
-      <div style={{ width:size, height:size, display:'grid', gridTemplateColumns:`repeat(8,${sq}px)`, border:'2px solid rgba(255,255,255,.2)', borderRadius:8, overflow:'hidden', margin:'0 auto' }}>
-        {board.map((row, ri) => row.map((piece, ci) => {
-          const sqName = files[ci] + (8 - ri)
-          const isLight = (ri + ci) % 2 === 0
-          const isSelected = selected === sqName
-          const isValid = validMoves.includes(sqName)
-          const bg = isSelected ? '#fbbf24' : isValid ? (piece ? '#ef4444' : '#4ade80') : isLight ? '#e8f7f3' : '#0D9B7E'
-          const symbol = piece ? PIECE_SYMBOLS[piece.color + piece.type] : ''
-          const isWhite = piece?.color === 'w'
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+        {/* Sıra göstergesi */}
+        <div style={{ display:'flex', width:actualSize, justifyContent:'space-between', marginBottom:4, padding:'0 2px' }}>
+          {['a','b','c','d','e','f','g','h'].map(f => (
+            <div key={f} style={{ width:sq, textAlign:'center', color:'rgba(255,255,255,.3)', fontSize:10 }}>{f}</div>
+          ))}
+        </div>
+        <div style={{ display:'flex' }}>
+          {/* Sol rakam */}
+          <div style={{ display:'flex', flexDirection:'column', marginRight:4 }}>
+            {[8,7,6,5,4,3,2,1].map(n => (
+              <div key={n} style={{ height:sq, display:'flex', alignItems:'center', color:'rgba(255,255,255,.3)', fontSize:10 }}>{n}</div>
+            ))}
+          </div>
+          <div style={{ width:actualSize, height:actualSize, display:'grid', gridTemplateColumns:`repeat(8,${sq}px)`, border:'3px solid rgba(255,255,255,.3)', borderRadius:6, overflow:'hidden' }}>
+            {board.map((row, ri) => row.map((piece, ci) => {
+              const sqName = files[ci] + (8 - ri)
+              const isLight = (ri + ci) % 2 === 0
+              const isSelected = selected === sqName
+              const isValid = validMoves.includes(sqName)
+              
+              let bg = isLight ? '#f0d9b5' : '#b58863'
+              if (isSelected) bg = '#f6f669'
+              else if (isValid && piece) bg = '#cc0000'
+              else if (isValid) bg = isLight ? '#cdd16f' : '#aaa23a'
 
-          return (
-            <div key={sqName} onClick={() => handleSquareClick(ri, ci)}
-              style={{ width:sq, height:sq, background:bg, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', position:'relative', transition:'background .15s' }}>
-              {isValid && !piece && <div style={{ width:sq*0.3, height:sq*0.3, borderRadius:'50%', background:'rgba(0,0,0,.2)' }}/>}
-              {symbol && <span style={{ fontSize:sq*0.65, lineHeight:1, color: isWhite ? '#1A2E2A' : '#fff', textShadow: isWhite ? '0 1px 2px rgba(0,0,0,.3)' : '0 1px 2px rgba(0,0,0,.5)', userSelect:'none' }}>{symbol}</span>}
-            </div>
-          )
-        }))}
+              const isWhitePiece = piece?.color === 'w'
+              const symbol = piece ? PIECE_SYMBOLS[piece.color + piece.type] : ''
+
+              return (
+                <div key={sqName} onClick={() => handleSquareClick(ri, ci)}
+                  style={{ width:sq, height:sq, background:bg, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', position:'relative' }}>
+                  {isValid && !piece && (
+                    <div style={{ width:sq*0.28, height:sq*0.28, borderRadius:'50%', background:'rgba(0,0,0,.25)' }}/>
+                  )}
+                  {symbol && (
+                    <span style={{
+                      fontSize: sq * 0.72,
+                      lineHeight: 1,
+                      userSelect: 'none',
+                      color: isWhitePiece ? '#fff' : '#000',
+                      textShadow: isWhitePiece
+                        ? '0 0 3px #000, 0 0 3px #000, 1px 1px 2px #000'
+                        : '0 0 3px #fff, 0 0 2px rgba(255,255,255,.5)',
+                      filter: isWhitePiece ? 'drop-shadow(0 1px 2px rgba(0,0,0,.8))' : 'drop-shadow(0 1px 2px rgba(255,255,255,.4))'
+                    }}>
+                      {symbol}
+                    </span>
+                  )}
+                </div>
+              )
+            }))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -202,15 +239,15 @@ export default function ChessGame({ currentChild, onFinish }) {
   )
 
   return (
-    <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'12px 16px', overflowY:'auto' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+    <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'8px', overflow:'hidden' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8, padding:'0 8px' }}>
         <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700 }}>{selectedLevel.name.toUpperCase()}</div>
         <div style={{ color:thinking?'#fbbf24':game?.isCheck()?'#fca88a':'#4ade80', fontSize:12, fontWeight:700 }}>{status}</div>
         <div style={{ color:'rgba(255,255,255,.4)', fontSize:11 }}>{moveCount} hamle</div>
       </div>
       {renderBoard()}
-      <div style={{ textAlign:'center', marginTop:10, color:'rgba(255,255,255,.3)', fontSize:11 }}>
-        Taşa bas → yeşil karelere oyna {thinking && '| AI düşünüyor...'}
+      <div style={{ textAlign:'center', marginTop:8, color:'rgba(255,255,255,.3)', fontSize:11 }}>
+        {thinking ? '⏳ AI düşünüyor...' : 'Taşa bas → yeşil karelere oyna'}
       </div>
     </div>
   )
