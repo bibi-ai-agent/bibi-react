@@ -39,9 +39,8 @@ function ChildCard({ c, isDeleting, onPress, onLongPress, onDeleteConfirm, onCan
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        onMouseDown={() => { pressedRef.current = true; timerRef.current = setTimeout(() => { if(pressedRef.current) onLongPress() }, 600) }}
+        onMouseDown={() => { pressedRef.current = true; timerRef.current = setTimeout(() => { onLongPress() }, 600) }}
         onMouseUp={() => { pressedRef.current = false; clearTimeout(timerRef.current) }}
-        onMouseLeave={() => { pressedRef.current = false; clearTimeout(timerRef.current) }}
         style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, border: isDeleting ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', transition:'border .2s', userSelect:'none' }}>
         <div style={{ position:'relative', flexShrink:0 }}>
           <div
