@@ -143,15 +143,26 @@ export default function ChildrenScreen() {
 
   function startChat(child) { setPinChild(child); setEntryPin(''); setEntryPinError('') }
 
+  const didLongPress = useRef(false)
+
   function onLongPressStart(child) {
+    didLongPress.current = false
     longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true
       setLongPressChild(child.id)
     }, 600)
   }
 
   function onLongPressEnd() {
-    // Sadece timer'ı temizle — longPressChild sabit kalsın
     clearTimeout(longPressTimer.current)
+  }
+
+  function onCardClick(c) {
+    if (didLongPress.current || longPressChild === c.id) {
+      didLongPress.current = false
+      return
+    }
+    startChat(c)
   }
 
   async function checkEntryPin(pin) {
@@ -212,7 +223,7 @@ export default function ChildrenScreen() {
         </div>
       </div>
 
-      <div onClick={(e) => { if(!e.target.closest('[data-delete-btn]')) setLongPressChild(null) }} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
+      <div onClick={() => { didLongPress.current = false; setLongPressChild(null) }} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
@@ -228,12 +239,12 @@ export default function ChildrenScreen() {
                 style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 12px rgba(239,68,68,.5)', animation:'popIn .2s ease' }}>✕</button>
             )}
             <div style={{ position:'relative', flexShrink:0 }}>
-              <div onClick={()=>{ if(longPressChild) { setLongPressChild(null); return } startChat(c) }} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
+              <div onClick={()=>onCardClick(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
                 {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
               </div>
               <button onClick={e=>{e.stopPropagation();setEditingChild(c)}} style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
             </div>
-            <div onClick={()=>{ if(longPressChild) { setLongPressChild(null); return } startChat(c) }} style={{ flex:1, cursor:'pointer' }}>
+            <div onClick={()=>onCardClick(c)} style={{ flex:1, cursor:'pointer' }}>
               <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
               <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
               {c.bibi_specialty
