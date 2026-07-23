@@ -19,6 +19,50 @@ const LEARN_STEPS = [
   { title:'Taktik', icon:'💡', msg:`Başlangıç için altın kurallar:\n\n1️⃣ Merkezi kontrol et (e4 veya d4)\n2️⃣ Atları ve filleri çabuk çıkar\n3️⃣ Şahı güvene al\n4️⃣ Aynı taşı arka arkaya oynatma\n5️⃣ Taş kaybetmemeye dikkat et\n\nŞimdi pratik yapmaya hazır mısın? 🚀` },
 ]
 
+const PRACTICE_POSITIONS = [
+  {
+    title: 'Vezirle Mat',
+    desc: 'Beyaz vezirle siyah şahı mat et! Vezir e7'ye git.',
+    fen: '4k3/8/8/8/8/8/8/4K2Q w - - 0 1',
+    hint: 'Veziri e7'ye taşı — Qe7#',
+    bestMove: { from:'h1', to:'e8' },
+    tip: 'Vezir çok güçlü! Şahı köşeye sıkıştırınca mat olur.'
+  },
+  {
+    title: 'Kaleyle Mat',
+    desc: 'Kaleyle mat pozisyonu. Kale a8'e git!',
+    fen: '8/8/8/8/8/8/R7/4K1k1 w - - 0 1',
+    hint: 'Kaleyi a8'e taşı — Ra8#',
+    bestMove: { from:'a2', to:'a8' },
+    tip: 'Kale, siyah şahı üst sıraya kapatır ve mat eder!'
+  },
+  {
+    title: 'Çatal Hamlesi',
+    desc: 'At iki taşa aynı anda saldırabilir! f3'e git.',
+    fen: 'r3k3/8/8/8/8/8/8/4K1N1 w - - 0 1',
+    hint: 'Atı f3'e taşı — hem kaleye hem şaha çatal!',
+    bestMove: { from:'g1', to:'f3' },
+    tip: 'At L şeklinde hareket eder ve aynı anda 2 taşa saldırabilir!'
+  },
+  {
+    title: 'Fil Diyagonali',
+    desc: 'Fil çapraz hareket eder. h7'deki piyonu ye!',
+    fen: '7p/8/8/8/8/8/8/B3K3 w - - 0 1',
+    hint: 'Fili h8'e taşı — Ah8',
+    bestMove: { from:'a1', to:'h8' },
+    tip: 'Fil çapraz şeritte güçlüdür — uzun mesafelere ulaşır!'
+  },
+  {
+    title: 'Piyon Terfisi',
+    desc: 'Piyon son sıraya ulaşırsa vezir olur! e8'e git.',
+    fen: '8/4P3/8/8/8/8/8/4K2k w - - 0 1',
+    hint: 'Piyonu e8'e taşı — vezir olur!',
+    bestMove: { from:'e7', to:'e8' },
+    tip: 'Piyon son sıraya ulaşınca istediğin taşa dönüşür!'
+  },
+]
+
+
 function getSet(age) { return age <= 8 ? 'young' : age <= 12 ? 'middle' : 'teen' }
 
 function evaluateBoard(chess) {
@@ -71,6 +115,13 @@ export default function ChessGame({ currentChild, onFinish }) {
   const levels = LEVELS[getSet(age)]
 
   const [knowsChess, setKnowsChess] = useState(null)
+  const [practiceMode, setPracticeMode] = useState(false)
+  const [practiceStep, setPracticeStep] = useState(0)
+  const [practiceGame, setPracticeGame] = useState(null)
+  const [practiceSelected, setPracticeSelected] = useState(null)
+  const [practiceValidMoves, setPracticeValidMoves] = useState([])
+  const [practiceDone, setPracticeDone] = useState(false)
+  const [practiceMsg, setPracticeMsg] = useState('')
   const [learnStep, setLearnStep] = useState(0)
   const [learnMessages, setLearnMessages] = useState([])
   const [learnInput, setLearnInput] = useState('')
@@ -200,6 +251,125 @@ export default function ChessGame({ currentChild, onFinish }) {
     )
   }
 
+
+  // Pratik modu — 5 pozisyon
+  if (practiceMode) {
+    const pos = PRACTICE_POSITIONS[practiceStep]
+    const files = ['a','b','c','d','e','f','g','h']
+    const size = Math.min(window.innerWidth - 32, 320)
+    const sq = Math.floor(size / 8)
+    const board = practiceGame?.board() || []
+
+    function handlePracticeClick(row, col) {
+      if (practiceDone || !practiceGame) return
+      const sqName = files[col] + (8-row)
+      if (practiceSelected) {
+        if (practiceValidMoves.includes(sqName)) {
+          const g = new Chess(practiceGame.fen())
+          try {
+            g.move({ from: practiceSelected, to: sqName, promotion: 'q' })
+            setPracticeGame(g)
+            setPracticeSelected(null)
+            setPracticeValidMoves([])
+            setPracticeDone(true)
+            if (g.isCheckmate() || sqName === pos.bestMove.to) {
+              setPracticeMsg('🎉 Harika! ' + pos.tip)
+            } else {
+              setPracticeMsg('✅ İyi hamle! ' + pos.tip)
+            }
+          } catch { setPracticeSelected(null); setPracticeValidMoves([]) }
+        } else {
+          const piece = practiceGame.get(sqName)
+          if (piece && piece.color === 'w') {
+            setPracticeSelected(sqName)
+            setPracticeValidMoves(practiceGame.moves({ square: sqName, verbose: true }).map(m => m.to))
+          } else { setPracticeSelected(null); setPracticeValidMoves([]) }
+        }
+      } else {
+        const piece = practiceGame.get(sqName)
+        if (piece && piece.color === 'w') {
+          setPracticeSelected(sqName)
+          setPracticeValidMoves(practiceGame.moves({ square: sqName, verbose: true }).map(m => m.to))
+        }
+      }
+    }
+
+    function nextPractice() {
+      const next = practiceStep + 1
+      if (next >= PRACTICE_POSITIONS.length) {
+        setPracticeMode(false)
+        setKnowsChess(true)
+      } else {
+        setPracticeStep(next)
+        setPracticeGame(new Chess(PRACTICE_POSITIONS[next].fen))
+        setPracticeDone(false)
+        setPracticeMsg('')
+        setPracticeSelected(null)
+        setPracticeValidMoves([])
+      }
+    }
+
+    return (
+      <div style={{ flex:1, display:'flex', flexDirection:'column', padding:'12px 16px', fontFamily:'Nunito,sans-serif' }}>
+        {/* İlerleme */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+          <div style={{ color:'#a78bfa', fontSize:12, fontWeight:700 }}>PRATİK {practiceStep+1}/{PRACTICE_POSITIONS.length}</div>
+          <div style={{ display:'flex', gap:4 }}>
+            {PRACTICE_POSITIONS.map((_,i) => <div key={i} style={{ width:20, height:4, borderRadius:2, background:i<=practiceStep?'#a78bfa':'rgba(255,255,255,.15)' }}/>)}
+          </div>
+        </div>
+
+        {/* Pozisyon başlığı */}
+        <div style={{ background:'rgba(167,139,250,.12)', border:'1.5px solid rgba(167,139,250,.3)', borderRadius:12, padding:'10px 14px', marginBottom:10 }}>
+          <div style={{ color:'#a78bfa', fontSize:14, fontWeight:800, marginBottom:3 }}>{pos.title}</div>
+          <div style={{ color:'rgba(255,255,255,.6)', fontSize:12 }}>{pos.desc}</div>
+          {!practiceDone && <div style={{ color:'rgba(255,255,255,.35)', fontSize:11, marginTop:4 }}>💡 İpucu: {pos.hint}</div>}
+        </div>
+
+        {/* Tahta */}
+        <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
+          <div style={{ width:sq*8, height:sq*8, display:'grid', gridTemplateColumns:`repeat(8,${sq}px)`, border:'2px solid rgba(255,255,255,.2)', borderRadius:6, overflow:'hidden' }}>
+            {board.map((row, ri) => row.map((piece, ci) => {
+              const sqName = files[ci]+(8-ri)
+              const isLight = (ri+ci)%2===0
+              const isSel = practiceSelected===sqName
+              const isVal = practiceValidMoves.includes(sqName)
+              let bg = isLight?'#f0d9b5':'#b58863'
+              if (isSel) bg='#f6f669'
+              else if (isVal&&piece) bg='#cc0000'
+              else if (isVal) bg=isLight?'#cdd16f':'#aaa23a'
+              const isW = piece?.color==='w'
+              const sym = piece ? PIECE_SYMBOLS[piece.color+piece.type] : ''
+              return (
+                <div key={sqName} onClick={() => handlePracticeClick(ri,ci)}
+                  style={{ width:sq,height:sq,background:bg,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer' }}>
+                  {isVal&&!piece&&<div style={{ width:sq*0.28,height:sq*0.28,borderRadius:'50%',background:'rgba(0,0,0,.25)' }}/>}
+                  {sym&&<span style={{ fontSize:sq*0.72,lineHeight:1,userSelect:'none',color:isW?'#fff':'#000',textShadow:isW?'0 0 3px #000,1px 1px 2px #000':'0 0 3px #fff' }}>{sym}</span>}
+                </div>
+              )
+            }))}
+          </div>
+        </div>
+
+        {/* Sonuç / İlerleme */}
+        {practiceMsg ? (
+          <div style={{ background:'rgba(74,222,128,.12)', border:'1px solid rgba(74,222,128,.3)', borderRadius:12, padding:'12px 14px', marginBottom:12, color:'#4ade80', fontSize:13, lineHeight:1.5 }}>
+            {practiceMsg}
+          </div>
+        ) : (
+          <div style={{ color:'rgba(255,255,255,.3)', fontSize:12, textAlign:'center', marginBottom:12 }}>Taşa bas → yeşil karelere oyna</div>
+        )}
+
+        {practiceDone && (
+          <button onClick={nextPractice}
+            style={{ width:'100%', padding:13, borderRadius:12, border:'none', background: practiceStep<PRACTICE_POSITIONS.length-1?'#7C3AED':'#0D9B7E', color:'white', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+            {practiceStep < PRACTICE_POSITIONS.length-1 ? 'Sonraki Pozisyon →' : '🎮 Gerçek Oyuna Geç!'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
   // 1. Biliyor musun popup'ı
   if (knowsChess === null) return (
     <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:24, fontFamily:'Nunito,sans-serif' }}>
@@ -241,7 +411,7 @@ export default function ChessGame({ currentChild, onFinish }) {
       <div style={{ padding:'8px 14px 12px', background:'rgba(0,0,0,.3)' }}>
         {learnStep < LEARN_STEPS.length-1
           ? <button onClick={() => { const n=learnStep+1; setLearnStep(n); setLearnMessages([{ role:'bibi', text:LEARN_STEPS[n].msg }]) }} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#7C3AED', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>Sonraki Konu →</button>
-          : <button onClick={() => setKnowsChess(true)} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>🎮 Oynamaya Hazırım!</button>
+          : <button onClick={() => { setPracticeMode(true); setPracticeStep(0); setPracticeGame(new Chess(PRACTICE_POSITIONS[0].fen)); setPracticeDone(false); setPracticeMsg('') }} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>🎮 Pratik Yap!</button>
         }
         <div style={{ display:'flex', gap:8 }}>
           <input value={learnInput} onChange={e=>setLearnInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&learnInput.trim()&&askBibi(learnInput)} placeholder="Bibi'ye soru sor..." style={{ flex:1, padding:'9px 13px', borderRadius:20, border:'1.5px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.08)', color:'white', fontSize:13, fontFamily:'Nunito,sans-serif' }}/>
