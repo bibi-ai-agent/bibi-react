@@ -7,45 +7,32 @@ const SPECIALTY_ICONS = { Matematik:"📐", Fen:"🔬", "Yabancı Dil":"🌐", T
 
 function ChildCard({ c, isDeleting, onPress, onLongPress, onDeleteConfirm, onCancelDelete, onEdit, onReport, onFriends, onStory }) {
   const timerRef = useRef(null)
-  const pressedRef = useRef(false)
 
-  function handleTouchStart(e) {
-    pressedRef.current = true
-    timerRef.current = setTimeout(() => {
-      if (pressedRef.current) onLongPress()
-    }, 600)
-  }
-
-  function handleTouchEnd(e) {
-    pressedRef.current = false
+  function startPress() {
     clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => { onLongPress() }, 600)
   }
 
-  function handleTap() {
-    if (isDeleting) { onCancelDelete(); return }
-    onPress()
+  function endPress() {
+    clearTimeout(timerRef.current)
   }
 
   return (
     <div style={{ position:'relative', marginBottom:12 }}>
-      {/* Silme X butonu — kart dışında, üstte */}
       {isDeleting && (
         <button
-          onTouchEnd={e => { e.stopPropagation(); onDeleteConfirm() }}
           onClick={e => { e.stopPropagation(); onDeleteConfirm() }}
           style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:20, boxShadow:'0 2px 12px rgba(239,68,68,.6)', animation:'popIn .2s ease' }}>✕</button>
       )}
       <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-        onMouseDown={() => { pressedRef.current = true; timerRef.current = setTimeout(() => { onLongPress() }, 600) }}
-        onMouseUp={() => { pressedRef.current = false; clearTimeout(timerRef.current) }}
-        style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, border: isDeleting ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', transition:'border .2s', userSelect:'none' }}>
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerCancel={endPress}
+        onClick={() => { if(isDeleting) { onCancelDelete(); return } onPress() }}
+        style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, border: isDeleting ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', transition:'border .2s', userSelect:'none', touchAction:'manipulation' }}>
         <div style={{ position:'relative', flexShrink:0 }}>
           <div
-            onTouchEnd={e => { e.stopPropagation(); handleTap() }}
-            onClick={handleTap}
+            onClick={e => { e.stopPropagation(); if(!isDeleting) onPress() }}
             style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
             {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
           </div>
@@ -55,8 +42,7 @@ function ChildCard({ c, isDeleting, onPress, onLongPress, onDeleteConfirm, onCan
             style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
         </div>
         <div
-          onTouchEnd={e => { e.stopPropagation(); handleTap() }}
-          onClick={handleTap}
+          onClick={e => { e.stopPropagation(); if(!isDeleting) onPress() }}
           style={{ flex:1, cursor:'pointer' }}>
           <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
           <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
