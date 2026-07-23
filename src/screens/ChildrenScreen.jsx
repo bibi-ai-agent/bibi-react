@@ -40,9 +40,23 @@ export default function ChildrenScreen() {
   const [entryPin, setEntryPin] = useState('')
   const [entryPinError, setEntryPinError] = useState('')
   const [projectInvite, setProjectInvite] = useState(null)
+  const [showSleepPopup, setShowSleepPopup] = useState(false)
   const fileRef = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
+
+  // Uyku vakti kontrolü — her dakika 21:30 kontrol et
+  useEffect(() => {
+    function checkSleepTime() {
+      const now = new Date()
+      if (now.getHours() === 21 && now.getMinutes() === 30) {
+        setShowSleepPopup(true)
+      }
+    }
+    checkSleepTime()
+    const interval = setInterval(checkSleepTime, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!children.length) return
@@ -205,7 +219,7 @@ export default function ChildrenScreen() {
             onMouseDown={() => onLongPressStart(c)}
             onMouseUp={onLongPressEnd}
             onMouseLeave={onLongPressEnd}
-            onTouchStart={() => onLongPressStart(c)}
+            onTouchStart={e => { e.preventDefault(); onLongPressStart(c) }}
             onTouchEnd={onLongPressEnd}
             style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border: longPressChild===c.id ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', position:'relative', transition:'border .2s' }}>
             {longPressChild === c.id && (
@@ -213,12 +227,12 @@ export default function ChildrenScreen() {
                 style={{ position:'absolute', top:-10, right:-10, width:28, height:28, borderRadius:'50%', background:'#ef4444', border:'2px solid white', cursor:'pointer', fontSize:14, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,.2)' }}>✕</button>
             )}
             <div style={{ position:'relative', flexShrink:0 }}>
-              <div onClick={()=>startChat(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
+              <div onClick={()=>{ if(longPressChild) { setLongPressChild(null); return } startChat(c) }} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
                 {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
               </div>
               <button onClick={e=>{e.stopPropagation();setEditingChild(c)}} style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
             </div>
-            <div onClick={()=>startChat(c)} style={{ flex:1, cursor:'pointer' }}>
+            <div onClick={()=>{ if(longPressChild) { setLongPressChild(null); return } startChat(c) }} style={{ flex:1, cursor:'pointer' }}>
               <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
               <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
               {c.bibi_specialty
@@ -364,6 +378,37 @@ export default function ChildrenScreen() {
         </div>
       )}
 
+      {/* Uyku Vakti Popup */}
+      {showSleepPopup && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1a1040,#0f1f35)', borderRadius:24, padding:'32px 24px', maxWidth:320, width:'100%', textAlign:'center', border:'1px solid rgba(255,255,255,.1)' }}>
+            <div style={{ fontSize:56, marginBottom:12 }}>🌙</div>
+            <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>Uyku Vakti!</div>
+            <div style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginBottom:24, lineHeight:1.5 }}>
+              Bibi sana güzel bir hikaye anlatmak istiyor. Yatmadan önce dinlemek ister misin?
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {children.length === 1 ? (
+                <button onClick={() => { setShowSleepPopup(false); setCurrentChild(children[0]); setScreen('story') }}
+                  style={{ padding:14, borderRadius:14, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontWeight:800, fontSize:15, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                  📖 Hikaye Dinle
+                </button>
+              ) : (
+                children.map(c => (
+                  <button key={c.id} onClick={() => { setShowSleepPopup(false); setCurrentChild(c); setScreen('story') }}
+                    style={{ padding:12, borderRadius:12, border:'1px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.08)', color:'white', fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                    {c.avatar_emoji || '👤'} {c.name} için Hikaye
+                  </button>
+                ))
+              )}
+              <button onClick={() => setShowSleepPopup(false)}
+                style={{ padding:10, borderRadius:12, border:'none', background:'transparent', color:'rgba(255,255,255,.3)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                Şimdi değil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         @keyframes floatBubble{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
