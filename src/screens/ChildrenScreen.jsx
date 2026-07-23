@@ -150,6 +150,7 @@ export default function ChildrenScreen() {
   }
 
   function onLongPressEnd() {
+    // Sadece timer'ı temizle — longPressChild sabit kalsın
     clearTimeout(longPressTimer.current)
   }
 
@@ -211,7 +212,7 @@ export default function ChildrenScreen() {
         </div>
       </div>
 
-      <div onClick={() => setLongPressChild(null)} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
+      <div onClick={(e) => { if(!e.target.closest('[data-delete-btn]')) setLongPressChild(null) }} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
@@ -223,8 +224,8 @@ export default function ChildrenScreen() {
             onTouchEnd={onLongPressEnd}
             style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border: longPressChild===c.id ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', position:'relative', transition:'border .2s' }}>
             {longPressChild === c.id && (
-              <button onClick={e=>{e.stopPropagation();setLongPressChild(null);setDeletingChild(c)}}
-                style={{ position:'absolute', top:-10, right:-10, width:28, height:28, borderRadius:'50%', background:'#ef4444', border:'2px solid white', cursor:'pointer', fontSize:14, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,.2)' }}>✕</button>
+              <button data-delete-btn="true" onClick={e=>{e.stopPropagation();setLongPressChild(null);setDeletingChild(c)}}
+                style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 12px rgba(239,68,68,.5)', animation:'popIn .2s ease' }}>✕</button>
             )}
             <div style={{ position:'relative', flexShrink:0 }}>
               <div onClick={()=>{ if(longPressChild) { setLongPressChild(null); return } startChat(c) }} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
@@ -409,7 +410,7 @@ export default function ChildrenScreen() {
           </div>
         </div>
       )}
-      <style>{`
+      <style>{`@keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}} 
         @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
         @keyframes floatBubble{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
