@@ -4,6 +4,75 @@ import { useApp } from '../lib/store'
 import EditAvatarModal from './EditAvatarModal'
 
 const SPECIALTY_ICONS = { Matematik:"📐", Fen:"🔬", "Yabancı Dil":"🌐", Tarih:"🏛️", Sanat:"🎨", Genel:"🌍" }
+
+function ChildCard({ c, isDeleting, onPress, onLongPress, onDeleteConfirm, onCancelDelete, onEdit, onReport, onFriends, onStory }) {
+  const timerRef = useRef(null)
+  const pressedRef = useRef(false)
+
+  function handleTouchStart(e) {
+    pressedRef.current = true
+    timerRef.current = setTimeout(() => {
+      if (pressedRef.current) onLongPress()
+    }, 600)
+  }
+
+  function handleTouchEnd(e) {
+    pressedRef.current = false
+    clearTimeout(timerRef.current)
+  }
+
+  function handleTap() {
+    if (isDeleting) { onCancelDelete(); return }
+    onPress()
+  }
+
+  return (
+    <div style={{ position:'relative', marginBottom:12 }}>
+      {/* Silme X butonu — kart dışında, üstte */}
+      {isDeleting && (
+        <button
+          onTouchEnd={e => { e.stopPropagation(); onDeleteConfirm() }}
+          onClick={e => { e.stopPropagation(); onDeleteConfirm() }}
+          style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:20, boxShadow:'0 2px 12px rgba(239,68,68,.6)', animation:'popIn .2s ease' }}>✕</button>
+      )}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+        onMouseDown={() => { pressedRef.current = true; timerRef.current = setTimeout(() => { if(pressedRef.current) onLongPress() }, 600) }}
+        onMouseUp={() => { pressedRef.current = false; clearTimeout(timerRef.current) }}
+        onMouseLeave={() => { pressedRef.current = false; clearTimeout(timerRef.current) }}
+        style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, border: isDeleting ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', transition:'border .2s', userSelect:'none' }}>
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <div
+            onTouchEnd={e => { e.stopPropagation(); handleTap() }}
+            onClick={handleTap}
+            style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
+            {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
+          </div>
+          <button
+            onTouchEnd={e => { e.stopPropagation(); onEdit() }}
+            onClick={e => { e.stopPropagation(); onEdit() }}
+            style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
+        </div>
+        <div
+          onTouchEnd={e => { e.stopPropagation(); handleTap() }}
+          onClick={handleTap}
+          style={{ flex:1, cursor:'pointer' }}>
+          <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
+          <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
+          {c.bibi_specialty
+            ? <div style={{ fontSize:11, color:'#0D9B7E', fontWeight:700, marginTop:3 }}>{SPECIALTY_ICONS[c.bibi_specialty]||'⭐'} {c.bibi_specialty} Uzmanı Bibi</div>
+            : <div style={{ fontSize:11, color:'#9CA3AF', marginTop:3 }}>✨ {c.name} ile konuştukça Bibi gelişecek</div>
+          }
+        </div>
+        <button onTouchEnd={e=>{e.stopPropagation();onReport()}} onClick={e=>{e.stopPropagation();onReport()}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
+        <button onTouchEnd={e=>{e.stopPropagation();onFriends()}} onClick={e=>{e.stopPropagation();onFriends()}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
+        <button onTouchEnd={e=>{e.stopPropagation();onStory()}} onClick={e=>{e.stopPropagation();onStory()}} style={{ width:32, height:32, borderRadius:'50%', background:'#fef3c7', border:'1px solid #fde68a', cursor:'pointer', fontSize:14 }}>📖</button>
+      </div>
+    </div>
+  )
+}
 const EMOJIS = ["👧","👦","🧒","👶","🦊","🐱","🐶","🐼","🐨","🦁","🐯","🐸","🦄","🐲","🤖","👾","🦸","🧙","🧚","🧜"]
 const QUESTIONS = [
   "Bugün çocuğuna kaç dakika ayırdın? 💙","En son ne zaman birlikte oyun oynadınız? 🎮",
@@ -223,39 +292,23 @@ export default function ChildrenScreen() {
         </div>
       </div>
 
-      <div onClick={() => { didLongPress.current = false; setLongPressChild(null) }} style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
+      <div style={{ position:'relative', zIndex:1, maxWidth:500, margin:'0 auto', padding:'20px 20px 60px' }}>
         <div style={{ fontSize:12, fontWeight:800, color:'#9c4dcc', letterSpacing:2, textTransform:'uppercase', marginBottom:16 }}>Kim oynayacak?</div>
 
         {children.map(c=>(
-          <div key={c.id}
-            onMouseDown={() => onLongPressStart(c)}
-            onMouseUp={onLongPressEnd}
-            onMouseLeave={onLongPressEnd}
-            onTouchStart={e => { e.preventDefault(); onLongPressStart(c) }}
-            onTouchEnd={onLongPressEnd}
-            style={{ background:'rgba(255,255,255,0.82)', borderRadius:18, padding:'16px 18px', boxShadow:'0 4px 24px rgba(180,120,200,.12)', display:'flex', alignItems:'center', gap:14, marginBottom:12, border: longPressChild===c.id ? '2px solid #ef4444' : '1px solid rgba(255,255,255,.7)', backdropFilter:'blur(8px)', position:'relative', transition:'border .2s' }}>
-            {longPressChild === c.id && (
-              <button data-delete-btn="true" onClick={e=>{e.stopPropagation();setLongPressChild(null);setDeletingChild(c)}}
-                style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 12px rgba(239,68,68,.5)', animation:'popIn .2s ease' }}>✕</button>
-            )}
-            <div style={{ position:'relative', flexShrink:0 }}>
-              <div onClick={()=>onCardClick(c)} style={{ width:56, height:56, borderRadius:'50%', overflow:'hidden', background:'#e8f7f3', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, border:'2px solid #c5e8e0', cursor:'pointer' }}>
-                {c.avatar_photo ? <img src={c.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : c.avatar_emoji||'👤'}
-              </div>
-              <button onClick={e=>{e.stopPropagation();setEditingChild(c)}} style={{ position:'absolute', bottom:-2, right:-2, width:20, height:20, borderRadius:'50%', background:'#0D9B7E', border:'2px solid white', cursor:'pointer', fontSize:10, color:'white', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
-            </div>
-            <div onClick={()=>onCardClick(c)} style={{ flex:1, cursor:'pointer' }}>
-              <div style={{ fontSize:17, fontWeight:900, color:'#1A2E2A' }}>{c.name}</div>
-              <div style={{ fontSize:12, color:'#6B7280', marginTop:2 }}>{c.age} yaş • {c.grade}</div>
-              {c.bibi_specialty
-                ? <div style={{ fontSize:11, color:'#0D9B7E', fontWeight:700, marginTop:3 }}>{SPECIALTY_ICONS[c.bibi_specialty]||'⭐'} {c.bibi_specialty} Uzmanı Bibi</div>
-                : <div style={{ fontSize:11, color:'#9CA3AF', marginTop:3 }}>✨ {c.name} ile konuştukça Bibi gelişecek</div>
-              }
-            </div>
-            <button onClick={e=>{e.stopPropagation();openReport(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
-            <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('friends')}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
-            <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('story')}} style={{ width:32, height:32, borderRadius:'50%', background:'#fef3c7', border:'1px solid #fde68a', cursor:'pointer', fontSize:14 }}>📖</button>
-          </div>
+          <ChildCard
+            key={c.id}
+            c={c}
+            isDeleting={longPressChild === c.id}
+            onPress={() => startChat(c)}
+            onLongPress={() => setLongPressChild(c.id)}
+            onDeleteConfirm={() => { setLongPressChild(null); setDeletingChild(c) }}
+            onCancelDelete={() => setLongPressChild(null)}
+            onEdit={() => setEditingChild(c)}
+            onReport={() => openReport(c)}
+            onFriends={() => { setCurrentChild(c); setScreen('friends') }}
+            onStory={() => { setCurrentChild(c); setScreen('story') }}
+          />
         ))}
 
         {!showAddForm ? (
