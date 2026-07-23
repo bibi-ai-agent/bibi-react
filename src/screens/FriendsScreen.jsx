@@ -194,29 +194,6 @@ export default function FriendsScreen() {
           </div>
         )}
       </div>
-      {/* Mod Seçim Popup */}
-      {modeSelect && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.8)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'28px 24px', maxWidth:320, width:'100%', textAlign:'center', boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
-            <div style={{ fontSize:36, marginBottom:8 }}>
-              {modeSelect.gameType === 'homework' ? '📚' : modeSelect.gameType === 'experiment' ? '🔬' : modeSelect.gameType === 'quiz' ? '🎯' : modeSelect.gameType === 'math' ? '➕' : modeSelect.gameType === 'memory' ? '🧩' : '🛒'}
-            </div>
-            <div style={{ color:'white', fontSize:18, fontWeight:900, marginBottom:6 }}>Nasıl oynamak istersin?</div>
-            <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginBottom:20 }}>ile {modeSelect.friendData.name}</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <button onClick={() => { setModeSelect(null); startSolo(modeSelect.gameType) }}
-                style={{ padding:14, borderRadius:12, border:'1.5px solid rgba(13,155,126,.4)', background:'rgba(13,155,126,.15)', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                🧒 Tek Başıma Oyna
-              </button>
-              <button onClick={() => { const d = modeSelect; setModeSelect(null); startWithFriend(d.friendData, d.gameType) }}
-                style={{ padding:14, borderRadius:12, border:'1.5px solid rgba(124,58,237,.4)', background:'rgba(124,58,237,.15)', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                👥 {modeSelect.friendData.name} ile Oyna
-              </button>
-            </div>
-            <button onClick={() => setModeSelect(null)} style={{ marginTop:12, background:'none', border:'none', color:'rgba(255,255,255,.3)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>İptal</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
