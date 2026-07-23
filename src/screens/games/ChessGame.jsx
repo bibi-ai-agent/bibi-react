@@ -245,6 +245,8 @@ export default function ChessGame({ currentChild, onFinish }) {
                 </div>
               )
             }))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -328,7 +330,15 @@ export default function ChessGame({ currentChild, onFinish }) {
 
         {/* Tahta */}
         <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
-          <div style={{ width:sq*8, height:sq*8, display:'grid', gridTemplateColumns:`repeat(8,${sq}px)`, border:'2px solid rgba(255,255,255,.2)', borderRadius:6, overflow:'hidden' }}>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+            <div style={{ display:'flex', width:sq*8, justifyContent:'space-around', marginBottom:2 }}>
+              {['a','b','c','d','e','f','g','h'].map(f => <div key={f} style={{ width:sq, textAlign:'center', color:'rgba(255,255,255,.4)', fontSize:9, fontWeight:700 }}>{f}</div>)}
+            </div>
+            <div style={{ display:'flex' }}>
+              <div style={{ display:'flex', flexDirection:'column', marginRight:2 }}>
+                {[8,7,6,5,4,3,2,1].map(n => <div key={n} style={{ height:sq, display:'flex', alignItems:'center', color:'rgba(255,255,255,.4)', fontSize:9, fontWeight:700, width:10 }}>{n}</div>)}
+              </div>
+              <div style={{ width:sq*8, height:sq*8, display:'grid', gridTemplateColumns:`repeat(8,${sq}px)`, border:'2px solid rgba(255,255,255,.2)', borderRadius:6, overflow:'hidden' }}>
             {board.map((row, ri) => row.map((piece, ci) => {
               const sqName = files[ci]+(8-ri)
               const isLight = (ri+ci)%2===0
