@@ -45,6 +45,11 @@ function minimax(chess, depth, alpha, beta, isMax) {
 
 function getBestMove(chess, depth) {
   const moves = chess.moves()
+  // Hamleleri karıştır — aynı skorlarda farklı hamle seçilsin
+  for (let i = moves.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [moves[i], moves[j]] = [moves[j], moves[i]]
+  }
   let bestMove = moves[0], bestEval = -Infinity
   for (const m of moves) {
     chess.move(m)
