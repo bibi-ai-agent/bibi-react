@@ -1,10 +1,7 @@
 import { useState } from 'react'
-
-export default function ActionMenu({ onImage, onPDF, onPresentation, onHomework }) {
+export default function ActionMenu({ onImage, onPDF, onPresentation, onHomework, onStory }) {
   const [open, setOpen] = useState(false)
-
   function handle(fn) { setOpen(false); fn() }
-
   return (
     <div style={{ position:'relative' }}>
       <button onClick={() => setOpen(!open)} style={{
@@ -17,12 +14,9 @@ export default function ActionMenu({ onImage, onPDF, onPresentation, onHomework 
       }}>
         {open ? '✕' : '+'}
       </button>
-
       {open && (
         <>
-          {/* Dışarı tıklayınca kapat */}
           <div style={{ position:'fixed', inset:0, zIndex:98 }} onClick={() => setOpen(false)}/>
-
           <div style={{
             position:'absolute', bottom:54, right:0, zIndex:99,
             background:'rgba(20,30,28,0.97)', backdropFilter:'blur(20px)',
@@ -31,10 +25,11 @@ export default function ActionMenu({ onImage, onPDF, onPresentation, onHomework 
             animation:'fadeUp .2s ease'
           }}>
             {[
-              { icon:'🎨', label:'Görsel Oluştur', fn: onImage },
-              { icon:'📚', label:'Ödev Modu', fn: onHomework },
-              { icon:'📄', label:'PDF Oluştur', fn: onPDF },
-              { icon:'📊', label:'Sunu Hazırla', fn: onPresentation },
+              { icon:'🎨', label:'Görsel Oluştur',  fn: onImage },
+              { icon:'📚', label:'Ödev Modu',        fn: onHomework },
+              { icon:'📖', label:'Hikaye Modu',      fn: onStory },
+              { icon:'📄', label:'PDF Oluştur',      fn: onPDF },
+              { icon:'📊', label:'Sunu Hazırla',     fn: onPresentation },
             ].map(item => (
               <button key={item.label} onClick={() => handle(item.fn)} style={{
                 width:'100%', padding:'11px 14px', border:'none',

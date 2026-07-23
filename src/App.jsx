@@ -11,6 +11,7 @@ import ProjectScreen from './screens/ProjectScreen'
 import ProjectSelectScreen from './screens/ProjectSelectScreen'
 import SubscriptionScreen from './screens/SubscriptionScreen'
 import ResetPasswordScreen from './screens/ResetPasswordScreen'
+import StoryScreen from './screens/StoryScreen'
 
 export default function App() {
   const { screen, setScreen, setCurrentUser, currentUser, setSubscription } = useApp()
@@ -23,13 +24,11 @@ export default function App() {
   }
 
   useEffect(() => {
-    // Şifre sıfırlama linki kontrolü
     const hash = window.location.hash
     if (hash.includes('type=recovery') || hash.includes('access_token')) {
       setResetMode(true)
       return
     }
-
     const timer = setTimeout(() => setScreen('auth'), 5000)
     sb.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timer)
@@ -41,12 +40,8 @@ export default function App() {
         setScreen('auth')
       }
     }).catch(() => { clearTimeout(timer); setScreen('auth') })
-
     const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setResetMode(true)
-        return
-      }
+      if (event === 'PASSWORD_RECOVERY') { setResetMode(true); return }
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
@@ -71,6 +66,8 @@ export default function App() {
     project: <ProjectScreen/>,
     projectSelect: <ProjectSelectScreen/>,
     subscription: <SubscriptionScreen/>,
+    story: <StoryScreen/>,
   }
+
   return screens[screen] || <LoadingScreen/>
 }
