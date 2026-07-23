@@ -85,21 +85,10 @@ export default function FriendsScreen() {
     setLoading(false)
   }
 
-  async function startProject(friendData, type) {
-    // Davet oluştur
-    const { data: invite } = await sb.from('project_invites').insert({
-      from_child_id: currentChild.id,
-      to_child_id: friendData.id,
-      project_type: type,
-      status: 'pending',
-      expires_at: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
-    }).select().single()
-
-    // Host olarak proje ekranına geç
+  function startProject(friendData) {
     setProjectFriend(friendData)
-    setProjectType(type)
     setIsProjectHost(true)
-    setScreen('project')
+    setScreen('projectSelect')
   }
 
   const [showProjectMenu, setShowProjectMenu] = useState(null)
@@ -195,13 +184,11 @@ export default function FriendsScreen() {
                   </button>
                 </div>
                 {showProjectMenu === f.id && (
-                  <div style={{ display:'flex', gap:8 }}>
-                    {[{type:'homework',icon:'📚',label:'Ödev'},{type:'experiment',icon:'🔬',label:'Deney'},{type:'quiz',icon:'🎯',label:'Yarışma'}].map(p => (
-                      <button key={p.type} onClick={() => { setShowProjectMenu(null); startProject(f.friendData) }}
-                        style={{ flex:1, padding:'10px 8px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.06)', color:'white', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                        {p.icon} {p.label}
-                      </button>
-                    ))}
+                  <div>
+                    <button onClick={() => { setShowProjectMenu(null); startProject(f.friendData) }}
+                      style={{ width:'100%', padding:'11px', borderRadius:12, border:'1.5px solid rgba(124,58,237,.4)', background:'rgba(124,58,237,.15)', color:'white', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                      🎮 Aktivite Seç →
+                    </button>
                   </div>
                 )}
               </div>
