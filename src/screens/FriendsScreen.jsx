@@ -85,28 +85,13 @@ export default function FriendsScreen() {
     setLoading(false)
   }
 
-  function startSolo(type) {
-    setIsProjectHost(true)
-    setProjectType(type)
-    setScreen('project')
-  }
-
-  async function startWithFriend(friendData, type) {
-    await sb.from('project_invites').insert({
-      from_child_id: currentChild.id,
-      to_child_id: friendData.id,
-      project_type: type,
-      status: 'pending',
-      expires_at: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
-    })
+  function goToProject(friendData) {
     setProjectFriend(friendData)
-    setProjectType(type)
     setIsProjectHost(true)
-    setScreen('project')
+    setScreen('projectSelect')
   }
 
   const [showProjectMenu, setShowProjectMenu] = useState(null)
-  const [modeSelect, setModeSelect] = useState(null) // { friendData, gameType }
 
   return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
@@ -199,24 +184,10 @@ export default function FriendsScreen() {
                   </button>
                 </div>
                 {showProjectMenu === f.id && (
-                  <div style={{ marginTop:8 }}>
-                    <div style={{ color:'rgba(255,255,255,.4)', fontSize:10, fontWeight:700, letterSpacing:1.5, marginBottom:8 }}>AKTİVİTE SEÇ</div>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                      {[
-                        {type:'homework',icon:'📚',label:'Ödev'},
-                        {type:'experiment',icon:'🔬',label:'Deney'},
-                        {type:'quiz',icon:'🎯',label:'Yarışma'},
-                        {type:'math',icon:'➕',label:'Matematik'},
-                        {type:'memory',icon:'🧩',label:'Eşleştirme'},
-                        {type:'market',icon:'🛒',label:'Market'},
-                      ].map(p => (
-                        <button key={p.type} onClick={() => { setShowProjectMenu(null); setModeSelect({ friendData: f.friendData, gameType: p.type }) }}
-                          style={{ padding:'10px 8px', borderRadius:10, border:'1.5px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.06)', color:'white', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                          {p.icon} {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <button onClick={() => { setShowProjectMenu(null); goToProject(f.friendData) }}
+                    style={{ width:'100%', marginTop:8, padding:'11px', borderRadius:12, border:'1.5px solid rgba(124,58,237,.4)', background:'rgba(124,58,237,.15)', color:'white', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                    🎮 Aktivite Seç →
+                  </button>
                 )}
               </div>
             ))}

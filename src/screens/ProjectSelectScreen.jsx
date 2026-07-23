@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 
@@ -21,6 +21,9 @@ export default function ProjectSelectScreen() {
   const { currentChild, projectFriend, setProjectType, setIsProjectHost, setScreen } = useApp()
   const [showGames, setShowGames] = useState(false)
   const [selectedGame, setSelectedGame] = useState(null)
+  const [friend, setFriend] = useState(projectFriend)
+
+  useEffect(() => { setFriend(projectFriend) }, [projectFriend])
 
   if (!currentChild) { setScreen('children'); return null }
 
@@ -31,11 +34,11 @@ export default function ProjectSelectScreen() {
   }
 
   async function startWithFriend(type) {
-    if (!projectFriend) { setScreen('friends'); return }
+    if (!friend) { setScreen('friends'); return }
     // Arkadaşa davet gönder
     await sb.from('project_invites').insert({
       from_child_id: currentChild.id,
-      to_child_id: projectFriend.id,
+      to_child_id: friend.id,
       project_type: type,
       status: 'pending',
       expires_at: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
@@ -48,7 +51,7 @@ export default function ProjectSelectScreen() {
   function selectMain(id) {
     if (id === 'games') { setShowGames(true); return }
     // Ödev ve deney sadece arkadaşla
-    if (!projectFriend) { setScreen('friends'); return }
+    if (!friend) { setScreen('friends'); return }
     startWithFriend(id)
   }
 
@@ -71,14 +74,14 @@ export default function ProjectSelectScreen() {
               <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, marginTop:3 }}>Kendi skorunu kır, kendin ile yarış</div>
             </button>
 
-            {game.multi && projectFriend ? (
+            {game.multi && friend ? (
               <button onClick={() => startWithFriend(selectedGame)}
                 style={{ background:'rgba(124,58,237,.15)', border:'1.5px solid rgba(124,58,237,.4)', borderRadius:16, padding:20, cursor:'pointer', textAlign:'left', fontFamily:'Nunito,sans-serif' }}>
                 <div style={{ fontSize:28, marginBottom:8 }}>👥</div>
                 <div style={{ color:'white', fontSize:15, fontWeight:800 }}>Arkadaşınla Oyna</div>
-                <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, marginTop:3 }}>{projectFriend.name}'e davet gönderilecek</div>
+                <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, marginTop:3 }}>{friend.name}'e davet gönderilecek</div>
               </button>
-            ) : game.multi && !projectFriend ? (
+            ) : game.multi && !friend ? (
               <div style={{ background:'rgba(255,255,255,.04)', border:'1.5px dashed rgba(255,255,255,.15)', borderRadius:16, padding:20, textAlign:'left' }}>
                 <div style={{ fontSize:28, marginBottom:8 }}>👥</div>
                 <div style={{ color:'rgba(255,255,255,.4)', fontSize:15, fontWeight:800 }}>Arkadaşınla Oyna</div>
@@ -102,7 +105,7 @@ export default function ProjectSelectScreen() {
             <div style={{ textAlign:'center', marginBottom:28 }}>
               <div style={{ fontSize:36, marginBottom:8 }}>🚀</div>
               <div style={{ color:'white', fontSize:20, fontWeight:900 }}>{currentChild.name}</div>
-              {projectFriend && <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginTop:2 }}>& {projectFriend.name}</div>}
+              {friend && <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginTop:2 }}>& {friend.name}</div>}
               <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginTop:8 }}>Ne yapmak istiyorsun?</div>
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -122,7 +125,7 @@ export default function ProjectSelectScreen() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setScreen(projectFriend ? 'friends' : 'children')} style={{ width:'100%', marginTop:16, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'transparent', color:'rgba(255,255,255,.5)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
+            <button onClick={() => setScreen(friend ? 'friends' : 'children')} style={{ width:'100%', marginTop:16, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'transparent', color:'rgba(255,255,255,.5)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
           </>
         ) : (
           <>
