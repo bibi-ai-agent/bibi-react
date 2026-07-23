@@ -41,7 +41,6 @@ export default function ChildrenScreen() {
   const [entryPinError, setEntryPinError] = useState('')
   const [projectInvite, setProjectInvite] = useState(null)
   const fileRef = useRef()
-  const longPressTimer = useRef()
 
   useEffect(() => { loadChildren(); loadParent() }, [])
 
