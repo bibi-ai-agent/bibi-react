@@ -197,7 +197,7 @@ export default function FriendsScreen() {
                 {showProjectMenu === f.id && (
                   <div style={{ display:'flex', gap:8 }}>
                     {[{type:'homework',icon:'📚',label:'Ödev'},{type:'experiment',icon:'🔬',label:'Deney'},{type:'quiz',icon:'🎯',label:'Yarışma'}].map(p => (
-                      <button key={p.type} onClick={() => { setShowProjectMenu(null); startProject(f.friendData, p.type) }}
+                      <button key={p.type} onClick={() => { setShowProjectMenu(null); startProject(f.friendData) }}
                         style={{ flex:1, padding:'10px 8px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.06)', color:'white', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
                         {p.icon} {p.label}
                       </button>
