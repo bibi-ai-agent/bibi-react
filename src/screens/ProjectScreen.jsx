@@ -45,6 +45,7 @@ export default function ProjectScreen() {
   useEffect(() => {
     if (!isProjectHost || !projectFriend || !projectType) return
     if (!['math','memory','market','chess','riddle','rhythm','quiz'].includes(projectType)) return
+    if (!projectFriend) { setGameReady(true); return }
     const listenInvite = async () => {
       const { data } = await sb.from('project_invites')
         .select('id, status')
@@ -192,7 +193,7 @@ export default function ProjectScreen() {
     </div>
   )
 
-  if (waitingAccept && isProjectHost) return (
+  if (waitingAccept && isProjectHost && projectFriend) return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif', padding:24 }}>
       <div style={{ fontSize:56, marginBottom:16, animation:'pulse 1.5s ease-in-out infinite' }}>{GAME_ICONS[projectType]||'🎮'}</div>
       <div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8, textAlign:'center' }}>{GAME_NAMES[projectType]||projectType}</div>

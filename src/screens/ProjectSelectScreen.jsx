@@ -32,6 +32,7 @@ export default function ProjectSelectScreen() {
 
   async function startSolo(type) {
     setProjectType(type)
+    setProjectFriend(null)
     setIsProjectHost(true)
     setScreen('project')
   }
