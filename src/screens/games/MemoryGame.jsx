@@ -8,12 +8,15 @@ const EMOJI_SETS = {
 
 function generateCards(age) {
   const set = age <= 8 ? EMOJI_SETS.young : age <= 12 ? EMOJI_SETS.middle : EMOJI_SETS.teen
-  const pairs = set.slice(0, 8)
+  const pairCount = age <= 8 ? 6 : age <= 12 ? 8 : 10
+  const pairs = set.slice(0, pairCount)
   const cards = [...pairs, ...pairs].map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false }))
   return cards.sort(() => Math.random() - 0.5)
 }
 
 export default function MemoryGame({ currentChild, projectFriend, onFinish }) {
+  const age = currentChild.age || 9
+  const TOTAL_PAIRS = age <= 8 ? 6 : age <= 12 ? 8 : 10
   const [cards, setCards] = useState(() => generateCards(currentChild.age || 9))
   const [selected, setSelected] = useState([])
   const [moves, setMoves] = useState(0)
@@ -21,8 +24,6 @@ export default function MemoryGame({ currentChild, projectFriend, onFinish }) {
   const [locked, setLocked] = useState(false)
   const [startTime] = useState(Date.now())
   const [finished, setFinished] = useState(false)
-
-  const TOTAL_PAIRS = 8
 
   function flipCard(card) {
     if (locked || card.flipped || card.matched) return
