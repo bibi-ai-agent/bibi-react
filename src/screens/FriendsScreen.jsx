@@ -85,6 +85,9 @@ export default function FriendsScreen() {
       {longPressFriend && (
         <div onClick={() => setLongPressFriend(null)} style={{ position:'fixed', inset:0, zIndex:5 }}/>
       )}
+      {showProjectMenu && (
+        <div onClick={() => setShowProjectMenu(null)} style={{ position:'fixed', inset:0, zIndex:5 }}/>
+      )}
 
       <div style={{ background:'rgba(255,255,255,.06)', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,.08)', flexShrink:0 }}>
         <div>
@@ -159,7 +162,7 @@ export default function FriendsScreen() {
                     style={{ position:'absolute', top:-10, right:-10, width:32, height:32, borderRadius:'50%', background:'#ef4444', border:'2.5px solid white', cursor:'pointer', fontSize:16, color:'white', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10, boxShadow:'0 2px 12px rgba(239,68,68,.6)', animation:'popIn .2s ease' }}>✕</button>
                 )}
                 <div
-                  onPointerDown={e => { e.stopPropagation(); startLongPress(f.id) }}
+                  onPointerDown={() => startLongPress(f.id)}
                   onPointerUp={endLongPress}
                   onPointerCancel={endLongPress}
                   style={{ background:'rgba(255,255,255,.06)', border: longPressFriend===f.id ? '2px solid #ef4444' : '1.5px solid rgba(255,255,255,.1)', borderRadius:16, padding:'14px 16px', transition:'border .2s', userSelect:'none' }}>
