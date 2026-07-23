@@ -206,6 +206,7 @@ export default function ChildrenScreen() {
             </div>
             <button onClick={e=>{e.stopPropagation();openReport(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#e8f7f3', border:'1px solid #c5e8e0', cursor:'pointer', fontSize:14 }}>📊</button>
             <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('friends')}} style={{ width:32, height:32, borderRadius:'50%', background:'#ede9fe', border:'1px solid #d4c5f9', cursor:'pointer', fontSize:14 }}>🤝</button>
+            <button onClick={e=>{e.stopPropagation();setCurrentChild(c);setScreen('story')}} style={{ width:32, height:32, borderRadius:'50%', background:'#fef3c7', border:'1px solid #fde68a', cursor:'pointer', fontSize:14 }}>📖</button>
             <button onClick={e=>{e.stopPropagation();setDeletingChild(c)}} style={{ width:32, height:32, borderRadius:'50%', background:'#fee2e2', border:'1px solid #fca5a5', cursor:'pointer', fontSize:14 }}>🗑️</button>
           </div>
         ))}

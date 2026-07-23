@@ -146,7 +146,7 @@ Sadece geliştirilmiş hikayeyi yaz, başka açıklama ekleme.`
           <div style={{ color:'rgba(255,255,255,.4)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase' }}>Hikaye Modu</div>
           <div style={{ color:'white', fontSize:18, fontWeight:900 }}>📖 Hangi hikaye türü?</div>
         </div>
-        <button onClick={() => setScreen('chat')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
+        <button onClick={() => setScreen(currentChild ? 'children' : 'chat')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:'20px 16px' }}>
