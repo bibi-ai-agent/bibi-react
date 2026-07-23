@@ -88,7 +88,7 @@ export default function FriendsScreen() {
   function startProject(friendData) {
     setProjectFriend(friendData)
     setIsProjectHost(true)
-    setScreen('projectSelect')
+    setTimeout(() => setScreen('projectSelect'), 50)
   }
 
   const [showProjectMenu, setShowProjectMenu] = useState(null)
