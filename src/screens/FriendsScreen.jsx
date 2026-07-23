@@ -67,9 +67,10 @@ export default function FriendsScreen() {
     setLoading(false)
   }
 
-  async function startProject(friendData, type) {
-    await sb.from('project_invites').insert({ from_child_id:currentChild.id, to_child_id:friendData.id, project_type:type, status:'pending', expires_at:new Date(Date.now()+3*60*60*1000).toISOString() }).select().single()
-    setProjectFriend(friendData); setProjectType(type); setIsProjectHost(true); setScreen('project')
+  function startProject(friendData) {
+    setProjectFriend(friendData)
+    sessionStorage.setItem('projectFriend', JSON.stringify(friendData))
+    setScreen('projectSelect')
   }
 
   function startLongPress(id) {
@@ -180,21 +181,12 @@ export default function FriendsScreen() {
                       <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>{f.friendData?.age} yaş</div>
                       {f.friendData?.bibi_specialty && <div style={{ color:'#4ade80', fontSize:11, marginTop:2 }}>⭐ {f.friendData.bibi_specialty} Uzmanı</div>}
                     </div>
-                    <button onClick={e => { e.stopPropagation(); setShowProjectMenu(showProjectMenu===f.id?null:f.id) }}
+                    <button onClick={e => { e.stopPropagation(); startProject(f.friendData) }}
                       style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>
                       🚀 Proje Yap
                     </button>
                   </div>
-                  {showProjectMenu === f.id && (
-                    <div style={{ display:'flex', gap:8 }}>
-                      {[{type:'homework',icon:'📚',label:'Ödev'},{type:'experiment',icon:'🔬',label:'Deney'},{type:'quiz',icon:'🎯',label:'Yarışma'}].map(p => (
-                        <button key={p.type} onClick={e => { e.stopPropagation(); setShowProjectMenu(null); startProject(f.friendData, p.type) }}
-                          style={{ flex:1, padding:'10px 8px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.06)', color:'white', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                          {p.icon} {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+
                 </div>
               </div>
             ))}
