@@ -11,11 +11,11 @@ const TYPE_ICONS = { homework:"📚", experiment:"🔬", quiz:"🎯" }
 
 export default function ProjectScreen() {
   const { currentChild, projectFriend, projectType, projectSessionId, setProjectSessionId, isProjectHost, setScreen } = useApp()
-  
+
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  
+
   // Quiz state
   const [quizSession, setQuizSession] = useState(null)
   const [myAnswer, setMyAnswer] = useState(null)
@@ -25,6 +25,14 @@ export default function ProjectScreen() {
   const [finalScores, setFinalScores] = useState(null)
   const [waitingFriend, setWaitingFriend] = useState(false)
 
+  // Game states — tüm hooks en üstte!
+  const [mathScore, setMathScore] = useState(null)
+  const [mathFinished, setMathFinished] = useState(false)
+  const [memoryResult, setMemoryResult] = useState(null)
+  const [memoryFinished, setMemoryFinished] = useState(false)
+  const [marketScore, setMarketScore] = useState(null)
+  const [marketFinished, setMarketFinished] = useState(false)
+
   const messagesEndRef = useRef(null)
   const stateRef = useRef({ messages: [] })
 
@@ -33,18 +41,15 @@ export default function ProjectScreen() {
   }, [messages, isTyping])
 
   useEffect(() => {
-    if (!currentChild || !projectFriend || !projectType) return
-    
-    addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte ${TYPE_NAMES[projectType]} yapıyor!`)
-    
+    if (!currentChild || !projectType) return
+    if (['math','memory','market','chess','riddle'].includes(projectType)) return // Oyunlar için AI başlatma
+    if (!projectFriend) return
+
+    addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte ${TYPE_NAMES[projectType]||projectType} yapıyor!`)
+
     if (projectType === 'quiz') {
-      if (isProjectHost) {
-        // Host sorular oluşturur ve session'a yazar
-        initQuizSession()
-      } else {
-        // Guest host'un session'ını bekler
-        waitForQuizSession()
-      }
+      if (isProjectHost) initQuizSession()
+      else waitForQuizSession()
     } else {
       sendAI(`${TYPE_NAMES[projectType]} projesini başlatın. ${currentChild.name} ve ${projectFriend.name} ile heyecanlı bir karşılama yapın ve ilk adımı sorun.`)
     }
@@ -53,36 +58,20 @@ export default function ProjectScreen() {
   async function initQuizSession() {
     setIsTyping(true)
     addMsg('bibi', '🎯 Sorular hazırlanıyor...')
-    
     const age = currentChild.age || 9
     const optCount = age <= 8 ? 2 : age <= 12 ? 3 : 4
-    
     const result = await callAI(null, [{
       role: 'user',
-      content: `${age} yaşında çocuklar için Türkçe bilgi yarışması. 5 farklı dersten (Matematik, Fen, Tarih, Yabancı Dil, Genel Kültür) birer soru. ${optCount} şıklı. Yaşa uygun.
-JSON formatında yaz (başka hiçbir şey yazma):
-{"questions":[{"question":"...","options":["A) ...","B) ..."],"correct":0,"subject":"...","explanation":"Bu sorudan öğrendiğin şey: ..."}]}`
+      content: `${age} yaşında çocuklar için Türkçe bilgi yarışması. 5 farklı dersten birer soru. ${optCount} şıklı. JSON: {"questions":[{"question":"...","options":["A)...","B)..."],"correct":0,"subject":"...","explanation":"..."}]}`
     }], 1500)
-
     let parsed = null
     try { parsed = JSON.parse(result.replace(/```json|```/g, '').trim()) }
     catch { addMsg('bibi', 'Sorular hazırlanamadı 🙈'); setIsTyping(false); return }
-
-    // Session oluştur
-    const scores = {}
-    scores[currentChild.id] = 0
-    scores[projectFriend.id] = 0
-
+    const scores = { [currentChild.id]: 0, [projectFriend.id]: 0 }
     const { data: session } = await sb.from('project_sessions').insert({
-      friendship_id: null,
-      project_type: 'quiz',
-      questions: parsed.questions,
-      current_question: 0,
-      answers: {},
-      scores,
-      status: 'active'
+      friendship_id: null, project_type: 'quiz',
+      questions: parsed.questions, current_question: 0, answers: {}, scores, status: 'active'
     }).select().single()
-
     if (session) {
       setProjectSessionId(session.id)
       setQuizSession(session)
@@ -94,20 +83,12 @@ JSON formatında yaz (başka hiçbir şey yazma):
 
   async function waitForQuizSession() {
     addMsg('bibi', '⏳ Arkadaşın soruları hazırlıyor...')
-    
-    // 30 sn bekle, her 2 sn'de bir kontrol et
     let tries = 0
     const interval = setInterval(async () => {
       tries++
-      // En son oluşturulan aktif quiz session'ını bul
       const { data } = await sb.from('project_sessions')
-        .select('*')
-        .eq('project_type', 'quiz')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
+        .select('*').eq('project_type', 'quiz').eq('status', 'active')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle()
       if (data) {
         clearInterval(interval)
         setProjectSessionId(data.id)
@@ -115,28 +96,16 @@ JSON formatında yaz (başka hiçbir şey yazma):
         subscribeToSession(data.id)
         showQuestion(data, data.current_question)
       }
-
-      if (tries > 15) {
-        clearInterval(interval)
-        addMsg('bibi', 'Bağlantı zaman aşımına uğradı 😔')
-      }
+      if (tries > 15) { clearInterval(interval); addMsg('bibi', 'Bağlantı zaman aşımına uğradı 😔') }
     }, 2000)
   }
 
   function subscribeToSession(sessionId) {
     const channel = sb.channel(`quiz-session-${sessionId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'project_sessions',
-        filter: `id=eq.${sessionId}`
-      }, payload => {
-        const updated = payload.new
-        setQuizSession(updated)
-        handleSessionUpdate(updated)
-      })
-      .subscribe()
-    
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'project_sessions', filter:`id=eq.${sessionId}` }, payload => {
+        setQuizSession(payload.new)
+        handleSessionUpdate(payload.new)
+      }).subscribe()
     return () => sb.removeChannel(channel)
   }
 
@@ -144,84 +113,49 @@ JSON formatında yaz (başka hiçbir şey yazma):
     const answers = session.answers || {}
     const currentQ = session.current_question
     const qKey = `q${currentQ}`
-
     const myAns = answers[`${qKey}_${currentChild.id}`]
-    const friendAns = answers[`${qKey}_${projectFriend.id}`]
-
+    const friendAns = answers[`${qKey}_${projectFriend?.id}`]
     if (myAns !== undefined) setMyAnswer(myAns)
     if (friendAns !== undefined) setFriendAnswer(friendAns)
-
-    // İkisi de cevapladıysa sonucu göster
     if (myAns !== undefined && friendAns !== undefined) {
       setWaitingFriend(false)
       showQuestionResult(session, currentQ, myAns, friendAns)
     }
-
-    // Quiz bittiyse
-    if (session.status === 'finished') {
-      setQuizFinished(true)
-      setFinalScores(session.scores)
-    }
+    if (session.status === 'finished') { setQuizFinished(true); setFinalScores(session.scores) }
   }
 
   function showQuestion(session, qIndex) {
     const q = session.questions[qIndex]
     if (!q) return
-    setMyAnswer(null)
-    setFriendAnswer(null)
-    setWaitingFriend(false)
-    setShowResult(false)
+    setMyAnswer(null); setFriendAnswer(null); setWaitingFriend(false); setShowResult(false)
     addMsg('system', `📝 Soru ${qIndex + 1}/${session.questions.length} — ${q.subject}`)
   }
 
   async function handleAnswer(optionIndex) {
     if (myAnswer !== null || !quizSession) return
-    setMyAnswer(optionIndex)
-    setWaitingFriend(true)
-
+    setMyAnswer(optionIndex); setWaitingFriend(true)
     const qKey = `q${quizSession.current_question}`
-    const currentAnswers = quizSession.answers || {}
-    const newAnswers = { ...currentAnswers, [`${qKey}_${currentChild.id}`]: optionIndex }
-
-    // Supabase'e yaz
-    await sb.from('project_sessions')
-      .update({ answers: newAnswers })
-      .eq('id', quizSession.id)
+    const newAnswers = { ...(quizSession.answers || {}), [`${qKey}_${currentChild.id}`]: optionIndex }
+    await sb.from('project_sessions').update({ answers: newAnswers }).eq('id', quizSession.id)
   }
 
   async function showQuestionResult(session, qIndex, myAns, friendAns) {
     const q = session.questions[qIndex]
     const myCorrect = myAns === q.correct
     const friendCorrect = friendAns === q.correct
-
-    // Skorları güncelle
     const newScores = { ...session.scores }
     if (myCorrect) newScores[currentChild.id] = (newScores[currentChild.id] || 0) + 1
-    if (friendCorrect) newScores[projectFriend.id] = (newScores[projectFriend.id] || 0) + 1
-
+    if (friendCorrect) newScores[projectFriend?.id] = (newScores[projectFriend?.id] || 0) + 1
     setShowResult(true)
-
     const nextQ = qIndex + 1
     const isLast = nextQ >= session.questions.length
-
     if (isProjectHost) {
       await sb.from('project_sessions').update({
-        scores: newScores,
-        current_question: nextQ,
-        status: isLast ? 'finished' : 'active',
-        answers: isLast ? session.answers : session.answers
+        scores: newScores, current_question: nextQ, status: isLast ? 'finished' : 'active'
       }).eq('id', session.id)
     }
-
-    if (isLast) {
-      setFinalScores(newScores)
-      setTimeout(() => setQuizFinished(true), 2000)
-    } else {
-      setTimeout(() => {
-        setShowResult(false)
-        showQuestion({ ...session, current_question: nextQ }, nextQ)
-      }, 3000)
-    }
+    if (isLast) { setFinalScores(newScores); setTimeout(() => setQuizFinished(true), 2000) }
+    else { setTimeout(() => { setShowResult(false); showQuestion({ ...session, current_question: nextQ }, nextQ) }, 3000) }
   }
 
   function addMsg(role, text) {
@@ -232,16 +166,12 @@ JSON formatında yaz (başka hiçbir şey yazma):
     setIsTyping(true)
     try {
       const reply = await callAI(
-        `Sen iki çocuğun (${currentChild.name} ve ${projectFriend.name}) ortak Bibi'sisin. ${TYPE_NAMES[projectType]} yapıyorlar. Kısa, heyecanlı, Türkçe konuş.`,
+        `Sen iki çocuğun (${currentChild.name} ve ${projectFriend?.name}) ortak Bibi'sisin. Kısa, heyecanlı, Türkçe konuş.`,
         [...stateRef.current.messages, { role: 'user', content: userText }], 800
       )
-      setIsTyping(false)
-      addMsg('bibi', reply)
+      setIsTyping(false); addMsg('bibi', reply)
       stateRef.current.messages.push({ role: 'user', content: userText }, { role: 'assistant', content: reply })
-    } catch {
-      setIsTyping(false)
-      addMsg('bibi', 'Bağlantıda sorun var 😅')
-    }
+    } catch { setIsTyping(false); addMsg('bibi', 'Bağlantıda sorun var 😅') }
   }
 
   function sendMessage() {
@@ -249,145 +179,115 @@ JSON formatında yaz (başka hiçbir şey yazma):
     setInput(''); addMsg('user', t); sendAI(t)
   }
 
-  if (!currentChild || !projectFriend || !projectType) {
-    return <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', alignItems:'center', justifyContent:'center', color:'white' }}>Proje bulunamadı</div>
-  }
-
-  const [mathSessionId, setMathSessionId] = useState(null)
-  const [mathScore, setMathScore] = useState(null)
-  const [mathFriendScore, setMathFriendScore] = useState(null)
-  const [mathFinished, setMathFinished] = useState(false)
-  const [memoryResult, setMemoryResult] = useState(null)
-  const [memoryFinished, setMemoryFinished] = useState(false)
-  const [marketScore, setMarketScore] = useState(null)
-  const [marketFinished, setMarketFinished] = useState(false)
-
   const currentQ = quizSession ? quizSession.questions?.[quizSession.current_question] : null
-  const myScore = finalScores?.[currentChild.id] || 0
-  const friendScore = finalScores?.[projectFriend.id] || 0
+  const myScore = finalScores?.[currentChild?.id] || 0
+  const friendScore = finalScores?.[projectFriend?.id] || 0
 
-  // Math oyunu için özel ekran
+  const friendName = projectFriend?.name || 'Arkadaşın'
+
+  // ── Matematik Oyunu ──
   if (projectType === 'math') return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
         <div>
-          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Matematik Yarışması</div>
-          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>➕ {currentChild.name} vs {projectFriend.name}</div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>Matematik Yarışması</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>➕ {currentChild.name} {projectFriend ? `vs ${friendName}` : ''}</div>
         </div>
         <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
       </div>
       {!mathFinished ? (
-        <MathGame
-          currentChild={currentChild}
-          projectFriend={projectFriend}
-          sessionId={mathSessionId}
-          isHost={isProjectHost}
-          onFinish={(score) => { setMathScore(score); setMathFinished(true) }}
-        />
+        <MathGame currentChild={currentChild} projectFriend={projectFriend || {name:'Bibi',id:'solo'}}
+          sessionId={projectSessionId} isHost={isProjectHost}
+          onFinish={(score) => { setMathScore(score); setMathFinished(true) }}/>
       ) : (
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
-            {mathScore > (mathFriendScore||0) ? (
-              <><div style={{ fontSize:56, marginBottom:12 }}>🏆</div><div style={{ color:'#fbbf24', fontSize:22, fontWeight:900, marginBottom:8 }}>Tebrikler {currentChild.name}!</div></>
-            ) : mathScore < (mathFriendScore||0) ? (
-              <><div style={{ fontSize:56, marginBottom:12 }}>🌟</div><div style={{ color:'white', fontSize:20, fontWeight:900, marginBottom:8 }}>Harika mücadele!</div></>
-            ) : (
-              <><div style={{ fontSize:56, marginBottom:12 }}>🤝</div><div style={{ color:'#4ade80', fontSize:20, fontWeight:900, marginBottom:8 }}>Berabere!</div></>
-            )}
-            <div style={{ display:'flex', justifyContent:'space-around', background:'rgba(255,255,255,.08)', borderRadius:14, padding:16, marginBottom:20 }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ color:'#4ade80', fontSize:32, fontWeight:900 }}>{mathScore}</div>
-                <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{currentChild.name}</div>
-              </div>
-              <div style={{ color:'rgba(255,255,255,.3)', fontSize:20, alignSelf:'center' }}>vs</div>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ color:'#a78bfa', fontSize:32, fontWeight:900 }}>{mathFriendScore ?? '?'}</div>
-                <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{projectFriend.name}</div>
-              </div>
-            </div>
-            <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+            <div style={{ fontSize:56, marginBottom:12 }}>🏆</div>
+            <div style={{ color:'#fbbf24', fontSize:22, fontWeight:900, marginBottom:8 }}>Tebrikler!</div>
+            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:20 }}>{mathScore}/10 doğru!</div>
+            <button onClick={() => setScreen('children')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
           </div>
         </div>
       )}
     </div>
   )
 
-  if (projectType === 'market') return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
-      <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
-        <div>
-          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Market Kasiyeri</div>
-          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🛒 {currentChild.name} vs {projectFriend.name}</div>
-        </div>
-        <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
-      </div>
-      {!marketFinished ? (
-        <MarketGame currentChild={currentChild} projectFriend={projectFriend}
-          onFinish={(score) => { setMarketScore(score); setMarketFinished(true) }}/>
-      ) : (
-        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-          <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
-            <div style={{ fontSize:56, marginBottom:12 }}>🛒</div>
-            <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Harika!</div>
-            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:12 }}>{marketScore} puan kazandın!</div>
-            <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>Para hesaplama hayat boyu işe yarar! 💰</div>
-            <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-
+  // ── Eşleştirme Oyunu ──
   if (projectType === 'memory') return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
         <div>
-          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Eşleştirme Oyunu</div>
-          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🧩 {currentChild.name} vs {projectFriend.name}</div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>Eşleştirme Oyunu</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🧩 {currentChild.name}</div>
         </div>
-        <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+        <button onClick={() => setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
       </div>
       {!memoryFinished ? (
-        <MemoryGame currentChild={currentChild} projectFriend={projectFriend}
+        <MemoryGame currentChild={currentChild} projectFriend={projectFriend || {name:'Bibi'}}
           onFinish={(result) => { setMemoryResult(result); setMemoryFinished(true) }}/>
       ) : (
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
             <div style={{ fontSize:56, marginBottom:12 }}>🧩</div>
             <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Tebrikler!</div>
-            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:12 }}>
-              {memoryResult?.moves} hamlede {memoryResult?.time} saniyede tamamladın!
-            </div>
-            <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>Hafıza oyunları beyin gelişimine çok katkı sağlar! 🧠</div>
-            <button onClick={() => setScreen('friends')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:12 }}>{memoryResult?.moves} hamlede {memoryResult?.time} saniyede!</div>
+            <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>Hafıza oyunları beyin gelişimine katkı sağlar! 🧠</div>
+            <button onClick={() => setScreen('children')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
           </div>
         </div>
       )}
     </div>
   )
 
+  // ── Market Kasiyeri ──
+  if (projectType === 'market') return (
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>Market Kasiyeri</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>🛒 {currentChild.name}</div>
+        </div>
+        <button onClick={() => setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      </div>
+      {!marketFinished ? (
+        <MarketGame currentChild={currentChild} projectFriend={projectFriend || {name:'Bibi'}}
+          onFinish={(score) => { setMarketScore(score); setMarketFinished(true) }}/>
+      ) : (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'rgba(255,255,255,.06)', borderRadius:24, padding:'32px 24px', maxWidth:340, width:'100%', textAlign:'center' }}>
+            <div style={{ fontSize:56, marginBottom:12 }}>🛒</div>
+            <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Harika!</div>
+            <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:20 }}>{marketScore} puan kazandın!</div>
+            <button onClick={() => setScreen('children')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (!currentChild || !projectFriend || !projectType) {
+    return <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', alignItems:'center', justifyContent:'center', color:'white' }}>Proje bulunamadı</div>
+  }
+
   return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
-
-      {/* Header */}
       <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
         <div>
           <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>İş Birliği</div>
-          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{TYPE_ICONS[projectType]} {TYPE_NAMES[projectType]}</div>
-          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{currentChild.name} & {projectFriend.name}</div>
+          <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{TYPE_ICONS[projectType]||'🎮'} {TYPE_NAMES[projectType]||projectType}</div>
+          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{currentChild.name} & {friendName}</div>
         </div>
         {quizSession && (
           <div style={{ textAlign:'center' }}>
             <div style={{ color:'#fbbf24', fontSize:11, fontWeight:700 }}>SKOR</div>
             <div style={{ color:'white', fontSize:16, fontWeight:900 }}>
-              {quizSession.scores?.[currentChild.id]||0} — {quizSession.scores?.[projectFriend.id]||0}
+              {quizSession.scores?.[currentChild.id]||0} — {quizSession.scores?.[projectFriend?.id]||0}
             </div>
           </div>
         )}
         <button onClick={() => setScreen('friends')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
       </div>
 
-      {/* Mesajlar */}
       <div style={{ flex:1, overflowY:'auto', padding:'16px 16px 8px', display:'flex', flexDirection:'column' }}>
         {messages.map(m => (
           <div key={m.id} style={{ display:'flex', marginBottom:12, justifyContent: m.role==='user' ? 'flex-end' : m.role==='system' ? 'center' : 'flex-start' }}>
@@ -410,14 +310,12 @@ JSON formatında yaz (başka hiçbir şey yazma):
         <div ref={messagesEndRef}/>
       </div>
 
-      {/* Quiz Soru Alanı */}
       {projectType === 'quiz' && currentQ && !showResult && !quizFinished && (
         <div style={{ padding:'12px 16px', background:'rgba(0,0,0,.4)', borderTop:'1px solid rgba(255,255,255,.1)', flexShrink:0 }}>
           <div style={{ color:'rgba(255,255,255,.5)', fontSize:10, fontWeight:700, letterSpacing:1.5, marginBottom:6 }}>
             SORU {(quizSession?.current_question||0)+1} / {quizSession?.questions?.length||5} • {currentQ.subject}
           </div>
           <div style={{ color:'white', fontSize:15, fontWeight:800, marginBottom:12, lineHeight:1.5 }}>{currentQ.question}</div>
-          
           {myAnswer === null ? (
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {currentQ.options.map((opt, i) => (
@@ -429,23 +327,20 @@ JSON formatında yaz (başka hiçbir şey yazma):
             </div>
           ) : waitingFriend ? (
             <div style={{ textAlign:'center', padding:'16px 0', color:'rgba(255,255,255,.6)', fontSize:14 }}>
-              ✅ Cevabın kaydedildi! {projectFriend.name} cevap bekliyor... ⏳
+              ✅ Cevabın kaydedildi! {friendName} cevap bekliyor... ⏳
             </div>
           ) : null}
         </div>
       )}
 
-      {/* Soru Sonucu */}
       {showResult && currentQ && !quizFinished && (
         <div style={{ padding:'16px', background:'rgba(0,0,0,.5)', borderTop:'1px solid rgba(255,255,255,.1)', flexShrink:0, textAlign:'center' }}>
-          <div style={{ fontSize:24, marginBottom:8 }}>
-            {myAnswer === currentQ.correct ? '✅ Doğru!' : '❌ Yanlış!'}
-          </div>
+          <div style={{ fontSize:24, marginBottom:8 }}>{myAnswer === currentQ.correct ? '✅ Doğru!' : '❌ Yanlış!'}</div>
           <div style={{ color:'rgba(255,255,255,.6)', fontSize:13, marginBottom:4 }}>
-            Doğru cevap: <span style={{ color:'#4ade80', fontWeight:800 }}>{currentQ.options[currentQ.correct]}</span>
+            Doğru: <span style={{ color:'#4ade80', fontWeight:800 }}>{currentQ.options[currentQ.correct]}</span>
           </div>
           <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>
-            {projectFriend.name}: {friendAnswer === currentQ.correct ? '✅ Doğru' : '❌ Yanlış'}
+            {friendName}: {friendAnswer === currentQ.correct ? '✅ Doğru' : '❌ Yanlış'}
           </div>
           {currentQ.explanation && (
             <div style={{ marginTop:8, padding:'8px 12px', background:'rgba(74,222,128,.1)', borderRadius:10, color:'#4ade80', fontSize:12 }}>
@@ -455,7 +350,6 @@ JSON formatında yaz (başka hiçbir şey yazma):
         </div>
       )}
 
-      {/* Normal Chat Input */}
       {projectType !== 'quiz' && (
         <div style={{ padding:'12px 16px 18px', background:'rgba(0,0,0,.3)', backdropFilter:'blur(12px)', flexShrink:0 }}>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
@@ -468,40 +362,18 @@ JSON formatında yaz (başka hiçbir şey yazma):
         </div>
       )}
 
-      {/* Quiz Bitiş Popup */}
       {quizFinished && finalScores && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.85)', backdropFilter:'blur(10px)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 24px', maxWidth:360, width:'100%', textAlign:'center', boxShadow:'0 8px 40px rgba(0,0,0,.5)' }}>
-            
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 24px', maxWidth:360, width:'100%', textAlign:'center' }}>
             {myScore > friendScore ? (
-              <>
-                <div style={{ fontSize:64, marginBottom:12 }}>🏆</div>
-                <div style={{ color:'#fbbf24', fontSize:24, fontWeight:900, marginBottom:8 }}>Tebrikler {currentChild.name}!</div>
-                <div style={{ color:'rgba(255,255,255,.7)', fontSize:15, marginBottom:4 }}>Bu yarışmayı kazandın! 🎉</div>
-                <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>
-                  {projectFriend.name} bu kez olmadı — ama her soru bir kazanım! 💪
-                </div>
-              </>
+              <><div style={{ fontSize:64, marginBottom:12 }}>🏆</div><div style={{ color:'#fbbf24', fontSize:24, fontWeight:900, marginBottom:8 }}>Tebrikler {currentChild.name}!</div><div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>{friendName} bu kez olmadı — ama her soru bir kazanım! 💪</div></>
             ) : myScore < friendScore ? (
-              <>
-                <div style={{ fontSize:64, marginBottom:12 }}>🌟</div>
-                <div style={{ color:'white', fontSize:22, fontWeight:900, marginBottom:8 }}>Harika mücadele {currentChild.name}!</div>
-                <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:4 }}>Bu kez {projectFriend.name} öndeydi.</div>
-                <div style={{ color:'#4ade80', fontSize:13, marginBottom:20, lineHeight:1.6 }}>
-                  Ama bu sorular senin için gerçek bir kazanım! Her yanlış cevap, bir sonraki seferki doğrunun tohumudur. 🌱
-                </div>
-              </>
+              <><div style={{ fontSize:64, marginBottom:12 }}>🌟</div><div style={{ color:'white', fontSize:22, fontWeight:900, marginBottom:8 }}>Harika mücadele!</div><div style={{ color:'#4ade80', fontSize:13, marginBottom:20 }}>Bu sorular senin için gerçek bir kazanım! 🌱</div></>
             ) : (
-              <>
-                <div style={{ fontSize:64, marginBottom:12 }}>🤝</div>
-                <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Berabere! Harika!</div>
-                <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:20 }}>İkiniz de eşit güçtesiniz! Her soru bir kazanım! 🎊</div>
-              </>
+              <><div style={{ fontSize:64, marginBottom:12 }}>🤝</div><div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>Berabere!</div><div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:20 }}>İkiniz de eşit güçtesiniz! 🎊</div></>
             )}
-
-            {/* Skor tablosu */}
-            <div style={{ background:'rgba(255,255,255,.08)', borderRadius:16, padding:'16px', marginBottom:20 }}>
-              <div style={{ display:'flex', justifyContent:'space-around', marginBottom:12 }}>
+            <div style={{ background:'rgba(255,255,255,.08)', borderRadius:16, padding:16, marginBottom:20 }}>
+              <div style={{ display:'flex', justifyContent:'space-around' }}>
                 <div style={{ textAlign:'center' }}>
                   <div style={{ color:'#4ade80', fontSize:32, fontWeight:900 }}>{myScore}</div>
                   <div style={{ color:'rgba(255,255,255,.5)', fontSize:12 }}>{currentChild.name}</div>
@@ -509,26 +381,10 @@ JSON formatında yaz (başka hiçbir şey yazma):
                 <div style={{ color:'rgba(255,255,255,.3)', fontSize:24, alignSelf:'center' }}>vs</div>
                 <div style={{ textAlign:'center' }}>
                   <div style={{ color:'#a78bfa', fontSize:32, fontWeight:900 }}>{friendScore}</div>
-                  <div style={{ color:'rgba(255,255,255,.5)', fontSize:12 }}>{projectFriend.name}</div>
+                  <div style={{ color:'rgba(255,255,255,.5)', fontSize:12 }}>{friendName}</div>
                 </div>
               </div>
-              <div style={{ color:'rgba(255,255,255,.3)', fontSize:11 }}>{quizSession?.questions?.length||5} sorudan</div>
             </div>
-
-            {/* Konu bazlı özet */}
-            <div style={{ background:'rgba(74,222,128,.08)', border:'1px solid rgba(74,222,128,.2)', borderRadius:12, padding:'12px 14px', marginBottom:20, textAlign:'left' }}>
-              <div style={{ color:'#4ade80', fontSize:12, fontWeight:800, marginBottom:6 }}>📚 Bu yarışmadan kazanımların:</div>
-              {quizSession?.questions?.map((q, i) => {
-                const qKey = `q${i}`
-                const myAns = quizSession.answers?.[`${qKey}_${currentChild.id}`]
-                return (
-                  <div key={i} style={{ color:'rgba(255,255,255,.6)', fontSize:11, marginBottom:4 }}>
-                    {myAns === q.correct ? '✅' : '📌'} {q.subject}: {q.explanation || q.question.slice(0, 40) + '...'}
-                  </div>
-                )
-              })}
-            </div>
-
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>{setQuizFinished(false);setFinalScores(null);setQuizSession(null);setMessages([]);if(isProjectHost)initQuizSession();else waitForQuizSession()}}
                 style={{ flex:1, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'transparent', color:'white', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>🔄 Tekrar</button>
@@ -540,7 +396,6 @@ JSON formatında yaz (başka hiçbir şey yazma):
       )}
 
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes dotPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
       `}</style>
     </div>
