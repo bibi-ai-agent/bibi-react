@@ -283,7 +283,7 @@ export default function ProjectScreen() {
         </div>
         <button onClick={() => setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
       </div>
-      <RhythmGame currentChild={currentChild} projectFriend={projectFriend} onFinish={() => { setRhythmFinished(true); setScreen('children') }}/>
+      <RhythmGame currentChild={currentChild} projectFriend={projectFriend} sessionId={projectSessionId} isHost={isProjectHost} onFinish={() => { setRhythmFinished(true); setScreen('children') }}/>
     </div>
   )
 

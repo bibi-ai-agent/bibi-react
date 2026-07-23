@@ -7,6 +7,8 @@ import BibiFace from '../components/BibiFace'
 import ActionMenu from '../components/ActionMenu'
 import ContentCreator from '../components/ContentCreator'
 import HistoryPanel from '../components/HistoryPanel'
+import { getNextQuestion, shouldAskPersonality, getQuestionForAge, calculatePersonalityScores, PERSONALITY_QUESTIONS } from '../lib/personality'
+import { detectEmotionFromMessage, saveEmotionLog, shouldAskDailyEmotion, EMOTIONS } from '../lib/emotion'
 
 const SPECIALTY_PROFILES = {
   Matematik: "Matematikte üstünsün. Sayılar, geometri, problem çözme senin tutkun.",
@@ -104,6 +106,10 @@ export default function ChatScreen() {
   const [homeworkQuestion, setHomeworkQuestion] = useState(null)
   const [homeworkCount, setHomeworkCount] = useState(0)
   const [showExitPin, setShowExitPin] = useState(false)
+  const [personalityQ, setPersonalityQ] = useState(null) // aktif kişilik sorusu
+  const [showEmotionPicker, setShowEmotionPicker] = useState(false)
+  const [todayEmotion, setTodayEmotion] = useState(null)
+  const [msgCount, setMsgCount] = useState(0)
   const [exitPin, setExitPin] = useState('')
   const [exitPinError, setExitPinError] = useState('')
   const [showForgotPin, setShowForgotPin] = useState(false)
@@ -255,6 +261,28 @@ export default function ChatScreen() {
     }
   }
 
+  async function savePersonalityAnswer(score) {
+    if (!personalityQ) return
+    const progress = (currentChild.personality_progress || 0) + 1
+    await sb.from('personality_answers').insert({
+      child_id: currentChild.id,
+      question_id: personalityQ.id,
+      dimension: personalityQ.dimension,
+      score,
+    })
+    // Tüm cevapları çek ve skoru güncelle
+    const { data: answers } = await sb.from('personality_answers')
+      .select('dimension,score').eq('child_id', currentChild.id)
+    const scores = calculatePersonalityScores(answers || [])
+    await sb.from('children').update({
+      personality_progress: progress,
+      personality_scores: scores,
+    }).eq('id', currentChild.id)
+    Object.assign(currentChild, { personality_progress: progress, personality_scores: scores })
+    setPersonalityQ(null)
+    addMsg('bibi', progress >= 50 ? 'Teşekkürler! Seni artık çok daha iyi tanıyorum! 🌟' : 'Teşekkürler! 😊')
+  }
+
   async function sendMessage(text, fromVoice=false) {
     const t = text.trim(); if(!t) return
     if (!checkLimit('messages')) return
@@ -279,6 +307,32 @@ export default function ChatScreen() {
       if ((currentChild?.age<=8 && fromVoice) || (voiceOn && currentChild?.age>8)) speakMsg(reply)
       if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
       if (!currentChild.profile_completed) extractAndSaveProfile(t)
+
+      // Duygu tespiti — arka planda
+      detectEmotionFromMessage(t).then(emotion => {
+        if (emotion) saveEmotionLog(currentChild.id, emotion, t.slice(0, 100))
+      })
+
+      // Günlük duygu sorusu
+      const newMsgCount = msgCount + 1
+      setMsgCount(newMsgCount)
+      if (!todayEmotion && shouldAskDailyEmotion(messages)) {
+        setTimeout(() => setShowEmotionPicker(true), 1500)
+      }
+
+      // Kişilik envanteri sorusu
+      const progress = currentChild.personality_progress || 0
+      if (shouldAskPersonality(newMsgCount, progress) && currentChild.profile_completed) {
+        const nextQ = getNextQuestion(progress)
+        if (nextQ) {
+          const qText = getQuestionForAge(nextQ, currentChild.age || 9)
+          setTimeout(() => {
+            setPersonalityQ({ ...nextQ, text: qText })
+            addMsg('bibi', `💭 Sana bir şey sormak istiyorum: ${qText}`)
+          }, 2000)
+        }
+      }
+
       setTimeout(() => { setExpr('idle') }, 3000)
     } catch {
       setIsTyping(false); addMsg('bibi','Bağlantı sorunu 🙈'); setExpr('idle')
@@ -679,6 +733,59 @@ export default function ChatScreen() {
             {exitPinError&&<div style={{ color:'#fca88a',fontSize:12,textAlign:'center',marginBottom:8 }}>{exitPinError}</div>}
             <button onClick={()=>setShowForgotPin(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:12,cursor:'pointer',display:'block',margin:'0 auto 8px',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
             <button onClick={()=>{setShowExitPin(false);setExitPin('');setExitPinError('')}} style={{ width:'100%',padding:10,borderRadius:12,border:'none',background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.5)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>İptal</button>
+          </div>
+        </div>
+      )}
+
+      {/* Kişilik Sorusu Rating */}
+      {personalityQ && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
+            <div style={{ color:'rgba(255,255,255,.4)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase', marginBottom:8 }}>
+              💭 Seni Tanıyorum — {(currentChild?.personality_progress||0)+1}/50
+            </div>
+            <div style={{ color:'white', fontSize:16, fontWeight:800, marginBottom:20, lineHeight:1.5 }}>{personalityQ.text}</div>
+            <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+              {[
+                { score:1, label:'Hiç', emoji:'😶' },
+                { score:2, label:'Bazen', emoji:'🤔' },
+                { score:3, label:'Orta', emoji:'😊' },
+                { score:4, label:'Çoğu zaman', emoji:'😄' },
+                { score:5, label:'Her zaman', emoji:'🤩' },
+              ].map(opt => (
+                <button key={opt.score} onClick={() => savePersonalityAnswer(opt.score)}
+                  style={{ flex:1, padding:'12px 4px', borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'rgba(255,255,255,.06)', color:'white', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif', textAlign:'center' }}>
+                  <div style={{ fontSize:22, marginBottom:4 }}>{opt.emoji}</div>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setPersonalityQ(null)} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.06)', color:'rgba(255,255,255,.4)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Şimdi değil</button>
+          </div>
+        </div>
+      )}
+
+      {/* Günlük Duygu Picker */}
+      {showEmotionPicker && !todayEmotion && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
+            <div style={{ color:'white', fontSize:18, fontWeight:900, marginBottom:6, textAlign:'center' }}>Bugün nasıl hissediyorsun? 💙</div>
+            <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:24, textAlign:'center' }}>Hislerini benimle paylaş</div>
+            <div style={{ display:'flex', justifyContent:'space-around', marginBottom:16 }}>
+              {EMOTIONS.map(e => (
+                <button key={e.id} onClick={async () => {
+                  setTodayEmotion(e.id)
+                  setShowEmotionPicker(false)
+                  await saveEmotionLog(currentChild.id, e.id, '')
+                  addMsg('bibi', `${e.emoji} ${e.label} hissediyorsun, anlıyorum. ${e.id === 'üzgün' || e.id === 'sinirli' ? 'Anlatmak istediğin bir şey var mı?' : 'Bu harika! Bugün seninle olmak güzel.'}`)
+                }}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 8px', borderRadius:14, border:`1.5px solid ${e.color}44`, background:`${e.color}18`, cursor:'pointer', minWidth:56 }}>
+                  <div style={{ fontSize:32 }}>{e.emoji}</div>
+                  <div style={{ color:e.color, fontSize:11, fontWeight:700 }}>{e.label}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowEmotionPicker(false)} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.06)', color:'rgba(255,255,255,.4)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Şimdi değil</button>
           </div>
         </div>
       )}

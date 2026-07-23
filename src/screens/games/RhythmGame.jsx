@@ -36,7 +36,7 @@ function getSpeedForAge(age) {
   return 1.2
 }
 
-export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
+export default function RhythmGame({ currentChild, projectFriend, sessionId, isHost, onFinish }) {
   const age = currentChild?.age || 9
   const [phase, setPhase] = useState('select') // select | countdown | playing | result
   const [selectedInstrument, setSelectedInstrument] = useState(null)
@@ -50,6 +50,7 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
   const [laneFlash, setLaneFlash] = useState([false,false,false,false])
   const [hitFeedback, setHitFeedback] = useState(null) // { text, lane }
   const [totalNotes, setTotalNotes] = useState(0)
+  const [friendScore, setFriendScore] = useState(null)
 
   const gameRef = useRef(null)
   const animRef = useRef(null)
@@ -69,19 +70,32 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
   const BOARD_H = typeof window !== 'undefined' ? window.innerHeight - 180 : 600
   const BOARD_W = LANE_W * 4
 
-  function startGame(instId) {
+  async function startGame(instId) {
     setSelectedInstrument(instId)
     setPhase('countdown')
     setCountdown(3)
     setNotes([]); setScore(0); setCombo(0); setMaxCombo(0)
-    setHits(0); setMisses(0)
+    setHits(0); setMisses(0); setFriendScore(null)
     notesRef.current = []
-    scoreRef.current = 0
-    comboRef.current = 0
-    hitsRef.current = 0
-    missesRef.current = 0
+    scoreRef.current = 0; comboRef.current = 0
+    hitsRef.current = 0; missesRef.current = 0
     spawnedRef.current = new Set()
     setTotalNotes(SONGS[instId].pattern.length)
+
+    // Host ise session oluştur
+    if (isHost && projectFriend && !sessionId) {
+      try {
+        const scores = { [currentChild.id]: null, [projectFriend.id]: null }
+        await sb.from('project_sessions').insert({
+          project_type: 'rhythm',
+          questions: [{ instrument: instId }],
+          current_question: 0,
+          answers: {},
+          scores,
+          status: 'active'
+        })
+      } catch {}
+    }
   }
 
   // Geri sayım
@@ -139,7 +153,7 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
           cancelAnimationFrame(animRef.current)
           setTimeout(() => {
             setPhase('result')
-            if (currentChild) saveResult()
+            if (currentChild) saveResult(scoreRef.current)
           }, 500)
           return
         }
@@ -177,14 +191,45 @@ export default function RhythmGame({ currentChild, projectFriend, onFinish }) {
     })
   }
 
-  async function saveResult() {
+  async function saveResult(finalScore) {
     if (!currentChild || !selectedInstrument) return
     try {
       await sb.from('children').update({
         music_interest: INSTRUMENTS.find(i => i.id === selectedInstrument)?.name || selectedInstrument
       }).eq('id', currentChild.id)
     } catch {}
+
+    // Arkadaşla oynanıyorsa skoru kaydet
+    if (projectFriend && sessionId) {
+      try {
+        const { data } = await sb.from('project_sessions').select('scores').eq('id', sessionId).single()
+        const scores = data?.scores || {}
+        scores[currentChild.id] = finalScore
+        const friendDone = scores[projectFriend.id] !== undefined
+        await sb.from('project_sessions').update({
+          scores,
+          status: friendDone ? 'finished' : 'active'
+        }).eq('id', sessionId)
+      } catch {}
+    }
   }
+
+  // Arkadaşın skorunu dinle
+  useEffect(() => {
+    if (!projectFriend || !sessionId) return
+    const channel = sb.channel(`rhythm-${sessionId}`)
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'project_sessions', filter:`id=eq.${sessionId}` }, payload => {
+        const scores = payload.new.scores || {}
+        if (scores[projectFriend.id] !== undefined) {
+          setFriendScore(scores[projectFriend.id])
+        }
+        if (payload.new.status === 'finished') {
+          setFriendScore(scores[projectFriend.id] || 0)
+        }
+      })
+      .subscribe()
+    return () => sb.removeChannel(channel)
+  }, [sessionId, projectFriend])
 
   const accuracy = totalNotes > 0 ? Math.round((hitsRef.current / totalNotes) * 100) : 0
   const rank = accuracy >= 95 ? 'S' : accuracy >= 80 ? 'A' : accuracy >= 60 ? 'B' : accuracy >= 40 ? 'C' : 'D'
