@@ -15,6 +15,7 @@ export default function FriendsScreen() {
   const [deletingFriend, setDeletingFriend] = useState(null) // silme onay popup
   const [longPressFriend, setLongPressFriend] = useState(null) // X göster
   const timerRef = useRef(null)
+  const longPressedRef = useRef(false)
 
   useEffect(() => { loadAll() }, [])
 
@@ -72,14 +73,17 @@ export default function FriendsScreen() {
   }
 
   function startLongPress(id) {
+    longPressedRef.current = false
     clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => setLongPressFriend(id), 600)
+    timerRef.current = setTimeout(() => {
+      longPressedRef.current = true
+      setLongPressFriend(id)
+    }, 600)
   }
   function endLongPress() { clearTimeout(timerRef.current) }
 
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}
-      onClick={() => setLongPressFriend(null)}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
 
       {/* Fullscreen overlay — X aktifken her yere basınca kapanır */}
       {longPressFriend && (
@@ -165,6 +169,7 @@ export default function FriendsScreen() {
                   onPointerDown={() => startLongPress(f.id)}
                   onPointerUp={endLongPress}
                   onPointerCancel={endLongPress}
+                  onClick={e => { if(longPressedRef.current) { longPressedRef.current = false; e.stopPropagation(); } }}
                   style={{ background:'rgba(255,255,255,.06)', border: longPressFriend===f.id ? '2px solid #ef4444' : '1.5px solid rgba(255,255,255,.1)', borderRadius:16, padding:'14px 16px', transition:'border .2s', userSelect:'none' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:showProjectMenu===f.id?12:0 }}>
                     <div style={{ width:48, height:48, borderRadius:'50%', overflow:'hidden', background:'rgba(255,255,255,.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
