@@ -144,6 +144,30 @@ export default function StoryScreen() {
     setGenerating(false)
   }
 
+  async function loadStoriesForGenre(genreId) {
+    setLoadingStories(true)
+    const ageGroup = age <= 8 ? 'young' : age <= 12 ? 'middle' : 'teen'
+    const { data } = await sb.from('stories')
+      .select('*').eq('genre', genreId).eq('age_group', ageGroup)
+      .order('created_at', { ascending: true })
+    setStories(data || [])
+    setLoadingStories(false)
+  }
+
+  async function startStory(s, mode) {
+    setStoryMode(mode)
+    setStory({ title: s.title, paragraphs: s.paragraphs, imagePrompts: s.image_prompts, imageUrls: s.image_urls, moral: s.moral })
+    setCurrentPara(0)
+    setImages({})
+    setPhase('reading')
+    if (mode === 'illustrated' && s.image_urls?.length) {
+      // Hazır URL'ler — anında set et, tarayıcı arka planda yükler
+      const urlMap = {}
+      s.image_urls.forEach((url, i) => { urlMap[i] = url })
+      setImages(urlMap)
+    }
+  }
+
   function resetStory() {
     stopAudio(); setStory(null); setImages({}); setCurrentPara(0)
     setSelectedGenre(null); setStoryMode(null); setError(''); setPhase('genre')
