@@ -52,7 +52,13 @@ export default function StoryScreen() {
     setIsPlaying(false)
   }
 
-  useEffect(() => { stopAudio() }, [currentPara])
+  useEffect(() => {
+    stopAudio()
+    if (phase === 'reading' && story) {
+      const para = story.paragraphs[currentPara]
+      if (para) setTimeout(() => speakParagraph(para), 300)
+    }
+  }, [currentPara, phase])
 
   async function generateStory(mode) {
     setPhase('generating')
