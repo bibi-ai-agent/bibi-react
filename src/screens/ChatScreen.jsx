@@ -135,6 +135,23 @@ export default function ChatScreen() {
     setSelectedVoiceId(autoVoice)
     const isYoung = currentChild.age <= 8
     setVoiceOn(isYoung)
+
+    // Yenilenince son sohbeti yükle
+    const lastSid = sessionStorage.getItem('bibi_last_session')
+    if (lastSid) {
+      sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true }).then(({ data: msgs }) => {
+        if (msgs?.length) {
+          setSessionId(lastSid)
+          msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
+          return
+        }
+        showOpening()
+      })
+      return
+    }
+    showOpening()
+
+    function showOpening() {
     const opening = currentChild.profile_completed
       ? (isYoung
           ? `Heyyyy ${currentChild.name}! 🎉 Tekrar görüştük! Bugün ne keşfediyoruz?`
@@ -148,6 +165,7 @@ export default function ChatScreen() {
           : `Selam! Ben Bibi. Seninle tanışmak istiyorum — kendinden biraz bahseder misin?`)
     addMsg('bibi', opening)
     if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
+    } // showOpening end
     const channel = sb.channel(`project-invites-${currentChild.id}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
         const invite = payload.new
@@ -236,6 +254,7 @@ export default function ChatScreen() {
     if (sessionId) return sessionId
     const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
+    if (data?.id) sessionStorage.setItem('bibi_last_session', data.id)
     return data?.id
   }
 

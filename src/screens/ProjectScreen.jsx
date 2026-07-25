@@ -89,7 +89,7 @@ export default function ProjectScreen() {
     addMsg('bibi', '🎯 Sorular hazırlanıyor...')
     const age = currentChild.age || 9
     const optCount = age <= 8 ? 2 : age <= 12 ? 3 : 4
-    const result = await callAI(null, [{ role:'user', content:`${age} yaşında çocuklar için Türkçe bilgi yarışması. 5 farklı dersten birer soru. ${optCount} şıklı. JSON: {"questions":[{"question":"...","options":["A)...","B)..."],"correct":0,"subject":"...","explanation":"..."}]}` }], 1500)
+    const result = await callAI('Sadece JSON formatında cevap ver, başka hiçbir şey yazma.', [{ role:'user', content:`${age} yaşında Türkçe konuşan bir çocuk için bilgi yarışması hazırla. 5 farklı ders konusundan birer soru. Her soru ${optCount} şıklı olsun. Türkçe yaz. SADECE şu JSON formatında döndür, açıklama ekleme:\n{"questions":[{"question":"Soru metni","options":["A) seçenek","B) seçenek"],"correct":0,"subject":"Ders adı","explanation":"Kısa açıklama"}]}` }], 2000)
     let parsed = null
     try { parsed = JSON.parse(result.replace(/```json|```/g,'').trim()) }
     catch { addMsg('bibi','Sorular hazırlanamadı 🙈'); setIsTyping(false); return }

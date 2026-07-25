@@ -4,7 +4,10 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
-  const [currentChild, setCurrentChild] = useState(null)
+  const [currentChild, setCurrentChildRaw] = useState(() => {
+    try { const s = sessionStorage.getItem('bibi_child'); return s ? JSON.parse(s) : null } catch { return null }
+  })
+  function setCurrentChild(c) { setCurrentChildRaw(c); if(c) sessionStorage.setItem('bibi_child', JSON.stringify(c)); else sessionStorage.removeItem('bibi_child') }
   const [screen, setScreenRaw] = useState('loading')
   function setScreen(s) { setScreenRaw(s); sessionStorage.setItem('bibi_screen', s) }
   const [voiceOn, setVoiceOn] = useState(false)
