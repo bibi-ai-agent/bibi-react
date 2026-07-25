@@ -89,25 +89,35 @@ export default function ProjectScreen() {
     addMsg('bibi', '🎯 Sorular hazırlanıyor...')
     const age = currentChild.age || 9
     const optCount = age <= 8 ? 2 : age <= 12 ? 3 : 4
-    // 3 deneme yap
+    // Quiz sorularını direkt fetch ile al
     let parsed = null
     for (let attempt = 0; attempt < 3 && !parsed?.questions?.length; attempt++) {
       try {
-        const result = await callAI(
-          'Sen bir bilgi yarışması hazırlayan sistemsin. SADECE geçerli JSON döndür, başka hiçbir şey yazma.',
-          [{ role:'user', content:`${age} yaşında çocuk için Türkçe bilgi yarışması. 5 soru, her biri ${optCount} şık. JSON formatı tam olarak şöyle olmalı (başka format kabul etmiyorum): {"questions":[{"question":"soru","options":["A) şık","B) şık"],"correct":0,"subject":"ders","explanation":"açıklama"}]}` }],
-          2000
-        )
-        const clean = result?.replace(/```json|```|`/g,'').trim() || ''
-        const start = clean.indexOf('{')
-        const end = clean.lastIndexOf('}')
+        const res = await fetch('https://bibi-app-rho.vercel.app/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.3,
+            max_tokens: 2000,
+            messages: [
+              { role: 'system', content: 'Sen bir bilgi yarışması hazırlayan sistemsin. SADECE JSON döndür. Hiçbir açıklama, yorum veya markdown ekleme.' },
+              { role: 'user', content: `${age} yaşında Türkçe konuşan bir çocuk için 5 soruluk bilgi yarışması hazırla. Her soruda ${optCount} şık olsun. SADECE şu JSON formatında döndür:
+{"questions":[{"question":"Soru?","options":["A) şık","B) şık","C) şık"],"correct":0,"subject":"Ders","explanation":"Açıklama"}]}` }
+            ]
+          })
+        })
+        const d = await res.json()
+        const text = d.choices?.[0]?.message?.content || ''
+        const start = text.indexOf('{')
+        const end = text.lastIndexOf('}')
         if (start !== -1 && end !== -1) {
-          parsed = JSON.parse(clean.slice(start, end+1))
+          parsed = JSON.parse(text.slice(start, end + 1))
         }
       } catch {}
     }
     if (!parsed?.questions?.length) {
-      addMsg('bibi','Sorular hazırlanamadı, tekrar dene 🙈')
+      addMsg('bibi', '😔 Sorular hazırlanamadı, tekrar dene!')
       setIsTyping(false)
       return
     }
