@@ -121,7 +121,8 @@ export default function ProjectScreen() {
       setIsTyping(false)
       return
     }
-    const scores = { [currentChild.id]:0, [projectFriend.id]:0 }
+    const scores = { [currentChild.id]:0 }
+    if (projectFriend?.id) scores[projectFriend.id] = 0
     const { data: session } = await sb.from('project_sessions').insert({ friendship_id:null, project_type:'quiz', questions:parsed.questions, current_question:0, answers:{}, scores, status:'active' }).select().single()
     if (session) { setProjectSessionId(session.id); setQuizSession(session); setIsTyping(false); subscribeToSession(session.id); showQuestion(session, 0) }
   }
