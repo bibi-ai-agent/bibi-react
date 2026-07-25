@@ -642,7 +642,6 @@ export default function ChatScreen() {
             }}
             onPDF={()=>setContentCreator('pdf')}
             onPresentation={()=>setContentCreator('presentation')}
-            onStory={()=>setScreen('story')}
           />
           <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18 }}>➤</button>
         </div>
