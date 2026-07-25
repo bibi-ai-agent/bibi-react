@@ -183,7 +183,7 @@ export default function FriendsScreen() {
                     </div>
                     <button onClick={e => { e.stopPropagation(); startProject(f.friendData) }}
                       style={{ padding:'7px 14px', borderRadius:12, border:'none', background:'rgba(13,155,126,.3)', color:'#4ade80', fontSize:12, fontWeight:800, cursor:'pointer' }}>
-                      🚀 Proje Yap
+                      📚 Eğitsel Aktivite
                     </button>
                   </div>
 
