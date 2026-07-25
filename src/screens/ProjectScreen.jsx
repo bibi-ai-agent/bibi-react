@@ -70,9 +70,13 @@ export default function ProjectScreen() {
   useEffect(() => {
     if (!currentChild || !projectType) return
     if (['math','memory','market','chess','riddle','rhythm'].includes(projectType)) return
-    if (!projectFriend) return
-    addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte ${TYPE_NAMES[projectType]||projectType} yapıyor!`)
     if (projectType === 'quiz') {
+      if (!projectFriend) {
+        addMsg('system', `🎯 ${currentChild.name} bilgi yarışmasında!`)
+        initQuizSession()
+        return
+      }
+      addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte ${TYPE_NAMES[projectType]||projectType} yapıyor!`)
       if (isProjectHost) initQuizSession()
       else waitForQuizSession()
     } else {
@@ -178,7 +182,7 @@ export default function ProjectScreen() {
         <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>{title}</div>
         <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{icon} {currentChild.name}{projectFriend?` vs ${friendName}`:''}</div>
       </div>
-      <button onClick={()=>setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
+      <button onClick={()=>setScreen('projectSelect')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
     </div>
   )
 
@@ -188,7 +192,7 @@ export default function ProjectScreen() {
         <div style={{ fontSize:56, marginBottom:12 }}>{emoji}</div>
         <div style={{ color:'#4ade80', fontSize:22, fontWeight:900, marginBottom:8 }}>{title}</div>
         {sub && <div style={{ color:'rgba(255,255,255,.6)', fontSize:14, marginBottom:20 }}>{sub}</div>}
-        <button onClick={()=>setScreen('children')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+        <button onClick={()=>setScreen('projectSelect')} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Oyunlara Dön</button>
       </div>
     </div>
   )
@@ -256,7 +260,7 @@ export default function ProjectScreen() {
     </div>
   )
 
-  if (!currentChild || !projectFriend || !projectType) return (
+  if (!currentChild || !projectType) return (
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', alignItems:'center', justifyContent:'center', color:'white' }}>Proje bulunamadı</div>
   )
 
@@ -338,7 +342,7 @@ export default function ProjectScreen() {
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>{setQuizFinished(false);setFinalScores(null);setQuizSession(null);setMessages([]);if(isProjectHost)initQuizSession();else waitForQuizSession()}} style={{ flex:1, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.2)', background:'transparent', color:'white', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>🔄 Tekrar</button>
-              <button onClick={()=>setScreen('friends')} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
+              <button onClick={()=>setScreen('projectSelect')} style={{ flex:1, padding:12, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Bitir ✓</button>
             </div>
           </div>
         </div>

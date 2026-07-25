@@ -27,7 +27,6 @@ export default function ActionMenu({ onImage, onPDF, onPresentation, onHomework,
             {[
               { icon:'🎨', label:'Görsel Oluştur',  fn: onImage },
               { icon:'📚', label:'Ödev Modu',        fn: onHomework },
-              { icon:'📖', label:'Hikaye Modu',      fn: onStory },
               { icon:'📄', label:'PDF Oluştur',      fn: onPDF },
               { icon:'📊', label:'Sunu Hazırla',     fn: onPresentation },
             ].map(item => (

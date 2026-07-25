@@ -35,7 +35,8 @@ export default function App() {
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        setScreen('children')
+        // Mevcut screen'i koru — sadece loading'deyse children'a geç
+        if (screen === 'loading') setScreen('children')
       } else {
         setScreen('auth')
       }
