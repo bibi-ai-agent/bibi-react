@@ -218,6 +218,13 @@ export default function ChatScreen() {
     }
   }
 
+  function stopAudio() {
+    if (currentAudio) { currentAudio.pause(); setCurrentAudio(null) }
+    window.speechSynthesis?.cancel()
+    setSpeechPaused(false)
+    setExpr('idle'); setStatus('Seninle burada!')
+  }
+
   function toggleSpeech() {
     if (currentAudio) {
       if (speechPaused) { currentAudio.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...') }
@@ -507,6 +514,7 @@ export default function ChatScreen() {
           </div>
         </div>
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+          <button onClick={()=>{ stopAudio(); setMessages([]); setSessionId(null); setInput(''); const opening = currentChild.age<=8?`Heyyyy ${currentChild.name}! 🎉 Yeni sohbet başlıyor!`:`Merhaba ${currentChild.name}! Yeni bir sohbet başlatalım.`; addMsg('bibi', opening) }} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>✏️</button>
           <button onClick={()=>setShowHistory(!showHistory)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>🕐</button>
           <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
@@ -634,6 +642,7 @@ export default function ChatScreen() {
             }}
             onPDF={()=>setContentCreator('pdf')}
             onPresentation={()=>setContentCreator('presentation')}
+            onStory={()=>setScreen('story')}
           />
           <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18 }}>➤</button>
         </div>

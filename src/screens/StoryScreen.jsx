@@ -85,13 +85,12 @@ JSON formatında yaz (başka hiçbir şey yazma):
   }
 
   async function loadImages(prompts) {
-    for (let i = 0; i < prompts.length; i++) {
-      try {
-        const style = age <= 8 ? 'cute cartoon children book illustration' : age <= 12 ? 'colorful storybook illustration' : 'artistic book illustration'
-        const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(prompts[i] + ', ' + style)}&t=${Date.now()}-${i}`
-        setImages(prev => ({ ...prev, [i]: url }))
-      } catch {}
-    }
+    const style = age <= 8 ? 'cute cartoon children book illustration' : age <= 12 ? 'colorful storybook illustration' : 'artistic book illustration'
+    // Hepsini paralel başlat
+    prompts.forEach((prompt, i) => {
+      const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(prompt + ', ' + style)}&t=${Date.now()}-${i}`
+      setImages(prev => ({ ...prev, [i]: url }))
+    })
   }
 
   async function speakParagraph(text) {
@@ -100,23 +99,21 @@ JSON formatında yaz (başka hiçbir şey yazma):
     setIsPlaying(true)
     const clean = cleanText(text)
     const vid = selectedVoiceId || getVoiceForChild(currentChild)
+    const onEnd = () => {
+      setIsPlaying(false); setCurrentAudio(null)
+      if (story && currentPara < story.paragraphs.length - 1) {
+        setTimeout(() => setCurrentPara(p => p + 1), 300)
+      }
+    }
     try {
       if (elevenLabsEnabled) {
-        const audio = await speakElevenLabs(clean, vid, () => {
-          setIsPlaying(false); setCurrentAudio(null)
-          // Otomatik sonraki paragraf
-          if (story && currentPara < story.paragraphs.length - 1) {
-            setTimeout(() => {
-              setCurrentPara(p => p + 1)
-            }, 500)
-          }
-        })
+        const audio = await speakElevenLabs(clean, vid, onEnd)
         setCurrentAudio(audio)
       } else {
-        speakBrowser(clean, age, () => setIsPlaying(false))
+        speakBrowser(clean, age, onEnd)
       }
     } catch {
-      speakBrowser(clean, age, () => setIsPlaying(false))
+      speakBrowser(clean, age, onEnd)
     }
   }
 
