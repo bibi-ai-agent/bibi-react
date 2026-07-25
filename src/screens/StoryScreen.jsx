@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useApp } from '../lib/store'
+import { sb } from '../lib/supabase'
 import { callAI } from '../lib/api'
 import { speakElevenLabs, speakBrowser, cleanText, getVoiceForChild } from '../lib/audio'
 
@@ -37,6 +38,9 @@ export default function StoryScreen() {
   const [userStoryResult, setUserStoryResult] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
+  const [stories, setStories] = useState([])
+  const [selectedStory, setSelectedStory] = useState(null)
+  const [loadingStories, setLoadingStories] = useState(false)
 
   const genre = GENRES.find(g => g.id === selectedGenre)
 
@@ -174,7 +178,7 @@ export default function StoryScreen() {
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
           {GENRES.map(g => (
-            <div key={g.id} onClick={() => { setSelectedGenre(g.id); setPhase('mode') }}
+            <div key={g.id} onClick={() => { setSelectedGenre(g.id); setPhase('mode'); loadStoriesForGenre(g.id) }}
               style={{ background:g.bg, borderRadius:20, padding:'18px 16px', cursor:'pointer', border:'1px solid rgba(255,255,255,.08)', position:'relative', overflow:'hidden' }}>
               <div style={{ position:'absolute', top:-20, right:-20, fontSize:80, opacity:.08 }}>{g.icon}</div>
               <div style={{ fontSize:36, marginBottom:10 }}>{g.icon}</div>
@@ -187,54 +191,51 @@ export default function StoryScreen() {
     </div>
   )
 
-  // ── Mod Seçim ──
+  // ── Hikaye Listesi ──
   if (phase === 'mode') return (
-    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#0a0f1e,#0d1f2d)`, display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
-      <div style={{ padding:'20px', display:'flex', alignItems:'center', gap:12 }}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#0a0f1e,#0d1f2d)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
+      <div style={{ padding:'20px 20px 0', display:'flex', alignItems:'center', gap:12 }}>
         <button onClick={() => setPhase('genre')} style={{ width:38, height:38, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.12)', cursor:'pointer', color:'white', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
-        <div style={{ color:'rgba(255,255,255,.5)', fontSize:13 }}>Geri</div>
-      </div>
-
-      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'0 24px 40px' }}>
-        <div style={{ width:80, height:80, borderRadius:24, background:genre?.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:40, marginBottom:16, border:'1px solid rgba(255,255,255,.1)' }}>{genre?.icon}</div>
-        <div style={{ color:'white', fontSize:24, fontWeight:900, marginBottom:6 }}>{genre?.name}</div>
-        <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:8, textAlign:'center', lineHeight:1.5 }}>{genre?.desc}</div>
-        {error && <div style={{ color:'#fca88a', fontSize:13, marginBottom:12, textAlign:'center' }}>{error}</div>}
-        <div style={{ color:'rgba(255,255,255,.3)', fontSize:13, marginBottom:28 }}>Nasıl okumak istersin?</div>
-
-        <div style={{ width:'100%', maxWidth:360, display:'flex', flexDirection:'column', gap:12 }}>
-          <div onClick={() => { setStoryMode('illustrated'); generateStory('illustrated') }}
-            style={{ background:'rgba(255,255,255,.06)', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:18, padding:'18px 20px', cursor:'pointer', display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:48, height:48, borderRadius:14, background:'linear-gradient(135deg,#7C3AED,#ec4899)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>🖼️</div>
-            <div>
-              <div style={{ color:'white', fontSize:15, fontWeight:800 }}>Resimli Hikaye</div>
-              <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>Her bölüm için özel görsel</div>
-            </div>
-          </div>
-
-          <div onClick={() => { setStoryMode('normal'); generateStory('normal') }}
-            style={{ background:'rgba(255,255,255,.06)', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:18, padding:'18px 20px', cursor:'pointer', display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:48, height:48, borderRadius:14, background:'linear-gradient(135deg,#0D9B7E,#06b6d4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>🔊</div>
-            <div>
-              <div style={{ color:'white', fontSize:15, fontWeight:800 }}>Sesli Hikaye</div>
-              <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>Bibi sesli okur</div>
-            </div>
-          </div>
+        <div>
+          <div style={{ color:'white', fontSize:17, fontWeight:900 }}>{genre?.icon} {genre?.name}</div>
+          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>Bir hikaye seç</div>
         </div>
       </div>
-    </div>
-  )
 
-  // ── Üretiliyor ──
-  if (phase === 'generating') return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#0a0f1e,#0d1f2d)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif', padding:24 }}>
-      <div style={{ width:100, height:100, borderRadius:28, background:genre?.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:52, marginBottom:24, animation:'float 2s ease-in-out infinite', border:'1px solid rgba(255,255,255,.1)' }}>{genre?.icon}</div>
-      <div style={{ color:'white', fontSize:22, fontWeight:900, marginBottom:8 }}>Hikaye yazılıyor...</div>
-      <div style={{ color:'rgba(255,255,255,.4)', fontSize:14, marginBottom:32, textAlign:'center', lineHeight:1.6 }}>Bibi senin için özel<br/>bir hikaye hazırlıyor ✨</div>
-      <div style={{ display:'flex', gap:8 }}>
-        {[0,1,2].map(i => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background:'white', animation:`dp 1.2s ease ${i*0.2}s infinite` }}/>)}
+      <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
+        {loadingStories ? (
+          <div style={{ display:'flex', justifyContent:'center', padding:40 }}>
+            <div style={{ display:'flex', gap:8 }}>
+              {[0,1,2].map(i => <div key={i} style={{ width:10, height:10, borderRadius:'50%', background:'white', animation:`dp 1.2s ease ${i*0.2}s infinite` }}/>)}
+            </div>
+          </div>
+        ) : stories.length === 0 ? (
+          <div style={{ textAlign:'center', color:'rgba(255,255,255,.3)', padding:40 }}>Hikaye bulunamadı</div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {stories.map(s => (
+              <div key={s.id} style={{ background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)', borderRadius:16, overflow:'hidden' }}>
+                <div style={{ padding:'16px 18px', borderBottom:'1px solid rgba(255,255,255,.06)' }}>
+                  <div style={{ color:'white', fontSize:15, fontWeight:800, marginBottom:4 }}>{s.title}</div>
+                  <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, lineHeight:1.5 }}>{s.paragraphs?.[0]?.slice(0, 80)}...</div>
+                  {s.moral && <div style={{ color:genre?.color, fontSize:11, marginTop:6, fontWeight:700 }}>💡 {s.moral}</div>}
+                </div>
+                <div style={{ display:'flex', gap:0 }}>
+                  <button onClick={() => startStory(s, 'illustrated')}
+                    style={{ flex:1, padding:'12px 8px', border:'none', borderRight:'1px solid rgba(255,255,255,.06)', background:'transparent', color:'rgba(255,255,255,.7)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                    🖼️ Resimli
+                  </button>
+                  <button onClick={() => startStory(s, 'normal')}
+                    style={{ flex:1, padding:'12px 8px', border:'none', background:'transparent', color:'rgba(255,255,255,.7)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+                    🔊 Sesli
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <style>{`@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-16px) rotate(2deg)}} @keyframes dp{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}`}</style>
+      <style>{`@keyframes dp{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}`}</style>
     </div>
   )
 
