@@ -153,12 +153,13 @@ export default function ChatScreen() {
     const lastSid = sessionStorage.getItem('bibi_last_session')
     if (lastSid) {
       sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true }).then(({ data: msgs }) => {
-        if (msgs?.length) {
+        if (msgs?.length > 0) {
           setSessionId(lastSid)
           msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
-          return
+        } else {
+          sessionStorage.removeItem('bibi_last_session')
+          showOpening()
         }
-        showOpening()
       })
       return
     }
