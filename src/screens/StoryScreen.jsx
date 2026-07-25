@@ -85,10 +85,26 @@ export default function StoryScreen() {
 
     if (mode === 'illustrated' && parsed.imagePrompts?.length) {
       const style = age <= 8 ? 'cute cartoon children book illustration, colorful, vibrant' : age <= 12 ? 'colorful storybook illustration, detailed' : 'artistic book illustration, cinematic'
-      parsed.imagePrompts.forEach((p, i) => {
-        const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(p + ', ' + style)}&t=${Date.now()}-${i}`
-        setImages(prev => ({ ...prev, [i]: url }))
-      })
+      // Görselleri sırayla yükle - önce ilk ikisini, sonra diğerlerini
+      const loadImage = (i) => {
+        if (i >= parsed.imagePrompts.length) return
+        const url = `https://bibi-app-rho.vercel.app/api/image?prompt=${encodeURIComponent(parsed.imagePrompts[i] + ', ' + style)}&t=${Date.now()}-${i}`
+        const img = new Image()
+        img.onload = () => {
+          setImages(prev => ({ ...prev, [i]: url }))
+          // Sonraki görseli yükle
+          setTimeout(() => loadImage(i + 1), 500)
+        }
+        img.onerror = () => {
+          setTimeout(() => loadImage(i + 1), 500)
+        }
+        img.src = url
+        // URL'i hemen set et ama yüklenmesini bekle
+        setImages(prev => ({ ...prev, [i]: null }))
+      }
+      // İlk iki görseli paralel başlat
+      loadImage(0)
+      setTimeout(() => loadImage(1), 200)
     }
   }
 
@@ -98,7 +114,17 @@ export default function StoryScreen() {
     const clean = cleanText(text)
     if (!clean) { setIsPlaying(false); return }
     const vid = selectedVoiceId || getVoiceForChild(currentChild)
-    const onEnd = () => { setIsPlaying(false); setCurrentAudio(null) }
+    const onEnd = () => {
+      setIsPlaying(false)
+      setCurrentAudio(null)
+      // Ses bitince 1sn sonra otomatik sonraki sayfaya geç
+      setTimeout(() => {
+        setCurrentPara(p => {
+          if (story && p < story.paragraphs.length - 1) return p + 1
+          return p
+        })
+      }, 1000)
+    }
     try {
       if (elevenLabsEnabled) { const audio = await speakElevenLabs(clean, vid, onEnd); setCurrentAudio(audio) }
       else speakBrowser(clean, age, onEnd)
@@ -243,12 +269,16 @@ export default function StoryScreen() {
           {/* Görsel */}
           {storyMode === 'illustrated' && (
             <div style={{ borderRadius:20, overflow:'hidden', marginBottom:20, background:'rgba(255,255,255,.04)', aspectRatio:'16/9', display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.08)', position:'relative' }}>
-              {img && <img src={img} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} alt=""
-                onError={e => e.target.style.display='none'}/>}
-              {!img && (
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-                  <div style={{ fontSize:40, opacity:.3 }}>{genre?.icon}</div>
-                  <div style={{ color:'rgba(255,255,255,.2)', fontSize:12 }}>Görsel yükleniyor...</div>
+              {img ? (
+                <img src={img} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} alt=""
+                  onError={e => { e.target.style.display='none' }}/>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, padding:20 }}>
+                  <div style={{ fontSize:36, animation:'float 2s ease-in-out infinite' }}>{genre?.icon}</div>
+                  <div style={{ color:'rgba(255,255,255,.3)', fontSize:12 }}>Görsel hazırlanıyor...</div>
+                  <div style={{ display:'flex', gap:4 }}>
+                    {[0,1,2].map(i => <div key={i} style={{ width:6, height:6, borderRadius:'50%', background:'rgba(255,255,255,.3)', animation:`dp 1.2s ease ${i*0.2}s infinite` }}/>)}
+                  </div>
                 </div>
               )}
             </div>
