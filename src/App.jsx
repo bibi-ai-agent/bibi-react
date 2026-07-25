@@ -35,8 +35,10 @@ export default function App() {
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        // Mevcut screen'i koru — sadece loading'deyse children'a geç
-        if (screen === 'loading') setScreen('children')
+        const saved = sessionStorage.getItem('bibi_screen')
+        const safeScreens = ['chat', 'children', 'report', 'friends', 'subscription', 'story']
+        if (saved && safeScreens.includes(saved)) setScreen(saved)
+        else setScreen('children')
       } else {
         setScreen('auth')
       }

@@ -5,7 +5,8 @@ const AppContext = createContext(null)
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [currentChild, setCurrentChild] = useState(null)
-  const [screen, setScreen] = useState('loading')
+  const [screen, setScreenRaw] = useState('loading')
+  function setScreen(s) { setScreenRaw(s); sessionStorage.setItem('bibi_screen', s) }
   const [voiceOn, setVoiceOn] = useState(false)
   const [selectedVoiceId, setSelectedVoiceId] = useState("HllA1j2zLOqUQ4kLjMmK")
   const [elevenLabsEnabled, setElevenLabsEnabled] = useState(true)

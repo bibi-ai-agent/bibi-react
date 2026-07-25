@@ -25,7 +25,8 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
         msgCount[m.session_id] = (msgCount[m.session_id] || 0) + 1
       })
       const filtered = sess.filter(s => (msgCount[s.id] || 0) > 0)
-      setSessions(filtered.map(s => ({ ...s, firstMsg: firstMsg[s.id] || 'Sohbet', message_count: msgCount[s.id] || 0 })))
+      const sorted = filtered.sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0))
+      setSessions(sorted.map(s => ({ ...s, firstMsg: firstMsg[s.id] || 'Sohbet', message_count: msgCount[s.id] || 0 })))
     } else {
       setSessions([])
     }

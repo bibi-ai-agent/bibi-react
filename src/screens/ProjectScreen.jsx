@@ -72,12 +72,12 @@ export default function ProjectScreen() {
     if (['math','memory','market','chess','riddle','rhythm'].includes(projectType)) return
     if (projectType === 'quiz') {
       if (!projectFriend) {
-        addMsg('system', `🎯 ${currentChild.name} bilgi yarışmasında!`)
-        initQuizSession()
+        addMsg('system', `🎯 ${currentChild.name} bilgi yarışmasına hazır!`)
+        setTimeout(() => initQuizSession(), 300)
         return
       }
-      addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte ${TYPE_NAMES[projectType]||projectType} yapıyor!`)
-      if (isProjectHost) initQuizSession()
+      addMsg('system', `🤝 ${currentChild.name} ve ${projectFriend.name} birlikte Bilgi Yarışması yapıyor!`)
+      if (isProjectHost) setTimeout(() => initQuizSession(), 300)
       else waitForQuizSession()
     } else {
       sendAI(`${TYPE_NAMES[projectType]} projesini başlatın. ${currentChild.name} ve ${projectFriend.name} ile heyecanlı bir karşılama yapın ve ilk adımı sorun.`)
