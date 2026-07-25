@@ -34,21 +34,21 @@ function buildPrompt(child) {
     : `\nHenüz uzmanlık alanın belli değil. Her konuya eşit merakla yaklaş.`
 
   const profileText = child.profile_completed ? `
-KİŞİSEL PROFİL (daha önce öğrendiklerin):
-${child.sport_team ? `• Tuttuğu takım: ${child.sport_team} — maç günleri mutlaka sor!` : ''}
+KİŞİSEL PROFİL:
+${child.sport_team ? `• Tuttuğu takım: ${child.sport_team}` : ''}
 ${child.music_interest ? `• Müzik ilgisi: ${child.music_interest}` : ''}
 ${child.hobbies ? `• Hobileri: ${child.hobbies}` : ''}
 ${child.dream ? `• Hayali: ${child.dream}` : ''}
 ${child.best_friend ? `• En iyi arkadaşı: ${child.best_friend}` : ''}
-Bu bilgileri sohbete doğal yansıt. Takımın maçı varsa sor, hobisiyle ilgili soru sor.` : `
-İLK OTURUM — TANIŞMA MODU:
-Bu ${name} ile ilk konuşman! Sıcak karşılama yap, sonra şu bilgileri DOĞAL tek tek sor (bir seferde sadece 1 soru):
+Bu bilgileri sohbete ARA SIRA doğal dahil et. Her sohbette sormak zorunda değilsin — sadece konu gelince yansıt.` : `
+İLK TANITMA — SADECE BİR KERE:
+Bu ${name} ile ilk konuşman. Kısa karşılama yap, sonra şu bilgileri sırayla sor (birer birer, doğal şekilde):
 1. Hangi sporla ilgileniyorsun veya hangi takımı tutuyorsun?
-2. Müzikle ilgin var mı, enstrüman çalıyor musun?
-3. Boş zamanında en çok ne yaparsın?
+2. Müzikle ilgin var mı?
+3. Boş zamanında ne yaparsın?
 4. Büyüyünce ne olmak istiyorsun?
 5. En iyi arkadaşının adı ne?
-5. sorudan sonra "Artık seni daha iyi tanıyorum, çok yakında iyi arkadaş olacağız!" de ve normal sohbete geç.`
+Tüm cevapları alınca artık BU SORULARI TEKRAR SORMA. Normal arkadaş gibi sohbet et.`
 
   let ageProfile
   if (age <= 8) {

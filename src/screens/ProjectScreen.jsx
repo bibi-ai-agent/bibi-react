@@ -89,17 +89,26 @@ export default function ProjectScreen() {
     addMsg('bibi', '🎯 Sorular hazırlanıyor...')
     const age = currentChild.age || 9
     const optCount = age <= 8 ? 2 : age <= 12 ? 3 : 4
-    const result = await callAI('Sadece JSON formatında cevap ver, başka hiçbir şey yazma.', [{ role:'user', content:`${age} yaşında Türkçe konuşan bir çocuk için bilgi yarışması hazırla. 5 farklı ders konusundan birer soru. Her soru ${optCount} şıklı olsun. Türkçe yaz. SADECE şu JSON formatında döndür, açıklama ekleme:\n{"questions":[{"question":"Soru metni","options":["A) seçenek","B) seçenek"],"correct":0,"subject":"Ders adı","explanation":"Kısa açıklama"}]}` }], 2000)
+    // 3 deneme yap
     let parsed = null
-    try {
-      const clean = result.replace(/```json|```/g,'').trim()
-      const jsonMatch = clean.match(/\{[\s\S]*\}/)
-      if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
-    } catch {}
+    for (let attempt = 0; attempt < 3 && !parsed?.questions?.length; attempt++) {
+      try {
+        const result = await callAI(
+          'Sen bir bilgi yarışması hazırlayan sistemsin. SADECE geçerli JSON döndür, başka hiçbir şey yazma.',
+          [{ role:'user', content:`${age} yaşında çocuk için Türkçe bilgi yarışması. 5 soru, her biri ${optCount} şık. JSON formatı tam olarak şöyle olmalı (başka format kabul etmiyorum): {"questions":[{"question":"soru","options":["A) şık","B) şık"],"correct":0,"subject":"ders","explanation":"açıklama"}]}` }],
+          2000
+        )
+        const clean = result?.replace(/```json|```|`/g,'').trim() || ''
+        const start = clean.indexOf('{')
+        const end = clean.lastIndexOf('}')
+        if (start !== -1 && end !== -1) {
+          parsed = JSON.parse(clean.slice(start, end+1))
+        }
+      } catch {}
+    }
     if (!parsed?.questions?.length) {
-      addMsg('bibi','Sorular tekrar hazırlanıyor... ⏳')
+      addMsg('bibi','Sorular hazırlanamadı, tekrar dene 🙈')
       setIsTyping(false)
-      setTimeout(() => initQuizSession(), 1000)
       return
     }
     const scores = { [currentChild.id]:0, [projectFriend.id]:0 }
