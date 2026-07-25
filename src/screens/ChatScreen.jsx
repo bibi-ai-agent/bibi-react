@@ -344,10 +344,13 @@ export default function ChatScreen() {
       const needsSearch = ['bugün','dün','bu hafta','maç','son dakika','haber','kaç kaç','puan durumu','transfer','güncel','şu an','şimdi'].some(k => t.toLowerCase().includes(k))
       let searchContext = ''
       if (needsSearch) {
-        const searchResult = await searchWeb(t)
+        const today = new Date().toLocaleDateString('tr-TR')
+        const searchQuery = `${t} ${today}`
+        const searchResult = await searchWeb(searchQuery)
         if (searchResult) searchContext = `
 
-[GÜNCEL BİLGİ - Web'den bulundu]: ${searchResult.slice(0, 500)}`
+[GÜNCEL BİLGİ - Bugün ${today} tarihli web araması]: ${searchResult.slice(0, 600)}
+Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       }
 
       const prompt = buildPrompt(currentChild) + searchContext
