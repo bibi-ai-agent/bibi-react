@@ -152,6 +152,15 @@ export default function StoryScreen() {
       .order('created_at', { ascending: true })
     setStories(data || [])
     setLoadingStories(false)
+    // Hikaye listesi açılınca tüm görselleri arka planda preload et
+    if (data?.length) {
+      data.forEach(s => {
+        (s.image_urls || []).forEach(url => {
+          const img = new Image()
+          img.src = url
+        })
+      })
+    }
   }
 
   async function startStory(s, mode) {
@@ -161,10 +170,13 @@ export default function StoryScreen() {
     setImages({})
     setPhase('reading')
     if (mode === 'illustrated' && s.image_urls?.length) {
-      // Hazır URL'ler — anında set et, tarayıcı arka planda yükler
-      const urlMap = {}
-      s.image_urls.forEach((url, i) => { urlMap[i] = url })
-      setImages(urlMap)
+      // Tüm görselleri paralel preload et
+      s.image_urls.forEach((url, i) => {
+        const img = new Image()
+        img.onload = () => setImages(prev => ({ ...prev, [i]: url }))
+        img.onerror = () => setImages(prev => ({ ...prev, [i]: url }))
+        img.src = url
+      })
     }
   }
 
