@@ -53,3 +53,16 @@ export function isHomeworkQuestion(text) {
   const keywords = ["ödev","soru","hesapla","çöz","bul","kaç","nedir","nasıl","açıkla","anlat"]
   return keywords.some(k => text.toLowerCase().includes(k))
 }
+export async function searchWeb(query) {
+  try {
+    const res = await fetch(`${API_BASE}/api/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    })
+    const data = await res.json()
+    if (data.answer) return data.answer
+    if (data.results?.length) return data.results.map(r => r.content).join(' ')
+    return null
+  } catch { return null }
+}
