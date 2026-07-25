@@ -36,7 +36,9 @@ export default function StoryScreen() {
   const [currentAudio, setCurrentAudio] = useState(null)
   const [userStory, setUserStory] = useState('')
   const [userStoryResult, setUserStoryResult] = useState(null)
+  const [userStoryImage, setUserStoryImage] = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [generatingImage, setGeneratingImage] = useState(false)
   const [error, setError] = useState('')
   const [stories, setStories] = useState([])
   const [selectedStory, setSelectedStory] = useState(null)
@@ -137,11 +139,25 @@ export default function StoryScreen() {
 
   async function improveUserStory() {
     setGenerating(true)
+    setUserStoryImage(null)
     try {
       const result = await callAI(null, [{ role:'user', content:`${age} yaşında bir çocuğun yazdığı hikayeyi güzelleştir. Orijinal fikri koru, daha akıcı ve etkileyici yap. Türkçe. Sadece hikayeyi yaz:\n"${userStory}"` }], 1500)
       setUserStoryResult(result)
+      // Görsel prompt üret ve görseli yükle
+      generateUserStoryImage(result)
     } catch { setUserStoryResult('Hikaye oluşturulamadı.') }
     setGenerating(false)
+  }
+
+  async function generateUserStoryImage(storyText) {
+    setGeneratingImage(true)
+    try {
+      const prompt = await callAI('Translate to English max 10 words, image scene description only.', [{ role:'user', content:`Bu hikayenin en güzel sahnesini İngilizce tanımla: ${storyText.slice(0,200)}` }], 60)
+      const style = age <= 8 ? 'cute cartoon children book illustration colorful' : age <= 12 ? 'colorful storybook illustration' : 'artistic illustration'
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent((prompt||'magical story scene') + ', ' + style)}?width=512&height=512&nologo=true`
+      setUserStoryImage(url)
+    } catch {}
+    setGeneratingImage(false)
   }
 
   async function loadStoriesForGenre(genreId) {
@@ -169,15 +185,7 @@ export default function StoryScreen() {
     setCurrentPara(0)
     setImages({})
     setPhase('reading')
-    if (mode === 'illustrated' && s.image_urls?.length) {
-      // Tüm görselleri paralel preload et
-      s.image_urls.forEach((url, i) => {
-        const img = new Image()
-        img.onload = () => setImages(prev => ({ ...prev, [i]: url }))
-        img.onerror = () => setImages(prev => ({ ...prev, [i]: url }))
-        img.src = url
-      })
-    }
+
   }
 
   function resetStory() {
@@ -256,16 +264,10 @@ export default function StoryScreen() {
                   <div style={{ color:'rgba(255,255,255,.5)', fontSize:12, lineHeight:1.5 }}>{s.paragraphs?.[0]?.slice(0, 80)}...</div>
                   {s.moral && <div style={{ color:genre?.color, fontSize:11, marginTop:6, fontWeight:700 }}>💡 {s.moral}</div>}
                 </div>
-                <div style={{ display:'flex', gap:0 }}>
-                  <button onClick={() => startStory(s, 'illustrated')}
-                    style={{ flex:1, padding:'12px 8px', border:'none', borderRight:'1px solid rgba(255,255,255,.06)', background:'transparent', color:'rgba(255,255,255,.7)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                    🖼️ Resimli
-                  </button>
-                  <button onClick={() => startStory(s, 'normal')}
-                    style={{ flex:1, padding:'12px 8px', border:'none', background:'transparent', color:'rgba(255,255,255,.7)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
-                    🔊 Sesli
-                  </button>
-                </div>
+                <button onClick={() => startStory(s, 'normal')}
+                  style={{ width:'100%', padding:'13px', border:'none', background:`rgba(255,255,255,.06)`, color:'white', fontSize:14, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                  🔊 Dinle
+                </button>
               </div>
             ))}
           </div>
@@ -399,6 +401,18 @@ export default function StoryScreen() {
               <div style={{ fontSize:20 }}>✨</div>
               <div style={{ color:'#4ade80', fontSize:14, fontWeight:700 }}>Bibi hikayen güzelleştirdi!</div>
             </div>
+            {userStoryImage && (
+              <div style={{ borderRadius:16, overflow:'hidden', marginBottom:12, aspectRatio:'16/9', position:'relative', background:'rgba(255,255,255,.04)' }}>
+                <img src={userStoryImage} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} alt=""
+                  onError={e => e.target.style.display='none'}/>
+                {generatingImage && <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.4)', fontSize:12 }}>🎨 Görsel hazırlanıyor...</div>}
+              </div>
+            )}
+            {!userStoryImage && generatingImage && (
+              <div style={{ borderRadius:16, marginBottom:12, padding:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', textAlign:'center', color:'rgba(255,255,255,.3)', fontSize:13 }}>
+                🎨 Hikayene özel görsel hazırlanıyor...
+              </div>
+            )}
             <div style={{ flex:1, background:'rgba(255,255,255,.05)', borderRadius:16, padding:18, overflowY:'auto', marginBottom:14, border:'1px solid rgba(255,255,255,.08)' }}>
               <div style={{ color:'white', fontSize:15, lineHeight:1.9, whiteSpace:'pre-line' }}>{userStoryResult}</div>
             </div>
