@@ -91,8 +91,17 @@ export default function ProjectScreen() {
     const optCount = age <= 8 ? 2 : age <= 12 ? 3 : 4
     const result = await callAI('Sadece JSON formatında cevap ver, başka hiçbir şey yazma.', [{ role:'user', content:`${age} yaşında Türkçe konuşan bir çocuk için bilgi yarışması hazırla. 5 farklı ders konusundan birer soru. Her soru ${optCount} şıklı olsun. Türkçe yaz. SADECE şu JSON formatında döndür, açıklama ekleme:\n{"questions":[{"question":"Soru metni","options":["A) seçenek","B) seçenek"],"correct":0,"subject":"Ders adı","explanation":"Kısa açıklama"}]}` }], 2000)
     let parsed = null
-    try { parsed = JSON.parse(result.replace(/```json|```/g,'').trim()) }
-    catch { addMsg('bibi','Sorular hazırlanamadı 🙈'); setIsTyping(false); return }
+    try {
+      const clean = result.replace(/```json|```/g,'').trim()
+      const jsonMatch = clean.match(/\{[\s\S]*\}/)
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
+    } catch {}
+    if (!parsed?.questions?.length) {
+      addMsg('bibi','Sorular tekrar hazırlanıyor... ⏳')
+      setIsTyping(false)
+      setTimeout(() => initQuizSession(), 1000)
+      return
+    }
     const scores = { [currentChild.id]:0, [projectFriend.id]:0 }
     const { data: session } = await sb.from('project_sessions').insert({ friendship_id:null, project_type:'quiz', questions:parsed.questions, current_question:0, answers:{}, scores, status:'active' }).select().single()
     if (session) { setProjectSessionId(session.id); setQuizSession(session); setIsTyping(false); subscribeToSession(session.id); showQuestion(session, 0) }
@@ -180,7 +189,7 @@ export default function ProjectScreen() {
     <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
       <div>
         <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase' }}>{title}</div>
-        <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{icon} {currentChild.name}{projectFriend?` vs ${friendName}`:''}</div>
+        <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{icon} {currentChild.name}{projectFriend ? ` vs ${friendName}` : ' — Tek Kişi'}</div>
       </div>
       <button onClick={()=>setScreen('projectSelect')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'7px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>✕ Çık</button>
     </div>
@@ -268,9 +277,9 @@ export default function ProjectScreen() {
     <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#243d38)', display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       <div style={{ background:'rgba(255,255,255,.06)', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', backdropFilter:'blur(12px)', flexShrink:0 }}>
         <div>
-          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>İş Birliği</div>
+          <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>{projectFriend ? 'İş Birliği' : 'Tek Kişi'}</div>
           <div style={{ color:'white', fontSize:15, fontWeight:900 }}>{TYPE_ICONS[projectType]||'🎮'} {TYPE_NAMES[projectType]||projectType}</div>
-          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{currentChild.name} & {friendName}</div>
+          <div style={{ color:'rgba(255,255,255,.4)', fontSize:12 }}>{projectFriend ? `${currentChild.name} & ${friendName}` : currentChild.name}</div>
         </div>
         {quizSession && (
           <div style={{ textAlign:'center' }}>

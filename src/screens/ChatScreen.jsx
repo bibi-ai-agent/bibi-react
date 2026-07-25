@@ -59,23 +59,35 @@ Bu ${name} ile ilk konuşman! Sıcak karşılama yap, sonra şu bilgileri DOĞAL
     ageProfile = `DİL TARZI (13-15 YAŞ):\n• Akran gibi konuş — samimi\n• Emoji çok az\n• Derin ve analitik açıklamalar\n• Eleştirel düşünmeyi teşvik et`
   }
 
-  return `Sen Bibi'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı.
+  return `Sen Bibi'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı ve yol arkadaşısın.
 Sınıfı: ${child.grade || '?'}
 ${specialtyText}
 ${profileText}
-KİMLİĞİN: ${name}'in hem arkadaşı, hem öğreticisi. Samimi, sıcak, destekleyici. "Ben bir yapay zekayım" deme.
+KİMLİĞİN:
+• ${name}'in hem arkadaşı hem öğreticisisin. Samimi, sıcak, destekleyici.
+• "Ben bir yapay zekayım" veya "Ben bir AI'yım" ASLA deme — sen Bibi'sin!
+• Her zaman meraklı, enerjik ve pozitif kal.
 ${ageProfile}
-ÖĞRETME TARZI:
-• Net ve kısa — en doğruyu en kısa yoldan ver
-• Ödev sorularında direkt cevap verme — Sokratik yöntemle yönlendir
+ÖĞRETME TARZI — ÇOK ÖNEMLİ:
+• Her soruya DOĞRU ve AKILLI cevap ver — uydurma, tahmin etme!
+• Bilmediğin bir şeyi söyle: "Bunu tam bilmiyorum ama birlikte öğrenebiliriz!"
+• Ödev sorularında direkt cevap verme — ipucu ver, yönlendir
 • Yanlışlarda "Yanlış!" deme — "Yaklaştın!", "Neredeyse!" de
-• Her cevabın sonunda bir soru sor
+• Cevapları kısa tut — çocuk sıkılmasın
+• Konuyu derinleştirmek için soru sor
+AKILLI CEVAP KURALLARI:
+• Matematik sorularında kesinlikle doğru hesapla
+• Tarih/bilim sorularında gerçek bilgi ver
+• Emin olmadığında "Hep birlikte araştıralım!" de
+• Saçma veya alakasız cevap verme — eğer konu dışıysa nazikçe yönlendir
 DUYGU TAKİBİ:
 • Üzgün görünürse "Seninle buradayım, anlatmak ister misin?" de
 • Profil tamamsa takım/hobi konularını doğal konuşmaya dahil et
-DİL KURALI — KRİTİK:
-• %100 Türkçe konuş — hiçbir yabancı dil YASAK
-• ${name} başka dilde yazsa bile sen Türkçe cevap ver`
+DİL KURALI — MUTLAK ZORUNLU:
+• %100 Türkçe konuş — İngilizce dahil HİÇBİR yabancı kelime YASAK
+• "okay", "yes", "no", "hello" gibi İngilizce kelimeler KULLANMA
+• ${name} başka dilde yazsa bile sen Türkçe cevap ver
+• Teknik terimler bile Türkçe karşılığıyla söyle`
 }
 
 function getImageStyle(age) {
@@ -122,6 +134,7 @@ export default function ChatScreen() {
   const [projectInvite, setProjectInvite] = useState(null)
   const [usage, setUsage] = useState({ message_count:0, image_count:0, slide_count:0 })
   const [showLimitModal, setShowLimitModal] = useState(null)
+  const [showNewChatConfirm, setShowNewChatConfirm] = useState(false)
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
   let msgCounter = useRef(0)
@@ -536,7 +549,7 @@ export default function ChatScreen() {
           </div>
         </div>
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          <button onClick={()=>{ stopAudio(); setMessages([]); setSessionId(null); setInput(''); const opening = currentChild.age<=8?`Heyyyy ${currentChild.name}! 🎉 Yeni sohbet başlıyor!`:`Merhaba ${currentChild.name}! Yeni bir sohbet başlatalım.`; addMsg('bibi', opening) }} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>✏️</button>
+          <button onClick={()=>setShowNewChatConfirm(true)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>✏️</button>
           <button onClick={()=>setShowHistory(!showHistory)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>🕐</button>
           <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
@@ -816,6 +829,29 @@ export default function ChatScreen() {
               ))}
             </div>
             <button onClick={() => setShowEmotionPicker(false)} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.06)', color:'rgba(255,255,255,.4)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Şimdi değil</button>
+          </div>
+        </div>
+      )}
+
+      {showNewChatConfirm && (
+        <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:300,width:'100%',textAlign:'center' }}>
+            <div style={{ fontSize:40,marginBottom:12 }}>✏️</div>
+            <div style={{ color:'white',fontSize:16,fontWeight:900,marginBottom:8 }}>Yeni Sohbet</div>
+            <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20 }}>Mevcut sohbet kapanacak. Devam etmek istiyor musun?</div>
+            <div style={{ display:'flex',gap:10 }}>
+              <button onClick={()=>setShowNewChatConfirm(false)} style={{ flex:1,padding:12,borderRadius:12,border:'1.5px solid rgba(255,255,255,.15)',background:'transparent',color:'rgba(255,255,255,.5)',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>İptal</button>
+              <button onClick={()=>{
+                setShowNewChatConfirm(false)
+                stopAudio()
+                setMessages([])
+                setSessionId(null)
+                setInput('')
+                sessionStorage.removeItem('bibi_last_session')
+                const opening = currentChild.age<=8?`Heyyyy ${currentChild.name}! 🎉 Yeni sohbet başlıyor!`:`Merhaba ${currentChild.name}! Yeni bir sohbet başlatalım.`
+                addMsg('bibi', opening)
+              }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
+            </div>
           </div>
         </div>
       )}
