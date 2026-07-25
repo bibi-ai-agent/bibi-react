@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { callAI, detectTopic, detectImageRequest } from '../lib/api'
+import { callAI, detectTopic, detectImageRequest, searchWeb } from '../lib/api'
 import { speakElevenLabs, speakBrowser, cleanText, getVoiceForChild, ELEVENLABS_VOICES } from '../lib/audio'
 import BibiFace from '../components/BibiFace'
 import ActionMenu from '../components/ActionMenu'
@@ -339,7 +339,19 @@ export default function ChatScreen() {
     try {
       const chatHistory = messages.slice(-20).map(m=>({role:m.role==='bibi'?'assistant':'user', content:m.text}))
       chatHistory.push({role:'user', content:t})
-      const reply = await callAI(buildPrompt(currentChild), chatHistory, 1000)
+
+      // Web search gerekiyor mu? Güncel bilgi sorularında ara
+      const needsSearch = ['bugün','dün','bu hafta','maç','son dakika','haber','kaç kaç','puan durumu','transfer','güncel','şu an','şimdi'].some(k => t.toLowerCase().includes(k))
+      let searchContext = ''
+      if (needsSearch) {
+        const searchResult = await searchWeb(t)
+        if (searchResult) searchContext = `
+
+[GÜNCEL BİLGİ - Web'den bulundu]: ${searchResult.slice(0, 500)}`
+      }
+
+      const prompt = buildPrompt(currentChild) + searchContext
+      const reply = await callAI(prompt, chatHistory, 1000)
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
       addMsg('bibi', reply)
       await incrementUsage('message_count')
