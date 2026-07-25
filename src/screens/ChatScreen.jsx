@@ -312,7 +312,10 @@ export default function ChatScreen() {
       addMsg('bibi', reply)
       await incrementUsage('message_count')
       if ((currentChild?.age<=8 && fromVoice) || (voiceOn && currentChild?.age>8)) speakMsg(reply)
-      if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
+      if (sid) {
+        await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
+        await sb.from('sessions').update({ message_count: messages.length + 2, updated_at: new Date().toISOString() }).eq('id', sid)
+      }
       if (!currentChild.profile_completed) extractAndSaveProfile(t)
 
       // Duygu tespiti — arka planda
