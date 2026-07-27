@@ -165,11 +165,11 @@ export default function ReportScreen() {
           {[0,1,2,3].map(i=><div key={i} style={{width:14,height:14,borderRadius:'50%',background:pin.length>i?'white':'transparent',border:'2px solid rgba(255,255,255,.4)'}}/>)}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,maxWidth:240,margin:'0 auto 16px'}}>
-          {[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((d,i)=>(
+          {[1,2,3,4,5,6,7,8,9,null,0,'⌫'].map((d,i)=>(
             <button key={i} onClick={()=>{
               if(d==='⌫') setPin(p=>p.slice(0,-1))
-              else if(d!==''&&pin.length<4){const np=pin+d;setPin(np);if(np.length===4)setTimeout(()=>checkPin(np),200)}
-            }} style={{aspectRatio:'1',borderRadius:'50%',border:'none',background:d===''?'transparent':'rgba(255,255,255,.1)',color:'white',fontSize:20,fontWeight:700,cursor:d===''?'default':'pointer',fontFamily:'Nunito,sans-serif'}}>{d}</button>
+              else if(d!==''&&d!==null&&pin.length<4){const np=pin+String(d);setPin(np);if(np.length===4)setTimeout(()=>checkPin(np),200)}
+            }} style={{aspectRatio:'1',borderRadius:'50%',border:'none',background:d===null?'transparent':'rgba(255,255,255,.1)',color:'white',fontSize:20,fontWeight:700,cursor:d===null?'default':'pointer',fontFamily:'Nunito,sans-serif'}}>{d}</button>
           ))}
         </div>
         {pinError&&<div style={{color:'#fca88a',fontSize:13,marginBottom:8}}>{pinError}</div>}

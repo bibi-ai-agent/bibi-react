@@ -410,6 +410,7 @@ export default function ChildrenScreen() {
               ))}
             </div>
             {entryPinError && <div style={{ color:'#fca88a', fontSize:12, marginBottom:8 }}>{entryPinError}</div>}
+            <button onClick={()=>setScreen('report')} style={{ background:'none', border:'none', color:'rgba(255,255,255,.35)', fontSize:12, cursor:'pointer', display:'block', margin:'0 auto 10px', fontFamily:'Nunito,sans-serif' }}>PIN'imi Unuttum?</button>
             <button onClick={()=>{setPinChild(null);setEntryPin('');setEntryPinError('')}} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.5)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>İptal</button>
           </div>
         </div>
