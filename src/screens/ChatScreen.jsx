@@ -600,8 +600,15 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             setShowHistory(false)
             const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', sid).order('created_at', { ascending: true })
             if (!msgs?.length) return
-            setSessionId(sid); setMessages([])
-            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
+            stopAudio()
+            setHomeworkMode(false)
+            setHomeworkStep(null)
+            setQuestionMode(false)
+            setCurrentQuestion(null)
+            setInput('')
+            setMessages([])
+            setSessionId(sid)
+            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content, { ts: new Date() }))
           }}
         />
       )}
@@ -866,9 +873,13 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setMessages([])
                 setSessionId(null)
                 setInput('')
+                setHomeworkMode(false)
+                setHomeworkStep(null)
+                setQuestionMode(false)
+                setCurrentQuestion(null)
                 sessionStorage.removeItem('bibi_last_session')
                 const opening = currentChild.age<=8?`Heyyyy ${currentChild.name}! 🎉 Yeni sohbet başlıyor!`:`Merhaba ${currentChild.name}! Yeni bir sohbet başlatalım.`
-                addMsg('bibi', opening)
+                setTimeout(() => addMsg('bibi', opening), 50)
               }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
             </div>
           </div>
