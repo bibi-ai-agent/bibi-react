@@ -168,9 +168,9 @@ export default function StoryScreen() {
 
   async function loadStoriesForGenre(genreId) {
     setLoadingStories(true)
-    const ageGroup = age <= 8 ? 'young' : age <= 12 ? 'middle' : 'teen'
+    // ageGroup filtresi kaldirildi
     const { data } = await sb.from('stories')
-      .select('*').eq('genre', genreId).eq('age_group', ageGroup)
+      .select('*').eq('genre', genreId)
       .order('created_at', { ascending: true })
     setStories(data || [])
     setLoadingStories(false)
