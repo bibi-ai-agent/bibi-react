@@ -173,8 +173,10 @@ export default function ReportScreen() {
           ))}
         </div>
         {pinError&&<div style={{color:'#fca88a',fontSize:13,marginBottom:8}}>{pinError}</div>}
-        <button onClick={()=>setShowForgot(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:12,cursor:'pointer',display:'block',margin:'0 auto 8px',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
-        <button onClick={()=>setScreen('children')} style={{background:'transparent',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer'}}>← Geri</button>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8 }}>
+          <button onClick={()=>setShowForgot(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:12,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
+          <button onClick={()=>setScreen('children')} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>← Geri</button>
+        </div>
       </div>
     </div>
   )
