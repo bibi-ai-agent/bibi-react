@@ -697,7 +697,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             onPDF={()=>setContentCreator('pdf')}
             onPresentation={()=>setContentCreator('presentation')}
           />
-          <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18 }}>➤</button>
+          <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:input.trim()?theme.bubble:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18,transition:'background .2s' }}>➤</button>
         </div>
       </div>
 
