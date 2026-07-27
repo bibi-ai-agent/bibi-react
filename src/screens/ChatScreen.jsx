@@ -693,7 +693,23 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
         </div>
       )}
 
-      <div style={{ padding:'10px 14px 18px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
+      {/* Alt Navigasyon Çubuğu */}
+      <div style={{ display:'flex',borderTop:'1px solid rgba(255,255,255,.06)',background:'rgba(0,0,0,.3)',backdropFilter:'blur(16px)',flexShrink:0 }}>
+        {[
+          { icon:'💬', label:'Sohbet', active:true },
+          { icon:'🧩', label:'Oyna & Öğren', action:()=>{ stopAudio(); setScreen('projectSelect') } },
+          { icon:'📖', label:'Hikayeler', action:()=>{ stopAudio(); setScreen('story') } },
+          { icon:'👤', label:'Profil', action:()=>{ stopAudio(); setScreen('children') } },
+        ].map((item,i)=>(
+          <button key={i} onClick={item.action||null} style={{ flex:1,padding:'8px 4px 10px',background:'transparent',border:'none',cursor:item.action?'pointer':'default',display:'flex',flexDirection:'column',alignItems:'center',gap:2,opacity:item.active?1:0.55,fontFamily:'Nunito,sans-serif' }}>
+            <span style={{ fontSize:20 }}>{item.icon}</span>
+            <span style={{ fontSize:9,fontWeight:item.active?800:600,color:item.active?theme.bubble:'rgba(255,255,255,.6)',letterSpacing:0.2 }}>{item.label}</span>
+            {item.active && <div style={{ width:20,height:2,borderRadius:2,background:theme.bubble,marginTop:1 }}/>}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding:'10px 14px 14px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
         <div style={{ display:'flex',gap:8,alignItems:'center' }}>
           <button onClick={toggleMic} style={{ width:46,height:46,borderRadius:'50%',flexShrink:0,cursor:'pointer',background:isListening?'rgba(239,68,68,.4)':currentChild?.age<=8?'rgba(74,222,128,.3)':'rgba(255,255,255,.12)',border:`1.5px solid ${isListening?'rgba(239,68,68,.6)':'rgba(255,255,255,.2)'}`,boxShadow:isListening?'0 0 16px rgba(239,68,68,.5)':'none',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>🎤</button>
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Bibi'ye yaz veya konuş..." style={{ flex:1,padding:'13px 18px',borderRadius:28,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:15,color:'white',fontFamily:'Nunito,sans-serif' }}/>
