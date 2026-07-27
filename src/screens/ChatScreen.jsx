@@ -224,7 +224,7 @@ export default function ChatScreen() {
 
   function addMsg(role, text, extra={}) {
     msgCounter.current++
-    setMessages(prev => [...prev, { role, text, id: `${Date.now()}-${msgCounter.current}`, ...extra }])
+    setMessages(prev => [...prev, { role, text, id: `${Date.now()}-${msgCounter.current}`, ts: new Date(), ...extra }])
   }
 
   async function speakMsg(text, voiceId) {
@@ -640,8 +640,11 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               </div>
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
-                <div style={{ padding:'12px 16px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',background:m.role==='user'?theme.bubble:'rgba(255,255,255,.92)',color:m.role==='user'?'white':'#1A2E2A',fontSize:15,lineHeight:1.5 }}>
+                <div style={{ padding:'10px 14px 6px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',background:m.role==='user'?theme.bubble:'rgba(255,255,255,.92)',color:m.role==='user'?'white':'#1A2E2A',fontSize:15,lineHeight:1.5 }}>
                   {m.text}
+                  {m.ts && <div style={{fontSize:9,marginTop:4,textAlign:'right',opacity:.45,color:m.role==='user'?'rgba(255,255,255,.8)':'#1A2E2A',letterSpacing:0.2}}>
+                    {`${m.ts.getDate().toString().padStart(2,'0')}.${(m.ts.getMonth()+1).toString().padStart(2,'0')} ${m.ts.getHours().toString().padStart(2,'0')}:${m.ts.getMinutes().toString().padStart(2,'0')}`}
+                  </div>}
                 </div>
                 {m.role==='bibi' && (
                   <button onClick={()=>speakMsg(m.text)} style={{ width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.2)',cursor:'pointer',color:'rgba(255,255,255,.6)',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>▶️</button>
