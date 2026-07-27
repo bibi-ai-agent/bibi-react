@@ -109,6 +109,7 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [currentAudio, setCurrentAudio] = useState(null)
+  const audioRef = useRef(null)
   const [speechPaused, setSpeechPaused] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showVoiceMenu, setShowVoiceMenu] = useState(false)
@@ -231,7 +232,8 @@ export default function ChatScreen() {
     if (!voiceOn && !voiceId) return
     const clean = cleanText(text)
     if (!clean) return
-    if (currentAudio) { currentAudio.pause(); setCurrentAudio(null) }
+    // Mevcut sesi durdur (ref ile güvenli)
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; setCurrentAudio(null) }
     window.speechSynthesis?.cancel()
     setSpeechPaused(false)
     setExpr('talking'); setStatus('Konuşuyor...')
@@ -239,8 +241,10 @@ export default function ChatScreen() {
     try {
       if (elevenLabsEnabled) {
         const audio = await speakElevenLabs(clean, vid, () => {
-          setExpr('idle'); setStatus('Seninle burada!'); setCurrentAudio(null); setSpeechPaused(false)
+          audioRef.current = null
+          setCurrentAudio(null); setExpr('idle'); setStatus('Seninle burada!'); setSpeechPaused(false)
         })
+        audioRef.current = audio
         setCurrentAudio(audio)
       } else {
         speakBrowser(clean, currentChild?.age, () => { setExpr('idle'); setStatus('Seninle burada!') })
@@ -251,16 +255,19 @@ export default function ChatScreen() {
   }
 
   function stopAudio() {
-    if (currentAudio) { currentAudio.pause(); setCurrentAudio(null) }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     window.speechSynthesis?.cancel()
-    setSpeechPaused(false)
+    setCurrentAudio(null); setSpeechPaused(false)
     setExpr('idle'); setStatus('Seninle burada!')
   }
 
   function toggleSpeech() {
-    if (currentAudio) {
-      if (speechPaused) { currentAudio.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...') }
-      else { currentAudio.pause(); setSpeechPaused(true); setExpr('idle'); setStatus('Duraklatıldı ⏸') }
+    if (audioRef.current) {
+      if (speechPaused) {
+        audioRef.current.play(); setSpeechPaused(false); setExpr('talking'); setStatus('Konuşuyor...')
+      } else {
+        audioRef.current.pause(); setSpeechPaused(true); setExpr('idle'); setStatus('Duraklatıldı ⏸')
+      }
     } else { setVoiceOn(!voiceOn) }
   }
 
@@ -553,7 +560,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       )}
 
       <div style={{ background:theme.header, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, flexShrink:0 }}>
-        <button onClick={()=>{if(currentAudio)currentAudio.pause();window.speechSynthesis?.cancel();setShowExitPin(true)}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
+        <button onClick={()=>{stopAudio();setShowExitPin(true)}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <div style={{ position:'relative' }}>
             <BibiFace expr={expr} size={44}/>
@@ -654,7 +661,10 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                   </div>}
                 </div>
                 {m.role==='bibi' && (
-                  <button onClick={()=>speakMsg(m.text)} style={{ width:28,height:28,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.2)',cursor:'pointer',color:'rgba(255,255,255,.6)',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>▶️</button>
+                  <button onClick={()=>{
+                    if(audioRef.current){stopAudio()}
+                    else{speakMsg(m.text)}
+                  }} style={{ width:28,height:28,borderRadius:'50%',background:currentAudio?'rgba(239,68,68,.3)':'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.2)',cursor:'pointer',color:'rgba(255,255,255,.6)',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background .2s' }}>{audioRef.current?'⏹':'▶️'}</button>
                 )}
               </div>
             )}
@@ -679,7 +689,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           <button onClick={toggleSpeech} style={{ padding:'5px 14px',borderRadius:10,border:'none',background:'rgba(124,58,237,.4)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
             {speechPaused ? '▶️ Devam Et' : '⏸ Duraklat'}
           </button>
-          <button onClick={()=>{currentAudio.pause();setCurrentAudio(null);setSpeechPaused(false);setExpr('idle');setStatus('Seninle burada!')}} style={{ padding:'5px 10px',borderRadius:10,border:'none',background:'rgba(239,68,68,.3)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>⏹ Durdur</button>
+          <button onClick={stopAudio} style={{ padding:'5px 10px',borderRadius:10,border:'none',background:'rgba(239,68,68,.3)',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>⏹ Durdur</button>
         </div>
       )}
 
