@@ -135,7 +135,7 @@ export default function StoryScreen() {
           if (story && p < story.paragraphs.length - 1) return p + 1
           return p
         })
-      }, 1000)
+      }, 500)
     }
     try {
       if (elevenLabsEnabled) { const audio = await speakElevenLabs(clean, vid, onEnd); setCurrentAudio(audio) }
@@ -186,6 +186,7 @@ export default function StoryScreen() {
   }
 
   async function startStory(s, mode) {
+    console.log('startStory paragraphs:', s.paragraphs?.length, s.paragraphs)
     setStoryMode(mode)
     setStory({ title: s.title, paragraphs: s.paragraphs, imagePrompts: s.image_prompts, imageUrls: s.image_urls, moral: s.moral })
     setCurrentPara(0)
