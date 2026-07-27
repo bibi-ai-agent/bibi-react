@@ -388,31 +388,31 @@ export default function ChildrenScreen() {
 
       {/* PIN Modal */}
       {pinChild && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, boxShadow:'0 8px 40px rgba(0,0,0,.4)', textAlign:'center' }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ width:'100%', maxWidth:340, textAlign:'center' }}>
             <div style={{ width:64, height:64, borderRadius:'50%', overflow:'hidden', background:'#0D9B7E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 12px' }}>
               {pinChild.avatar_photo ? <img src={pinChild.avatar_photo} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : pinChild.avatar_emoji || '👤'}
             </div>
-            <div style={{ color:'white', fontSize:17, fontWeight:900, marginBottom:4 }}>{pinChild.name}</div>
-            <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginBottom:20 }}>Veli PIN'ini gir</div>
-            <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:16 }}>
-              {[1,2,3,4].map(i => <div key={i} style={{ width:14, height:14, borderRadius:'50%', background:entryPin.length>=i?'#4ade80':'rgba(255,255,255,.2)' }}/>)}
+            <div style={{color:'white',fontSize:20,fontWeight:900,marginBottom:4}}>{pinChild.name}</div>
+            <div style={{color:'rgba(255,255,255,.45)',fontSize:13,marginBottom:24}}>Veli PIN'ini girin</div>
+            <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:16}}>
+              {[0,1,2,3].map(i=><div key={i} style={{width:14,height:14,borderRadius:'50%',background:entryPin.length>i?'white':'transparent',border:'2px solid rgba(255,255,255,.4)'}}/>)}
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:12 }}>
-              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((d,i) => (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,maxWidth:240,margin:'0 auto 16px'}}>
+              {[1,2,3,4,5,6,7,8,9,null,0,'⌫'].map((d,i) => (
                 <button key={i} onClick={async()=>{
                   if(d==='⌫'){setEntryPin(p=>p.slice(0,-1));setEntryPinError('')}
-                  else if(d!==''&&entryPin.length<4){
-                    const np=entryPin+d; setEntryPin(np)
+                  else if(d!==null&&entryPin.length<4){
+                    const np=entryPin+String(d); setEntryPin(np)
                     if(np.length===4) await checkEntryPin(np)
                   }
-                }} style={{ padding:'14px 0', borderRadius:12, border:'none', background:d===''?'transparent':'rgba(255,255,255,.1)', color:'white', fontSize:18, fontWeight:700, cursor:d===''?'default':'pointer', fontFamily:'Nunito,sans-serif' }}>{d}</button>
+                }} style={{aspectRatio:'1',borderRadius:'50%',border:'none',background:d===null?'transparent':'rgba(255,255,255,.1)',color:'white',fontSize:20,fontWeight:700,cursor:d===null?'default':'pointer',fontFamily:'Nunito,sans-serif'}}>{d}</button>
               ))}
             </div>
-            {entryPinError && <div style={{ color:'#fca88a', fontSize:12, marginBottom:8 }}>{entryPinError}</div>}
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:4 }}>
-              <button onClick={()=>setScreen('report')} style={{ background:'none', border:'none', color:'rgba(255,255,255,.35)', fontSize:12, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>PIN'imi Unuttum?</button>
-              <button onClick={()=>{setPinChild(null);setEntryPin('');setEntryPinError('')}} style={{ background:'none', border:'none', color:'rgba(255,255,255,.35)', fontSize:12, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
+            {entryPinError && <div style={{color:'#fca88a',fontSize:13,marginBottom:8}}>{entryPinError}</div>}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
+              <button onClick={()=>setScreen('report')} style={{background:'none',border:'none',color:'rgba(255,255,255,.4)',fontSize:12,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
+              <button onClick={()=>{setPinChild(null);setEntryPin('');setEntryPinError('')}} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>← Geri</button>
             </div>
           </div>
         </div>
