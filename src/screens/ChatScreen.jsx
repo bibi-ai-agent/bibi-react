@@ -826,8 +826,10 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               ))}
             </div>
             {exitPinError&&<div style={{ color:'#fca88a',fontSize:12,textAlign:'center',marginBottom:8 }}>{exitPinError}</div>}
-            <button onClick={()=>setShowForgotPin(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:12,cursor:'pointer',display:'block',margin:'0 auto 8px',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
-            <button onClick={()=>{setShowExitPin(false);setExitPin('');setExitPinError('')}} style={{ width:'100%',padding:10,borderRadius:12,border:'none',background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.5)',fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>İptal</button>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:4 }}>
+              <button onClick={()=>setShowForgotPin(true)} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:12,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>PIN'imi Unuttum?</button>
+              <button onClick={()=>{setShowExitPin(false);setExitPin('');setExitPinError('')}} style={{background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:12,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>← Geri</button>
+            </div>
           </div>
         </div>
       )}
