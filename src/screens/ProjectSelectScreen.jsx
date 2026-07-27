@@ -5,7 +5,6 @@ import { useApp } from '../lib/store'
 const MAIN_TYPES = [
   { id:"homework",   icon:"📚", name:"Ödev Yap",                   desc:"Bibi ile birlikte ödev sorularını çöz",         bg:"rgba(37,99,235,.2)",   border:"rgba(37,99,235,.4)" },
   { id:"experiment", icon:"🔬", name:"Deney & Proje",              desc:"Bibi ile deney tasarla ve araştır",             bg:"rgba(13,155,126,.15)", border:"rgba(13,155,126,.3)" },
-  { id:"games",      icon:"🎮", name:"Bilgi Yarışması & Oyunlar",   desc:"Satranç, ritim, matematik ve daha fazlası!",    bg:"rgba(124,58,237,.15)", border:"rgba(124,58,237,.4)" },
 ]
 
 const GAME_TYPES = [
