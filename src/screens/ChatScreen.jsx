@@ -197,6 +197,25 @@ export default function ChatScreen() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, isTyping])
 
+  // Global: herhangi bir yere tıklanınca ses dur
+  useEffect(() => {
+    function handleGlobalClick(e) {
+      // Ses butonlarına tıklanınca zaten toggle yapıyor, onları atla
+      if (e.target.closest && e.target.closest('[data-audio-btn]')) return
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+        setCurrentAudio(null)
+        setSpeechPaused(false)
+        setExpr('idle')
+        setStatus('Seninle burada!')
+      }
+      window.speechSynthesis?.cancel()
+    }
+    document.addEventListener('click', handleGlobalClick)
+    return () => document.removeEventListener('click', handleGlobalClick)
+  }, [])
+
   async function loadUsage() {
     const today = new Date().toISOString().split('T')[0]
     const { data } = await sb.from('daily_usage')
