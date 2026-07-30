@@ -74,10 +74,15 @@ export function getNextQuestion(progress) {
   return PERSONALITY_QUESTIONS[progress]
 }
 
-export function shouldAskPersonality(messageCount, progress) {
+export function shouldAskPersonality(messageCount, progress, lastAskedDate) {
   if (progress >= 50) return false
-  // Her 8 mesajda bir sor
-  return messageCount > 0 && messageCount % 8 === 0
+  // Günde maksimum 1 soru, en az 2 gün arayla
+  if (lastAskedDate) {
+    const daysSince = Math.floor((Date.now() - new Date(lastAskedDate)) / 1000 / 60 / 60 / 24)
+    if (daysSince < 2) return false
+  }
+  // Her 10 mesajda bir kontrol et ama günlük limit var
+  return messageCount > 0 && messageCount % 10 === 0
 }
 
 export function calculatePersonalityScores(answers) {

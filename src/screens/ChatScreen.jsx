@@ -454,7 +454,8 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
 
       // Kişilik envanteri sorusu
       const progress = currentChild.personality_progress || 0
-      if (shouldAskPersonality(newMsgCount, progress) && currentChild.profile_completed) {
+      const lastAsked = currentChild.last_personality_asked
+      if (shouldAskPersonality(newMsgCount, progress, lastAsked) && currentChild.profile_completed) {
         const nextQ = getNextQuestion(progress)
         if (nextQ) {
           const qText = getQuestionForAge(nextQ, currentChild.age || 9)
