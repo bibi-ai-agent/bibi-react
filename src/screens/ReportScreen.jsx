@@ -370,7 +370,7 @@ export default function ReportScreen() {
                         const date = new Date(Date.now() - (27-i) * 24 * 60 * 60 * 1000)
                         const dateStr = date.toISOString().split('T')[0]
                         const session = sessions.find(function(s) { return s.started_at && s.started_at.startsWith(dateStr) })
-                        const intensity = session ? (session.message_count > 20 ? '#0D9B7E' : session.message_count > 10 ? '#16a34a' : '#4ade80') : 'rgba(255,255,255,.06)'
+                        const intensity = session ? (session.message_count > 20 ? '#00ff88' : session.message_count > 10 ? '#f59e0b' : '#3b82f6') : 'rgba(255,255,255,.06)'
                         return <div key={i} title={dateStr} style={{ aspectRatio:'1', borderRadius:4, background:intensity }}/>
                       })}
                     </div>
@@ -380,9 +380,9 @@ export default function ReportScreen() {
                     <div style={{ display:'flex', gap:12, marginTop:10, flexWrap:'wrap' }}>
                       {[
                         { color:'rgba(255,255,255,.06)', label:'Giriş yok' },
-                        { color:'#4ade80', label:'Az aktif' },
-                        { color:'#16a34a', label:'Aktif' },
-                        { color:'#0D9B7E', label:'Çok aktif' },
+                        { color:'#3b82f6', label:'Az aktif' },
+                        { color:'#f59e0b', label:'Aktif' },
+                        { color:'#00ff88', label:'Çok aktif' },
                       ].map(function(item) {
                         return (
                           <div key={item.label} style={{ display:'flex', alignItems:'center', gap:5 }}>
