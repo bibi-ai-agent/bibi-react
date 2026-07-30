@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { callAI, detectTopic, detectImageRequest, searchWeb } from '../lib/api'
+import { callAI, classifyMessage, detectTopic, detectImageRequest, searchWeb } from '../lib/api'
 import { speakElevenLabs, speakBrowser, cleanText, getVoiceForChild, ELEVENLABS_VOICES } from '../lib/audio'
 import BibiFace from '../components/BibiFace'
 import ActionMenu from '../components/ActionMenu'
@@ -381,7 +381,14 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       }
 
       const prompt = buildPrompt(currentChild) + searchContext
-      const reply = await callAI(prompt, chatHistory, 1000)
+
+      // KATMAN 1 — Girdi Analizi (paralel çalışır)
+      const [classification] = await Promise.all([
+        classifyMessage(t, currentChild?.age || 9)
+      ])
+
+      // KATMAN 2 + 3 — Uzman + Yaş motoru callAI içinde aktif
+      const reply = await callAI(prompt, chatHistory, 1000, currentChild?.age, classification)
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
       addMsg('bibi', reply)
       await incrementUsage('message_count')
