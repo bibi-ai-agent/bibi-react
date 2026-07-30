@@ -86,12 +86,7 @@ export function buildMemoryContext(memory) {
 
   if (!parts.length) return ''
 
-  return `
-
-KİŞİSEL HAFIZA (bu çocuk hakkında öğrendiklerin):
-${parts.join('
-')}
-Bu bilgileri doğal bir şekilde sohbete yansıt.`
+  return '\n\nKİŞİSEL HAFIZA (bu cocuk hakkinda ogrendiklerin):\n' + parts.join('\n') + '\nBu bilgileri dogal bir sekilde sohbete yansiit.'
 }
 
 // ══════════════════════════════════════════════════════════
