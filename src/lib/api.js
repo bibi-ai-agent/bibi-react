@@ -1,6 +1,100 @@
 const API_BASE = "https://bibi-app-rho.vercel.app"
 
 // ══════════════════════════════════════════════════════════
+// KATMAN 5 — DERİN HAFIZA SİSTEMİ
+// ══════════════════════════════════════════════════════════
+
+// Çocuğun hafıza profilini çek
+export async function getChildMemory(sb, childId) {
+  if (!sb || !childId) return null
+  try {
+    const { data } = await sb.from('child_memory').select('*').eq('child_id', childId).maybeSingle()
+    return data
+  } catch { return null }
+}
+
+// Hafızayı güncelle (arka planda çalışır)
+export async function updateChildMemory(sb, childId, classification, reply, userMessage) {
+  if (!sb || !childId) return
+  try {
+    const { data: existing } = await sb.from('child_memory')
+      .select('*').eq('child_id', childId).maybeSingle()
+
+    const konu = classification?.konu || 'gunluk'
+    const duygu = classification?.duygu || 'normal'
+
+    // Mevcut veriyi güncelle
+    const strong = existing?.strong_topics || []
+    const weak   = existing?.weak_topics || []
+    const emotional = existing?.emotional_profile || {}
+    const patterns  = existing?.interaction_patterns || {}
+
+    // Konuya göre güçlü/zayıf güncelle
+    if (['matematik','fen','tarih','dil','sanat'].includes(konu)) {
+      // Cevap uzunsa (ilgi gösteriyor) güçlü konulara ekle
+      if (userMessage.length > 30 && !strong.includes(konu)) {
+        strong.push(konu)
+      }
+    }
+
+    // Duygu profilini güncelle
+    emotional[duygu] = (emotional[duygu] || 0) + 1
+
+    // Etkileşim desenlerini güncelle
+    const hour = new Date().getHours()
+    const timeSlot = hour < 12 ? 'sabah' : hour < 17 ? 'ogle' : hour < 21 ? 'aksam' : 'gece'
+    patterns[timeSlot] = (patterns[timeSlot] || 0) + 1
+
+    await sb.from('child_memory').upsert({
+      child_id: childId,
+      strong_topics: strong,
+      weak_topics: weak,
+      emotional_profile: emotional,
+      interaction_patterns: patterns,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'child_id' })
+  } catch(e) {
+    console.error('Hafıza güncelleme hatası:', e)
+  }
+}
+
+// Hafızayı prompt'a enjekte et
+export function buildMemoryContext(memory) {
+  if (!memory) return ''
+
+  const parts = []
+
+  if (memory.strong_topics?.length) {
+    parts.push(`• Güçlü olduğu konular: ${memory.strong_topics.join(', ')}`)
+  }
+
+  if (memory.weak_topics?.length) {
+    parts.push(`• Zorlandığı konular: ${memory.weak_topics.join(', ')} — bu konularda daha sabırlı ve adım adım ilerle`)
+  }
+
+  if (memory.emotional_profile) {
+    const dominant = Object.entries(memory.emotional_profile)
+      .sort((a,b) => b[1]-a[1])[0]
+    if (dominant) parts.push(`• Genel duygu profili: ${dominant[0]} ağırlıklı`)
+  }
+
+  if (memory.interaction_patterns) {
+    const dominant = Object.entries(memory.interaction_patterns)
+      .sort((a,b) => b[1]-a[1])[0]
+    if (dominant) parts.push(`• En aktif olduğu zaman: ${dominant[0]}`)
+  }
+
+  if (!parts.length) return ''
+
+  return `
+
+KİŞİSEL HAFIZA (bu çocuk hakkında öğrendiklerin):
+${parts.join('
+')}
+Bu bilgileri doğal bir şekilde sohbete yansıt.`
+}
+
+// ══════════════════════════════════════════════════════════
 // KATMAN 0 — ÇEKİRDEK KİMLİK (Değişmez kurallar)
 // ══════════════════════════════════════════════════════════
 const CORE_IDENTITY = `

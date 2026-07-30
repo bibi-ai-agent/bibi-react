@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
-import { callAI, classifyMessage, detectTopic, detectImageRequest, searchWeb } from '../lib/api'
+import { callAI, classifyMessage, getChildMemory, updateChildMemory, buildMemoryContext, detectTopic, detectImageRequest, searchWeb } from '../lib/api'
 import { speakElevenLabs, speakBrowser, cleanText, getVoiceForChild, ELEVENLABS_VOICES } from '../lib/audio'
 import BibiFace from '../components/BibiFace'
 import ActionMenu from '../components/ActionMenu'
@@ -380,15 +380,23 @@ export default function ChatScreen() {
 Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       }
 
-      const prompt = buildPrompt(currentChild) + searchContext
+      const prompt = buildPrompt(currentChild)
 
-      // KATMAN 1 — Girdi Analizi (paralel çalışır)
-      const [classification] = await Promise.all([
-        classifyMessage(t, currentChild?.age || 9)
+      // KATMAN 1 — Girdi Analizi + KATMAN 5 Hafıza (paralel çalışır)
+      const [classification, memory] = await Promise.all([
+        classifyMessage(t, currentChild?.age || 9),
+        getChildMemory(sb, currentChild?.id)
       ])
 
+      // KATMAN 5 — Hafıza bağlamını prompt'a ekle
+      const memoryContext = buildMemoryContext(memory)
+      const fullPrompt = prompt + (memoryContext || '') + (searchContext || '')
+
       // KATMAN 2 + 3 — Uzman + Yaş motoru callAI içinde aktif
-      const reply = await callAI(prompt, chatHistory, 1000, currentChild?.age, classification)
+      const reply = await callAI(fullPrompt, chatHistory, 1000, currentChild?.age, classification)
+
+      // KATMAN 5 — Hafızayı arka planda güncelle
+      updateChildMemory(sb, currentChild?.id, classification, reply, t)
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
       addMsg('bibi', reply)
       await incrementUsage('message_count')
