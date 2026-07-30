@@ -24,7 +24,7 @@ const PLAN_LIMITS = {
   pro:  { messages: Infinity, images: 50, slides: 15, friends: true, report: true },
 }
 
-function buildPrompt(child) {
+function buildPrompt(child, memory = null) {
   const age = child.age || 9
   const name = child.name || 'sevgili'
   const gender = child.gender === 'kız' ? 'kız' : 'erkek'
@@ -49,6 +49,32 @@ Bu ${name} ile ilk konuşman. Kısa karşılama yap, sonra şu bilgileri sırayl
 4. Büyüyünce ne olmak istiyorsun?
 5. En iyi arkadaşının adı ne?
 Tüm cevapları alınca artık BU SORULARI TEKRAR SORMA. Normal arkadaş gibi sohbet et.`
+
+  // KATMAN 9 — KİŞİSEL ÖĞRETMEN PROFİLİ
+  let memoryProfile = ''
+  if (memory) {
+    const parts = []
+    if (memory.strong_topics?.length)
+      parts.push(`• Güçlü konular: ${memory.strong_topics.join(', ')} — bu konularda daha ileri götür, zorla.`)
+    if (memory.weak_topics?.length)
+      parts.push(`• Zorlandığı konular: ${memory.weak_topics.join(', ')} — çok sabırlı ol, adım adım ilerle.`)
+    if (memory.emotional_profile) {
+      const dom = Object.entries(memory.emotional_profile).sort((a,b)=>b[1]-a[1])[0]
+      if (dom) parts.push(`• Duygusal profil: genellikle ${dom[0]} hissediyor — buna göre tonu ayarla.`)
+    }
+    if (memory.interaction_patterns) {
+      const dom = Object.entries(memory.interaction_patterns).sort((a,b)=>b[1]-a[1])[0]
+      if (dom) parts.push(`• En aktif: ${dom[0]} saatlerinde — bu saatte daha enerjik ve derin sorular sorabilirsin.`)
+    }
+    if (parts.length) {
+      memoryProfile = `
+
+KATMAN 9 — KİŞİSEL ÖĞRETMEN PROFİLİ:
+${parts.join('
+')}
+Bu profilini her sohbette sessizce uygula; açıkça bahsetme.`
+    }
+  }
 
   let ageProfile
   if (age <= 8) {
@@ -87,7 +113,7 @@ DİL KURALI — MUTLAK ZORUNLU:
 • %100 Türkçe konuş — İngilizce dahil HİÇBİR yabancı kelime YASAK
 • "okay", "yes", "no", "hello" gibi İngilizce kelimeler KULLANMA
 • ${name} başka dilde yazsa bile sen Türkçe cevap ver
-• Teknik terimler bile Türkçe karşılığıyla söyle`
+• Teknik terimler bile Türkçe karşılığıyla söyle${memoryProfile}`
 }
 
 function getImageStyle(age) {
@@ -380,7 +406,7 @@ export default function ChatScreen() {
 Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       }
 
-      const prompt = buildPrompt(currentChild)
+      const prompt = buildPrompt(currentChild, memory)
 
       // KATMAN 1 — Girdi Analizi + KATMAN 5 Hafıza (paralel çalışır)
       const [classification, memory] = await Promise.all([
