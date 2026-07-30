@@ -392,9 +392,7 @@ export default function ReportScreen() {
                         )
                       })}
                     </div>
-                    <div style={{ color:'rgba(255,255,255,.3)', fontSize:10, marginTop:6 }}>
-                      Her kare bir günü temsil eder. Renk ne kadar koyu olursa o gün o kadar çok konuşulmuştur.
-                    </div>
+                    <div style={{ color:'rgba(255,255,255,.3)', fontSize:10, marginTop:6 }}>Her kare bir günü temsil eder.</div>
                   </Card>
                 )}
 
