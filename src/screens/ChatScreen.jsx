@@ -67,12 +67,7 @@ Tüm cevapları alınca artık BU SORULARI TEKRAR SORMA. Normal arkadaş gibi so
       if (dom) parts.push(`• En aktif: ${dom[0]} saatlerinde — bu saatte daha enerjik ve derin sorular sorabilirsin.`)
     }
     if (parts.length) {
-      memoryProfile = `
-
-KATMAN 9 — KİŞİSEL ÖĞRETMEN PROFİLİ:
-${parts.join('
-')}
-Bu profilini her sohbette sessizce uygula; açıkça bahsetme.`
+      memoryProfile = '\n\nKATMAN 9 — KİŞİSEL OGRETMEN PROFİLİ:\n' + parts.join('\n') + '\nBu profilini her sohbette sessizce uygula; acikca bahsetme.'
     }
   }
 
