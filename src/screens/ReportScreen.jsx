@@ -377,6 +377,24 @@ export default function ReportScreen() {
                     <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, color:'rgba(255,255,255,.3)', fontSize:10 }}>
                       <span>28 gün önce</span><span>Bugün</span>
                     </div>
+                    <div style={{ display:'flex', gap:12, marginTop:10, flexWrap:'wrap' }}>
+                      {[
+                        { color:'rgba(255,255,255,.06)', label:'Giriş yok' },
+                        { color:'#4ade80', label:'Az aktif' },
+                        { color:'#16a34a', label:'Aktif' },
+                        { color:'#0D9B7E', label:'Çok aktif' },
+                      ].map(function(item) {
+                        return (
+                          <div key={item.label} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                            <div style={{ width:12, height:12, borderRadius:3, background:item.color, border:'1px solid rgba(255,255,255,.1)' }}/>
+                            <span style={{ color:'rgba(255,255,255,.4)', fontSize:10 }}>{item.label}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ color:'rgba(255,255,255,.3)', fontSize:10, marginTop:6 }}>
+                      Her kare bir günü temsil eder. Renk ne kadar koyu olursa o gün o kadar çok konuşulmuştur.
+                    </div>
                   </Card>
                 )}
 
