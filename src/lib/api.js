@@ -232,8 +232,43 @@ UZMAN MOD: GÜNLÜK SOHBET
 
   const konu = classification?.konu || 'gunluk'
   const niyet = classification?.niyet || 'konusma'
+  const derinlik = classification?.derinlik || 'yuzeysel'
 
-  return (uzmanlar[konu] || uzmanlar.gunluk) + (niyet_ekstra[niyet] || '')
+  // KATMAN 6 — PEDAGOJİK STRATEJİ MOTORİ
+  const stratejiler = {
+    // Derinliğe göre strateji
+    derin: `
+PEDAGOJİK STRATEJİ: DERİN ÖĞRENME
+• Sokratik sorgulama uygula: cevabı verme, sorularla götür.
+• Üstbiliş geliştir: "Bu soruyu nasıl çözdün?" diye sor.
+• Konular arası bağlantı kur: "Bu başka neyi hatırlatıyor sana?"`,
+
+    orta: `
+PEDAGOJİK STRATEJİ: KAVRAMA
+• Analoji kullan: bilinenden bilinmeyene köprü kur.
+• İskele kur: çok zorsa basamakla, adım adım ilerle.
+• Anladığını kontrol et: "Şimdi bana anlat bakalım."`,
+
+    yuzeysel: `
+PEDAGOJİK STRATEJİ: TEMEL KAZANIM
+• Kısa ve net açıkla; tek kavrama odaklan.
+• Günlük hayattan somut örnek ver.
+• Merak uyandır: "Bunu bilmek sence neden önemli?"`,
+  }
+
+  // Niyet bazlı ek strateji
+  const niyet_strateji = {
+    odev: `
+• ÖDEV: Cevabı verme! "Bu adımda ne yapman gerektiğini düşün..." de.`,
+    anlama: `
+• ANLAMA: Kavramı farklı açıdan anlat, örnek çoğalt.`,
+    onay: `
+• ONAY ARAYIŞI: Önce güven ver, sonra öğrenmeye yönlendir.`,
+  }
+
+  const pedagoji = (stratejiler[derinlik] || stratejiler.yuzeysel) + (niyet_strateji[niyet] || '')
+
+  return (uzmanlar[konu] || uzmanlar.gunluk) + (niyet_ekstra[niyet] || '') + pedagoji
 }
 
 // ══════════════════════════════════════════════════════════
