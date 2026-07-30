@@ -166,6 +166,18 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentChild) return
     loadUsage()
+
+    // Cleanup: bu effect temizlenince (çocuk değişince) oturumu kapat
+    return () => {
+      const prevSession = sessionStorage.getItem('bibi_last_session_' + currentChild.id)
+      if (prevSession) {
+        fetch('https://bibi-app-rho.vercel.app/api/session-close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: prevSession, started_at: sessionStorage.getItem('bibi_session_start') })
+        }).catch(function() {})
+      }
+    }
     const autoVoice = getVoiceForChild(currentChild)
     setSelectedVoiceId(autoVoice)
     const isYoung = currentChild.age <= 8

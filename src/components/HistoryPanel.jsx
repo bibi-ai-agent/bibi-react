@@ -58,6 +58,29 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
 
   useEffect(function() { loadSessions() }, [])
 
+  async function closePendingSessions(sessions) {
+    const untitled = sessions.filter(function(s) { return !s.title && s.message_count > 0 })
+    for (const s of untitled) {
+      try {
+        const res = await fetch('https://bibi-app-rho.vercel.app/api/session-close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: s.id, started_at: s.started_at })
+        })
+        const data = await res.json()
+        if (data.ok) {
+          // Listeyi güncelle
+          setSessions(function(prev) {
+            return prev.map(function(p) {
+              if (p.id === s.id) return Object.assign({}, p, { title: data.title, summary: data.summary, topic_tags: data.tags })
+              return p
+            })
+          })
+        }
+      } catch(e) {}
+    }
+  }
+
   async function loadSessions() {
     setLoading(true)
     const { data } = await sb
@@ -67,8 +90,13 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
       .gt('message_count', 0)
       .order('started_at', { ascending: false })
       .limit(50)
-    setSessions(data || [])
+    const sessions = data || []
+    setSessions(sessions)
     setLoading(false)
+    // Başlıksız oturumları arka planda başlıklandır
+    if (sessions.some(function(s) { return !s.title && s.message_count > 0 })) {
+      closePendingSessions(sessions)
+    }
   }
 
   const filtered = sessions.filter(function(s) {
