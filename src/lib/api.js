@@ -1,10 +1,6 @@
 const API_BASE = "https://bibi-app-rho.vercel.app"
 
-// ══════════════════════════════════════════════════════════
 // KATMAN 5 — DERİN HAFIZA SİSTEMİ
-// ══════════════════════════════════════════════════════════
-
-// Çocuğun hafıza profilini çek
 export async function getChildMemory(sb, childId) {
   if (!sb || !childId) return null
   try {
@@ -13,125 +9,56 @@ export async function getChildMemory(sb, childId) {
   } catch { return null }
 }
 
-// Hafızayı güncelle (arka planda çalışır)
 export async function updateChildMemory(sb, childId, classification, reply, userMessage) {
   if (!sb || !childId) return
   try {
-    const { data: existing } = await sb.from('child_memory')
-      .select('*').eq('child_id', childId).maybeSingle()
-
+    const { data: existing } = await sb.from('child_memory').select('*').eq('child_id', childId).maybeSingle()
     const konu = classification?.konu || 'gunluk'
     const duygu = classification?.duygu || 'normal'
-
-    // Mevcut veriyi güncelle
     const strong = existing?.strong_topics || []
-    const weak   = existing?.weak_topics || []
+    const weak = existing?.weak_topics || []
     const emotional = existing?.emotional_profile || {}
-    const patterns  = existing?.interaction_patterns || {}
-
-    // Konuya göre güçlü/zayıf güncelle
+    const patterns = existing?.interaction_patterns || {}
     if (['matematik','fen','tarih','dil','sanat'].includes(konu)) {
-      // Cevap uzunsa (ilgi gösteriyor) güçlü konulara ekle
-      if (userMessage.length > 30 && !strong.includes(konu)) {
-        strong.push(konu)
-      }
+      if (userMessage.length > 30 && !strong.includes(konu)) strong.push(konu)
     }
-
-    // Duygu profilini güncelle
     emotional[duygu] = (emotional[duygu] || 0) + 1
-
-    // Etkileşim desenlerini güncelle
     const hour = new Date().getHours()
-    const timeSlot = hour < 12 ? 'sabah' : hour < 17 ? 'ogle' : hour < 21 ? 'aksam' : 'gece'
-    patterns[timeSlot] = (patterns[timeSlot] || 0) + 1
-
-    await sb.from('child_memory').upsert({
-      child_id: childId,
-      strong_topics: strong,
-      weak_topics: weak,
-      emotional_profile: emotional,
-      interaction_patterns: patterns,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'child_id' })
-  } catch(e) {
-    console.error('Hafıza güncelleme hatası:', e)
-  }
+    const slot = hour < 12 ? 'sabah' : hour < 17 ? 'ogle' : hour < 21 ? 'aksam' : 'gece'
+    patterns[slot] = (patterns[slot] || 0) + 1
+    await sb.from('child_memory').upsert({ child_id: childId, strong_topics: strong, weak_topics: weak, emotional_profile: emotional, interaction_patterns: patterns, updated_at: new Date().toISOString() }, { onConflict: 'child_id' })
+  } catch(e) { console.error('Hafiza hatasi:', e) }
 }
 
-// Hafızayı prompt'a enjekte et
 export function buildMemoryContext(memory) {
   if (!memory) return ''
-
   const parts = []
-
-  if (memory.strong_topics?.length) {
-    parts.push(`• Güçlü olduğu konular: ${memory.strong_topics.join(', ')}`)
-  }
-
-  if (memory.weak_topics?.length) {
-    parts.push(`• Zorlandığı konular: ${memory.weak_topics.join(', ')} — bu konularda daha sabırlı ve adım adım ilerle`)
-  }
-
+  if (memory.strong_topics?.length) parts.push('• Guclu konular: ' + memory.strong_topics.join(', '))
+  if (memory.weak_topics?.length) parts.push('• Zorlandi konular: ' + memory.weak_topics.join(', ') + ' — daha sabirl i ol')
   if (memory.emotional_profile) {
-    const dominant = Object.entries(memory.emotional_profile)
-      .sort((a,b) => b[1]-a[1])[0]
-    if (dominant) parts.push(`• Genel duygu profili: ${dominant[0]} ağırlıklı`)
+    const dom = Object.entries(memory.emotional_profile).sort((a,b) => b[1]-a[1])[0]
+    if (dom) parts.push('• Genel duygu: ' + dom[0])
   }
-
   if (memory.interaction_patterns) {
-    const dominant = Object.entries(memory.interaction_patterns)
-      .sort((a,b) => b[1]-a[1])[0]
-    if (dominant) parts.push(`• En aktif olduğu zaman: ${dominant[0]}`)
+    const dom = Object.entries(memory.interaction_patterns).sort((a,b) => b[1]-a[1])[0]
+    if (dom) parts.push('• En aktif: ' + dom[0])
   }
-
   if (!parts.length) return ''
-
-  return '\n\nKİŞİSEL HAFIZA (bu cocuk hakkinda ogrendiklerin):\n' + parts.join('\n') + '\nBu bilgileri dogal bir sekilde sohbete yansiit.'
+  return '\n\nKISISEL HAFIZA:\n' + parts.join('\n') + '\nBu bilgileri dogal yansit.'
 }
 
-// ══════════════════════════════════════════════════════════
-// KATMAN 0 — ÇEKİRDEK KİMLİK (Değişmez kurallar)
-// ══════════════════════════════════════════════════════════
-const CORE_IDENTITY = `
-SEN BİBİ'SİN — KATMAN 0: ÇEKİRDEK KİMLİK
-Bu kimlik hiçbir koşulda değişmez. Hangi soru gelirse gelsin bu kurallar geçerlidir.
-
-KESİN KURALLAR:
-• %100 Türkçe konuş. Tek bir İngilizce kelime bile yasaktır. "okay", "yes", "no", "hello" gibi kelimeler KULLANILMAZ.
-• "Ben bir yapay zekayım" veya "Ben AI'yım" ASLA deme. Sen Bibi'sin, çocuğun öğrenme arkadaşı.
-• Emin olmadığın bilgiyi uydurma. "Bunu tam bilmiyorum, birlikte araştıralım!" de.
-• Çocuğu hiçbir koşulda küçümseme, yargılama veya kıyaslama.
-• Cevabı vermek yerine merak uyandır. Keşfettir, rehberlik et.
-• Duygusal zeka bilgi kadar önemlidir. Önce çocuğu anla, sonra öğret.
-`.trim()
-
-// ══════════════════════════════════════════════════════════
 // KATMAN 1 — GİRDİ ANALİZİ
-// ══════════════════════════════════════════════════════════
 export async function classifyMessage(text, childAge) {
-  const prompt = `Bir çocuğun mesajını analiz et. SADECE JSON döndür, başka hiçbir şey yazma.
-
-MESAJ: "${text}"
-YAŞ: ${childAge}
-
-JSON formatı:
-{
-  "konu": "matematik|fen|dil|tarih|sanat|duygu|yaraticilik|kariyer|gunluk",
-  "derinlik": "yuzeysel|orta|derin",
-  "niyet": "cevap|anlama|konusma|onay|odev",
-  "duygu": "mutlu|uzgun|stresli|heyecanli|merakli|normal",
-  "bağlam": "okul|aile|arkadas|gunluk|diger"
-}`
-
+  const prompt = 'Bir cocugun mesajini analiz et. SADECE JSON dondur.\n\nMESAJ: "' + text + '"\nYAS: ' + childAge + '\n\n{"konu":"matematik|fen|dil|tarih|sanat|duygu|yaraticilik|kariyer|gunluk","derinlik":"yuzeysel|orta|derin","niyet":"cevap|anlama|konusma|onay|odev","duygu":"mutlu|uzgun|stresli|heyecanli|merakli|normal","bagiam":"okul|aile|arkadas|gunluk|diger"}'
   try {
-    const res = await fetch(`${API_BASE}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: "system", content: "Sen bir eğitim analisti AI'sın. SADECE JSON döndür." },
-          { role: "user", content: prompt }
+          { role: 'system', content: 'Egitim analisti AI. SADECE JSON dondur.' },
+          { role: 'user', content: prompt }
         ],
         max_tokens: 150,
         temperature: 0.1
@@ -139,219 +66,88 @@ JSON formatı:
     })
     const data = await res.json()
     const content = data.choices?.[0]?.message?.content || '{}'
-    const clean = content.replace(/```json|```/g, '').trim()
-    return JSON.parse(clean)
+    return JSON.parse(content.replace(/```json|```/g, '').trim())
   } catch {
-    return { konu: "gunluk", derinlik: "yuzeysel", niyet: "konusma", duygu: "normal", bagımlı: "diger" }
+    return { konu: 'gunluk', derinlik: 'yuzeysel', niyet: 'konusma', duygu: 'normal', bagiam: 'diger' }
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// KATMAN 2 — DİNAMİK UZMAN SİSTEMİ
-// ══════════════════════════════════════════════════════════
+// KATMAN 2 — UZMAN SİSTEMİ
 function buildExpertPrompt(classification) {
+  const konu = classification?.konu || 'gunluk'
+  const derinlik = classification?.derinlik || 'yuzeysel'
+  const niyet = classification?.niyet || 'konusma'
+
   const uzmanlar = {
-    matematik: `
-UZMAN MOD: MATEMATİK
-• Hatayı tespit et; nerede yanlış gittiğini adım adım göster.
-• Formülü ezberletme — mantığını kavrat, somutlaştır.
-• "2 elma + 3 elma" gibi günlük hayat örnekleri kullan.
-• Benzer sorular üret, pekiştir.
-• Yanlış cevap için: "Neredeyse! Şu adımda farklı düşünelim:" de.`,
+    matematik: '\nUZMAN MOD: MATEMATIK\n• Hatayi tespit et; adim adim goster.\n• Formulu ezberletme, mantigini kavrat.\n• Gunluk hayat ornekleri kullan.\n• Benzer sorular uret, pekistir.\n• Yanlis icin: "Neredeyse! Su adimda farkli dusunelim:" de.',
+    fen: '\nUZMAN MOD: FEN\n• Her kavrami gunluk hayatla iliskilendir.\n• Deney veya gozlem oner.\n• "Peki sence neden boyle?" sorusunu sor.\n• Bilimsel dusunce ogret: gozlemle, hipotez kur, test et.',
+    dil: '\nUZMAN MOD: DIL\n• Turkceyi guclend ir; yanlis kullanimlari duzelt.\n• Kelime hazinesini genislet.\n• Yaratici yazarligi tesvik et.\n• Dilbilgisi kuralini ornek le kavrat.',
+    tarih: '\nUZMAN MOD: TARIH\n• Her konuyu hikaye formatinda anlat.\n• "O donemde sen olsaydin ne yapardın?" sor.\n• Neden-sonuc iliskisi kur.\n• Tarihi olayı gunumuyle iliskilendir.',
+    sanat: '\nUZMAN MOD: SANAT\n• "Ya soyle olsaydi?" sorulari sor.\n• Ozgun uretimi odullend ir.\n• Farkli bakis acilar i sun.',
+    duygu: '\nUZMAN MOD: DUYGUSAL DESTEK\n• Once dinle, sonra konuş. Cozum sunmadan once anla.\n• Duyguyu yansi t: "Seni cok iyi anliyorum." de.\n• Asla yargilama. Guven ver, umut ver.',
+    kariyer: '\nUZMAN MOD: KARIYER\n• Hayallerini kesfet.\n• Guclu yanlarini goster.\n• Gercekci ama ilham verici ol.',
+    yaraticilik: '\nUZMAN MOD: YARATICILIK\n• Sinir koy, ozgurlestir.\n• Her fikri degerli bul; once onayla, sonra gelistir.',
+    gunluk: '\nUZMAN MOD: GUNLUK SOHBET\n• Arkadasca konuş; samimi, sicak ol.\n• Sohbeti ogrenmey e nazikce yonlendir.',
+  }
 
-    fen: `
-UZMAN MOD: FEN VE BİLİM
-• Her kavramı günlük hayatla ilişkilendir. ("Neden gökyüzü mavi?")
-• Deney veya gözlem öner. Merakı körükle.
-• "Peki sence neden böyle?" sorusunu sık sor.
-• Bilimsel düşünce sürecini öğret: gözlemle, hipotez kur, test et.
-• Karmaşık kavramı basitten karmaşığa doğru aç.`,
-
-    dil: `
-UZMAN MOD: DİL VE EDEBİYAT
-• Türkçeyi güçlendir; yanlış kullanımları nazikçe düzelt.
-• Kelime hazinesini sistematik genişlet; yeni kelimeyi cümlede kullan.
-• Yaratıcı yazarlığı teşvik et.
-• Okuma anlama için sorular sor.
-• Dilbilgisi kuralını ezberletme; örnekle hissettir.`,
-
-    tarih: `
-UZMAN MOD: TARİH VE SOSYAL BİLİMLER
-• Her konuyu hikâye formatında anlat; karakterleri canlandır.
-• "O dönemde sen olsaydın ne yapardın?" empati soruları sor.
-• Neden-sonuç ilişkisi kur; sadece tarih değil anlam öğret.
-• Tarihi olayı günümüzle ilişkilendir.
-• Kritik düşünceyi geliştir: "Farklı bir karar verseydi ne olurdu?"`,
-
-    sanat: `
-UZMAN MOD: SANAT VE YARATICILIK
-• "Ya şöyle olsaydı?" soruları ile hayal gücünü besle.
-• Özgün üretimi ödüllendir; kopyalamayı değil yaratmayı teşvik et.
-• Farklı bakış açıları sun; tek doğru olmadığını göster.
-• Sanatçı perspektifinden bak; duyguyu ifadeyle bağla.`,
-
-    duygu: `
-UZMAN MOD: DUYGUSAL DESTEK
-• Önce dinle, sonra konuş. Çözüm sunmadan önce anla.
-• Duyguyu yansıt: "Seni çok iyi anlıyorum, bu durum gerçekten zor olabilir."
-• Asla yargılama. Asla küçümseme.
-• Gerekirse: "Bunu bir büyüğünle de konuşabilirsin, seninle birlikte düşünebilirler."
-• Güven ver, umut ver, yalnız olmadığını hissettir.`,
-
-    kariyer: `
-UZMAN MOD: KARİYER VE GELECEK
-• Hayallerini keşfet; "Büyüyünce ne olmak istiyorsun ve neden?" diye sor.
-• Güçlü yanlarını göster; "Bu senin doğal yeteneğin!" de.
-• Gerçekçi ama ilham verici ol.
-• Yaşa uygun rol modeller ve meslek örnekleri paylaş.`,
-
-    yaraticilik: `
-UZMAN MOD: YARATICILIK VE HAYAL GÜCÜ
-• Sınır koy, özgürleştir: "Sadece 5 renk kullanarak bir dünya hayal et."
-• "Peki bunun tam tersi nasıl olurdu?" soruları sor.
-• Her fikri değerli bul; önce onayla, sonra geliştir.`,
-
-    gunluk: `
-UZMAN MOD: GÜNLÜK SOHBET
-• Arkadaş gibi konuş; samimi, sıcak, eğlenceli ol.
-• Çocuğun günlük hayatına ilgi göster.
-• Sohbeti öğrenmeye doğru nazikçe yönlendir.
-• Paylaşımlarını takdir et ve devam ettir.`
+  const stratejiler = {
+    derin: '\nSTRATEJI: Sokratik sorgulama uygula. Cevabi verme, sorularla gotür. Ustbilis gelist ir.',
+    orta: '\nSTRATEJI: Analoji kullan. Iskele kur: cok zorsa basamakla. "Simdi bana anlat." de.',
+    yuzeysel: '\nSTRATEJI: Kisa ve net acikla. Gunluk hayattan somut ornek ver. Merak uyandır.',
   }
 
   const niyet_ekstra = {
-    odev: "\nÖDEV MODU: Direkt cevap verme! İpucu ver, adımı göster, düşündür. Cevabı kendin bulmalarını sağla.",
-    anlama: "\nDERİN ANLAMA: Sadece bilgi verme; bağlantı kur, örnek ver, soru sor.",
-    onay: "\nONAY ARAYIŞI: Çocuk onay arıyor. Önce güven ver, sonra öğret.",
+    odev: '\nODEV: Cevabi verme! Ipucu ver, adimi goster, dusundur.',
+    anlama: '\nANLAMA: Kavrami farkli acidan anlat, ornek cogalt.',
+    onay: '\nONAY ARAYISI: Once guven ver, sonra ogrenmey e yonlendir.',
   }
 
-  const konu = classification?.konu || 'gunluk'
-  const niyet = classification?.niyet || 'konusma'
-  const derinlik = classification?.derinlik || 'yuzeysel'
-
-  // KATMAN 6 — PEDAGOJİK STRATEJİ MOTORİ
-  const stratejiler = {
-    // Derinliğe göre strateji
-    derin: `
-PEDAGOJİK STRATEJİ: DERİN ÖĞRENME
-• Sokratik sorgulama uygula: cevabı verme, sorularla götür.
-• Üstbiliş geliştir: "Bu soruyu nasıl çözdün?" diye sor.
-• Konular arası bağlantı kur: "Bu başka neyi hatırlatıyor sana?"`,
-
-    orta: `
-PEDAGOJİK STRATEJİ: KAVRAMA
-• Analoji kullan: bilinenden bilinmeyene köprü kur.
-• İskele kur: çok zorsa basamakla, adım adım ilerle.
-• Anladığını kontrol et: "Şimdi bana anlat bakalım."`,
-
-    yuzeysel: `
-PEDAGOJİK STRATEJİ: TEMEL KAZANIM
-• Kısa ve net açıkla; tek kavrama odaklan.
-• Günlük hayattan somut örnek ver.
-• Merak uyandır: "Bunu bilmek sence neden önemli?"`,
-  }
-
-  // Niyet bazlı ek strateji
-  const niyet_strateji = {
-    odev: `
-• ÖDEV: Cevabı verme! "Bu adımda ne yapman gerektiğini düşün..." de.`,
-    anlama: `
-• ANLAMA: Kavramı farklı açıdan anlat, örnek çoğalt.`,
-    onay: `
-• ONAY ARAYIŞI: Önce güven ver, sonra öğrenmeye yönlendir.`,
-  }
-
-  const pedagoji = (stratejiler[derinlik] || stratejiler.yuzeysel) + (niyet_strateji[niyet] || '')
-
-  return (uzmanlar[konu] || uzmanlar.gunluk) + (niyet_ekstra[niyet] || '') + pedagoji
+  return (uzmanlar[konu] || uzmanlar.gunluk) + (stratejiler[derinlik] || '') + (niyet_ekstra[niyet] || '')
 }
 
-// ══════════════════════════════════════════════════════════
-// KATMAN 3 — YAŞ VE GELİŞİM MOTORİ
-// ══════════════════════════════════════════════════════════
-function buildAgePrompt(age, name, classification) {
+// KATMAN 3 — YAŞ MOTORİ
+function buildAgePrompt(age, classification) {
   const duygu = classification?.duygu || 'normal'
-
   const duyguEkstra = {
-    uzgun: `\nÇOCUK ÜZGÜN: Önce duygusunu kabul et. "Seni duyuyorum, bu zor bir his." de. Çözüme atlamadan önce anla.`,
-    stresli: `\nÇOCUK STRESLİ: Sakinleştir. "Birlikte bakalım, adım adım çözeriz." de. Ağır sorular sorma.`,
-    heyecanli: `\nÇOCUK HEYECANLI: Heyecanını paylaş! Enerjiyi öğrenmeye yönlendir.`,
-    merakli: `\nÇOCUK MERAKLI: Altın fırsat! Soruyu derinleştir, daha fazla merak uyandır.`,
+    uzgun: '\nCOCUK UZGUN: Once duygusunu kabul et. Cozume atlamadan once anla.',
+    stresli: '\nCOCUK STRESLI: Sakinlest ir. "Birlikte bakalim, adim adim cozeriz." de.',
+    heyecanli: '\nCOCUK HEYECANLI: Heyecanini paylas! Enerjiyi ogrenmey e yonlendir.',
+    merakli: '\nCOCUK MERAKLI: Soruyu derinlestir, daha fazla merak uyandır.',
   }
+  const extra = duyguEkstra[duygu] || ''
 
-  if (age <= 8) {
-    return `
-YAŞ PROFİLİ: 6-8 YAŞ (Somut İşlemsel Dönem)
-• Cümleler çok kısa — en fazla 2 cümle. Asla uzun paragraf yazma.
-• Kelimeler çok basit ve somut. Soyut kavram kullanma.
-• Her mesajda mutlaka 2-3 emoji kullan. Renkli ve neşeli ol.
-• Övgü ver: "Vay be! Harikasın! Çok akıllısın!" 
-• Her şeyi hikâye veya oyun formatına çevir.
-• Dikkat süresi kısadır; odak dağıtma.${duyguEkstra[duygu] || ''}`
-  }
-
-  if (age <= 11) {
-    return `
-YAŞ PROFİLİ: 9-11 YAŞ (Geçiş Dönemi)
-• 2-3 cümle. Gerçek hayat örnekleri kullan.
-• Neden sorularını cevapla; mantığı açıkla.
-• 1-2 emoji yeterli.
-• Arkadaşça ama öğretici ton.
-• Başarı hissini destekle; "Bunu çözdün, harika!" de.
-• Sosyal bağlam önemli; arkadaş ve okul konularına ilgi göster.${duyguEkstra[duygu] || ''}`
-  }
-
-  return `
-YAŞ PROFİLİ: 12-15 YAŞ (Formal İşlemsel Dönem)
-• 3-5 cümle. Derin ve analitik açıklamalar yap.
-• Akran gibi konuş — samimi, saygılı, entelektüel.
-• Emoji çok az veya hiç. Olgun ton.
-• Eleştirel düşünceyi teşvik et: "Peki sen ne düşünüyorsun?"
-• Özerklik ver; karar almasına alan aç.
-• Kimlik arayışını destekle; değerlerini keşfetmesine yardım et.
-• Hipotetik sorular sor: "Ya farklı olsaydı?"${duyguEkstra[duygu] || ''}`
+  if (age <= 8) return '\nYAS: 6-8 — En fazla 2 cumle. Cok basit kelimeler. Her mesajda 2-3 emoji. Ovgu ver. Her seyi oyunlastir.' + extra
+  if (age <= 11) return '\nYAS: 9-11 — 2-3 cumle. Gercek hayat ornekleri. 1-2 emoji. Arkadasca ama ogretici. Neden sorularini cevapla.' + extra
+  return '\nYAS: 12-15 — 3-5 cumle. Derin ve analitik. Emoji cok az. Elestirel dusunceyi tesvik et. Ozerklik ver.' + extra
 }
 
-// ══════════════════════════════════════════════════════════
-// ANA callAI — TÜM KATMANLAR BİR ARADA
-// ══════════════════════════════════════════════════════════
-export async function callAI(systemPrompt, messages, maxTokens = 1000, childAge = null, classification = null) {
+// ANA callAI — TÜM KATMANLAR
+export async function callAI(systemPrompt, messages, maxTokens, childAge, classification) {
   let finalSystem
 
   if (childAge && classification) {
-    // Yeni sistem: Katman 0 + 2 + 3 aktif
     const expertPrompt = buildExpertPrompt(classification)
-    const agePrompt = buildAgePrompt(childAge, '', classification)
-    finalSystem = `${CORE_IDENTITY}\n${expertPrompt}\n${agePrompt}`
-    if (systemPrompt) finalSystem += `\n\nEK BAĞLAM:\n${systemPrompt}`
+    const agePrompt = buildAgePrompt(childAge, classification)
+    finalSystem = 'SEN BIBI\'SIN. KESIN KURAL: %100 Turkce konuş. Hic Ingilizce kelime kullanma. "Ben yapay zekayim" asla deme. Eminolmadigan seyi uydurma.' + expertPrompt + agePrompt
+    if (systemPrompt) finalSystem += '\n\nEK BAGIAM:\n' + systemPrompt
   } else {
-    // Eski sistem: geriye dönük uyumluluk
-    finalSystem = systemPrompt
-      ? `ZORUNLU: Sadece Türkçe kullan.\n\n${systemPrompt}`
-      : `ZORUNLU: Sadece Türkçe kullan.`
+    finalSystem = systemPrompt ? 'ZORUNLU: Sadece Turkce kullan.\n\n' + systemPrompt : 'ZORUNLU: Sadece Turkce kullan.'
   }
 
-  const apiMessages = [{ role: "system", content: finalSystem }]
-  ;(messages || []).forEach(m => apiMessages.push({ role: m.role || "user", content: m.content || m.text || "" }))
+  const apiMessages = [{ role: 'system', content: finalSystem }]
+  ;(messages || []).forEach(m => apiMessages.push({ role: m.role || 'user', content: m.content || m.text || '' }))
 
-  const res = await fetch(`${API_BASE}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      messages: apiMessages,
-      max_tokens: maxTokens,
-      temperature: 0.7
-    })
+  const res = await fetch(API_BASE + '/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: apiMessages, max_tokens: maxTokens || 1000, temperature: 0.7 })
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message || "API hatası")
-  return data.choices?.[0]?.message?.content || ""
+  if (!res.ok) throw new Error(data.error?.message || 'API hatasi')
+  return data.choices?.[0]?.message?.content || ''
 }
 
-// ══════════════════════════════════════════════════════════
-// YARDIMCI FONKSİYONLAR (değişmedi)
-// ══════════════════════════════════════════════════════════
+// YARDIMCI FONKSİYONLAR
 export function getImageStyle(age) {
   if (age <= 8) return "cartoon style, cute, colorful, simple, children's book illustration"
   if (age <= 12) return "colorful illustration, semi-realistic, educational style, vibrant"
@@ -360,20 +156,20 @@ export function getImageStyle(age) {
 
 export async function generateImageUrl(prompt, age) {
   const stylePrompt = getImageStyle(age)
-  const translateRes = await callAI("You are an image prompt expert.", [{ role: "user", content: `Translate to English, max 15 words: "${prompt}"` }], 60)
+  const translateRes = await callAI("You are an image prompt expert.", [{ role: "user", content: 'Translate to English, max 15 words: "' + prompt + '"' }], 60)
   const englishPrompt = (translateRes?.trim() || prompt).replace(/['"*]/g, "").trim()
-  const safePrompt = encodeURIComponent(`${englishPrompt}, ${stylePrompt}, high quality`)
-  return `${API_BASE}/api/image?prompt=${safePrompt}&t=${Date.now()}`
+  const safePrompt = encodeURIComponent(englishPrompt + ', ' + stylePrompt + ', high quality')
+  return API_BASE + '/api/image?prompt=' + safePrompt + '&t=' + Date.now()
 }
 
 export function detectTopic(text) {
   const t = text.toLowerCase()
   const topics = {
-    "Matematik": ["matematik","hesap","sayı","toplama","çıkarma","çarpma","bölme","geometri","denklem","oran","kesir"],
-    "Fen": ["fen","bilim","fizik","kimya","biyoloji","atom","hücre","enerji","doğa","deney","evrim","gezegen"],
-    "Yabancı Dil": ["ingilizce","english","yabancı dil","fransızca","almanca","kelime","gramer","çevir"],
-    "Tarih": ["tarih","osmanlı","atatürk","cumhuriyet","savaş","padişah","medeniyet","antik","roma"],
-    "Sanat": ["sanat","resim","müzik","dans","tiyatro","şiir","yaratıcı","çiz","bestele"],
+    "Matematik": ["matematik","hesap","sayi","toplama","cikarma","carpma","bolme","geometri","denklem","oran","kesir"],
+    "Fen": ["fen","bilim","fizik","kimya","biyoloji","atom","hucre","enerji","doga","deney","evrim","gezegen"],
+    "Yabanci Dil": ["ingilizce","english","yabanci dil","fransizca","almanca","kelime","gramer","cevir"],
+    "Tarih": ["tarih","osmanli","ataturk","cumhuriyet","savas","padisah","medeniyet","antik","roma"],
+    "Sanat": ["sanat","resim","muzik","dans","tiyatro","siir","yaratici","ciz","bestele"],
   }
   for (const [topic, keywords] of Object.entries(topics)) {
     if (keywords.some(k => t.includes(k))) return topic
@@ -382,20 +178,20 @@ export function detectTopic(text) {
 }
 
 export function detectImageRequest(text) {
-  const keywords = ["çiz","resim yap","görsel yap","resim çiz","illüstrasyon","draw","paint","picture","image","göster","çizim","karikatür"]
+  const keywords = ["ciz","resim yap","gorsel yap","resim ciz","illustrasyon","draw","paint","picture","image","goster","cizim","karikatur"]
   return keywords.some(k => text.toLowerCase().includes(k))
 }
 
 export function isHomeworkQuestion(text) {
-  const keywords = ["ödev","soru","hesapla","çöz","bul","kaç","nedir","nasıl","açıkla","anlat"]
+  const keywords = ["odev","soru","hesapla","coz","bul","kac","nedir","nasil","acikla","anlat"]
   return keywords.some(k => text.toLowerCase().includes(k))
 }
 
 export async function searchWeb(query) {
   try {
-    const res = await fetch(`${API_BASE}/api/search`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(API_BASE + '/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query })
     })
     const data = await res.json()
