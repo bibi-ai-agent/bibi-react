@@ -315,7 +315,7 @@ export default function ChatScreen() {
     if (sessionId) return sessionId
     const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
-    if (data?.id) sessionStorage.setItem('bibi_last_session', data.id)
+    if (data?.id) { sessionStorage.setItem('bibi_last_session', data.id); sessionStorage.setItem('bibi_session_start', new Date().toISOString()) }
     return data?.id
   }
 
@@ -950,9 +950,21 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20 }}>Mevcut sohbet kapanacak. Devam etmek istiyor musun?</div>
             <div style={{ display:'flex',gap:10 }}>
               <button onClick={()=>setShowNewChatConfirm(false)} style={{ flex:1,padding:12,borderRadius:12,border:'1.5px solid rgba(255,255,255,.15)',background:'transparent',color:'rgba(255,255,255,.5)',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>İptal</button>
-              <button onClick={()=>{
+              <button onClick={async()=>{
                 setShowNewChatConfirm(false)
                 stopAudio()
+
+                // Mevcut oturumu kapat ve başlıklandır
+                if (sessionId) {
+                  try {
+                    await fetch('https://bibi-app-rho.vercel.app/api/session-close', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ session_id: sessionId, started_at: sessionStorage.getItem('bibi_session_start') })
+                    })
+                  } catch(e) { console.log('Session close hata:', e) }
+                }
+
                 setMessages([])
                 setSessionId(null)
                 setInput('')
@@ -961,7 +973,24 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setQuestionMode(false)
                 setCurrentQuestion(null)
                 sessionStorage.removeItem('bibi_last_session')
-                const opening = currentChild.age<=8?`Heyyyy ${currentChild.name}! 🎉 Yeni sohbet başlıyor!`:`Merhaba ${currentChild.name}! Yeni bir sohbet başlatalım.`
+                sessionStorage.removeItem('bibi_session_start')
+
+                // Kişiselleştirilmiş açılış mesajı al
+                try {
+                  const ctxRes = await fetch('https://bibi-app-rho.vercel.app/api/session-context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ child_id: currentChild.id, child: { name: currentChild.name, age: currentChild.age } })
+                  })
+                  const ctx = await ctxRes.json()
+                  if (ctx.opening_message) {
+                    setTimeout(() => addMsg('bibi', ctx.opening_message), 50)
+                    return
+                  }
+                } catch(e) { console.log('Session context hata:', e) }
+
+                // Fallback açılış
+                const opening = currentChild.age<=8 ? 'Heyyyy ' + currentChild.name + '! 🎉 Yeni sohbet başlıyor!' : 'Merhaba ' + currentChild.name + '! Yeni bir sohbet başlatalım.'
                 setTimeout(() => addMsg('bibi', opening), 50)
               }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
             </div>
