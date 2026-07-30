@@ -172,14 +172,15 @@ export default function ChatScreen() {
     setVoiceOn(isYoung)
 
     // Yenilenince son sohbeti yükle
-    const lastSid = sessionStorage.getItem('bibi_last_session')
+    const sessionKey = 'bibi_last_session_' + currentChild.id
+    const lastSid = sessionStorage.getItem(sessionKey)
     if (lastSid) {
       sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true }).then(({ data: msgs }) => {
         if (msgs?.length > 0) {
           setSessionId(lastSid)
           msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
         } else {
-          sessionStorage.removeItem('bibi_last_session')
+          sessionStorage.removeItem(sessionKey)
           showOpening()
         }
       })
@@ -315,7 +316,7 @@ export default function ChatScreen() {
     if (sessionId) return sessionId
     const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
-    if (data?.id) { sessionStorage.setItem('bibi_last_session', data.id); sessionStorage.setItem('bibi_session_start', new Date().toISOString()) }
+    if (data?.id) { sessionStorage.setItem('bibi_last_session_' + currentChild.id, data.id); sessionStorage.setItem('bibi_session_start', new Date().toISOString()) }
     return data?.id
   }
 
@@ -972,7 +973,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setHomeworkStep(null)
                 setQuestionMode(false)
                 setCurrentQuestion(null)
-                sessionStorage.removeItem('bibi_last_session')
+                sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
                 sessionStorage.removeItem('bibi_session_start')
 
                 // Kişiselleştirilmiş açılış mesajı al

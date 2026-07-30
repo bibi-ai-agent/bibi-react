@@ -64,6 +64,7 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
       .from('sessions')
       .select('id, started_at, ended_at, title, summary, topic_tags, mood_score, duration_seconds, message_count')
       .eq('child_id', child.id)
+      .gt('message_count', 0)
       .order('started_at', { ascending: false })
       .limit(50)
     setSessions(data || [])
