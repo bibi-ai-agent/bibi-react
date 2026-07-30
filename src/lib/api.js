@@ -47,29 +47,41 @@ export function buildMemoryContext(memory) {
   return '\n\nKISISEL HAFIZA:\n' + parts.join('\n') + '\nBu bilgileri dogal yansit.'
 }
 
-// KATMAN 1 — GİRDİ ANALİZİ
-export async function classifyMessage(text, childAge) {
-  const prompt = 'Bir cocugun mesajini analiz et. SADECE JSON dondur.\n\nMESAJ: "' + text + '"\nYAS: ' + childAge + '\n\n{"konu":"matematik|fen|dil|tarih|sanat|duygu|yaraticilik|kariyer|gunluk","derinlik":"yuzeysel|orta|derin","niyet":"cevap|anlama|konusma|onay|odev","duygu":"mutlu|uzgun|stresli|heyecanli|merakli|normal","bagiam":"okul|aile|arkadas|gunluk|diger"}'
-  try {
-    const res = await fetch(API_BASE + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: 'Egitim analisti AI. SADECE JSON dondur.' },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 150,
-        temperature: 0.1
-      })
-    })
-    const data = await res.json()
-    const content = data.choices?.[0]?.message?.content || '{}'
-    return JSON.parse(content.replace(/```json|```/g, '').trim())
-  } catch {
-    return { konu: 'gunluk', derinlik: 'yuzeysel', niyet: 'konusma', duygu: 'normal', bagiam: 'diger' }
-  }
+// KATMAN 1 — GİRDİ ANALİZİ (client-side, API çağrısı yok)
+export function classifyMessage(text, childAge) {
+  const t = text.toLowerCase()
+
+  // Konu tespiti
+  let konu = 'gunluk'
+  if (/matematik|hesap|sayi|toplama|cikarma|carpma|bolme|geometri|denklem|kac|oran|kesir/.test(t)) konu = 'matematik'
+  else if (/fen|fizik|kimya|biyoloji|atom|hucre|enerji|deney|evrim|gezegen|bilim/.test(t)) konu = 'fen'
+  else if (/ingilizce|kelime|gramer|yabanci|fransizca|almanca|cevir/.test(t)) konu = 'dil'
+  else if (/tarih|osmanli|ataturk|cumhuriyet|savas|padisah|medeniyet/.test(t)) konu = 'tarih'
+  else if (/sanat|resim|muzik|dans|siir|yaratici|ciz/.test(t)) konu = 'sanat'
+  else if (/uzgum|uzgun|agladk|mutsuz|kotu|korku|kaygi|stres|yalniz/.test(t)) konu = 'duygu'
+  else if (/meslek|kariyer|buyuyunce|olmak istiyorum|hayalim/.test(t)) konu = 'kariyer'
+  else if (/hayal|yarat|fikir|mucit|icat/.test(t)) konu = 'yaraticilik'
+
+  // Derinlik tespiti
+  let derinlik = 'yuzeysel'
+  if (text.length > 100 || /neden|nasil|niye|acikla|anlat|detay|derinlemesine/.test(t)) derinlik = 'orta'
+  if (text.length > 200 || /karsilastir|analiz|elestir|felsefi|dusuncesi|mantigi/.test(t)) derinlik = 'derin'
+
+  // Niyet tespiti
+  let niyet = 'konusma'
+  if (/odev|sinav|test|soru|problem|coz|hesapla/.test(t)) niyet = 'odev'
+  else if (/nedir|nasil|neden|anlat|acikla|ogret/.test(t)) niyet = 'anlama'
+  else if (/dogru mu|yanlis mi|iyi mi|guzel mi|begendin mi/.test(t)) niyet = 'onay'
+
+  // Duygu tespiti
+  let duygu = 'normal'
+  if (/mutlu|harika|super|sevindim|heyecanli|wow/.test(t)) duygu = 'mutlu'
+  else if (/uzgun|agladk|kotu|mutsuz|yalniz|umutsuz/.test(t)) duygu = 'uzgun'
+  else if (/stresli|endiseli|korkuyorum|panikladim|sinirdim/.test(t)) duygu = 'stresli'
+  else if (/merak|acaba|sormak istiyorum|nasil olur/.test(t)) duygu = 'merakli'
+  else if (/heyecan|wow|inanamıyorum|muhtesem/.test(t)) duygu = 'heyecanli'
+
+  return { konu, derinlik, niyet, duygu, bagiam: 'diger' }
 }
 
 // KATMAN 2 — UZMAN SİSTEMİ

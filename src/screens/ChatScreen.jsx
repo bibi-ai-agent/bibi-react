@@ -401,11 +401,11 @@ export default function ChatScreen() {
 Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       }
 
-      // KATMAN 1 + 5 — Girdi Analizi ve Hafıza paralel çalışır
-      const [classification, memory] = await Promise.all([
-        classifyMessage(t, currentChild?.age || 9),
-        getChildMemory(sb, currentChild?.id)
-      ])
+      // KATMAN 1 — Girdi Analizi (anlık, API çağrısı yok)
+      const classification = classifyMessage(t, currentChild?.age || 9)
+
+      // KATMAN 5 — Hafıza çek
+      const memory = await getChildMemory(sb, currentChild?.id)
 
       // KATMAN 5 + 9 — Hafıza prompt'a enjekte edilir
       const memoryContext = buildMemoryContext(memory)
