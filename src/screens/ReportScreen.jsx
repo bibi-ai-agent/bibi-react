@@ -273,8 +273,9 @@ export default function ReportScreen() {
                           <div>
                             <div style={{ color:WHITE, fontSize:13, fontWeight:700 }}>{s.title||'Sohbet'}</div>
                             <div style={{ color:'rgba(255,255,255,.35)', fontSize:11, marginTop:2 }}>
-                              {new Date(s.started_at).toLocaleDateString('tr-TR')}
+                              {new Date(s.started_at).toLocaleDateString('tr-TR',{day:'numeric',month:'short',weekday:'short'})}
                               {s.message_count ? ' • '+s.message_count+' mesaj' : ''}
+                              {s.duration_seconds > 0 ? ' • '+(s.duration_seconds>=60?Math.round(s.duration_seconds/60)+' dk':s.duration_seconds+' sn') : ''}
                             </div>
                           </div>
                           <div style={{ fontSize:18 }}>{s.mood_score>=7?'😄':s.mood_score>=5?'🙂':'😔'}</div>
