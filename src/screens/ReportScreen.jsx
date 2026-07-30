@@ -46,6 +46,7 @@ export default function ReportScreen() {
   const [personality, setPersonality] = useState(null)
   const [weekStats, setWeekStats] = useState(null)
   const [activeSection, setActiveSection] = useState('ozet')
+  const [generalStatus, setGeneralStatus] = useState(null)
 
   async function checkPin(p) {
     const { data: parent } = await sb.from('parents').select('*').eq('id', currentUser.id).single()
@@ -91,7 +92,30 @@ export default function ReportScreen() {
       if (m.topic && m.topic !== 'Genel') topicCounts[m.topic] = (topicCounts[m.topic] || 0) + 1
     })
     const days = new Set(msgs.map(function(m) { return m.created_at.split('T')[0] }))
-    setWeekStats({ messageCount: msgs.length, activeDays: days.size, topics: topicCounts })
+    const wStats = { messageCount: msgs.length, activeDays: days.size, topics: topicCounts }
+    setWeekStats(wStats)
+
+    // Genel durum hesapla
+    const negEmotions = ['sad','frustrated','anxious','uzgun','sinirli','stresli']
+    const recentEmotions = emotionsRes || []
+    const negCount = recentEmotions.filter(function(d) { return negEmotions.includes(d.dominant) }).length
+    const activeDays = days.size
+
+    let statusColor, statusEmoji, statusText
+    if (negCount >= 3) {
+      statusColor = '#dc2626'; statusEmoji = '🔴'
+      statusText = currentChild.name + ' son günlerde üzgün görünüyor. Dikkat önerilir.'
+    } else if (activeDays <= 2) {
+      statusColor = '#d97706'; statusEmoji = '🟡'
+      statusText = currentChild.name + " bu hafta az aktif. Birlikte Uygulamayı birlikte açabilirsiniz."
+    } else if (activeDays >= 5 && negCount === 0) {
+      statusColor = '#16a34a'; statusEmoji = '🟢'
+      statusText = currentChild.name + ' bu hafta harika! Aktif ve enerjik görünüyor.'
+    } else {
+      statusColor = '#d97706'; statusEmoji = '🟡'
+      statusText = currentChild.name + ' bu hafta normal seyrinde devam ediyor.'
+    }
+    setGeneralStatus({ color: statusColor, emoji: statusEmoji, text: statusText })
     setLoading(false)
   }
 
@@ -224,6 +248,17 @@ export default function ReportScreen() {
             {/* ÖZET SEKMESİ */}
             {activeSection === 'ozet' && (
               <>
+                {/* Genel Durum Kartı */}
+                {generalStatus && (
+                  <div style={{ background:'rgba(255,255,255,.04)', border:'2px solid '+generalStatus.color, borderRadius:16, padding:'16px 18px', marginBottom:12, display:'flex', alignItems:'center', gap:14 }}>
+                    <div style={{ fontSize:36, flexShrink:0 }}>{generalStatus.emoji}</div>
+                    <div>
+                      <div style={{ color:'rgba(255,255,255,.4)', fontSize:10, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase', marginBottom:4 }}>GENEL DURUM</div>
+                      <div style={{ color:'white', fontSize:14, fontWeight:700, lineHeight:1.5 }}>{generalStatus.text}</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Genel durum */}
                 <Card>
                   <SectionTitle icon="📊" title="BU HAFTA" />
