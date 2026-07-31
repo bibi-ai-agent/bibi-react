@@ -1110,7 +1110,9 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setInput('')
                 setHomeworkMode(false)
                 setHomeworkStep(null)
-                        sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
+                setQuickReplies([])
+                setShowDailyGreeting(false)
+                sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
                 sessionStorage.removeItem('bibi_session_start')
 
                 // Kişiselleştirilmiş açılış mesajı al
