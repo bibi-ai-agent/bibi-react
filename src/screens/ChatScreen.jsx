@@ -193,17 +193,6 @@ export default function ChatScreen() {
     loadUsage()
     updateStreak()
 
-    // Cleanup: bu effect temizlenince (çocuk değişince) oturumu kapat
-    return () => {
-      const prevSession = sessionStorage.getItem('bibi_last_session_' + currentChild.id)
-      if (prevSession) {
-        fetch('https://bibi-app-rho.vercel.app/api/session-close', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: prevSession, started_at: sessionStorage.getItem('bibi_session_start') })
-        }).catch(function() {})
-      }
-    }
     const autoVoice = getVoiceForChild(currentChild)
     setSelectedVoiceId(autoVoice)
     const isYoung = currentChild.age <= 8
@@ -246,7 +235,17 @@ export default function ChatScreen() {
         setProjectInvite({ ...invite, sender })
       })
       .subscribe()
-    return () => sb.removeChannel(channel)
+    return () => {
+      sb.removeChannel(channel)
+      const prevSession = sessionStorage.getItem('bibi_last_session_' + currentChild.id)
+      if (prevSession) {
+        fetch('https://bibi-app-rho.vercel.app/api/session-close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: prevSession, started_at: sessionStorage.getItem('bibi_session_start') })
+        }).catch(function() {})
+      }
+    }
   }, [currentChild?.id])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, isTyping])
