@@ -740,18 +740,20 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       {showHistory && (
         <HistoryPanel child={currentChild} onClose={() => setShowHistory(false)}
           onLoadSession={async (sid) => {
-            setShowHistory(false)
-            const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', sid).order('created_at', { ascending: true })
-            if (!msgs?.length) return
+            const { data: msgs } = await sb.from('messages').select('role,content,created_at').eq('session_id', sid).order('created_at', { ascending: true })
+            if (!msgs?.length) { setShowHistory(false); return }
             stopAudio()
+            setShowHistory(false)
             setHomeworkMode(false)
             setHomeworkStep(null)
             setQuestionMode(false)
             setCurrentQuestion(null)
             setInput('')
+            setQuickReplies([])
             setMessages([])
             setSessionId(sid)
-            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content, { ts: new Date() }))
+            sessionStorage.setItem('bibi_last_session_' + currentChild.id, sid)
+            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content, { ts: m.created_at ? new Date(m.created_at) : new Date() }))
           }}
         />
       )}
