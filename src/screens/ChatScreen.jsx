@@ -814,6 +814,41 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
         <div ref={messagesEndRef}/>
       </div>
 
+      {/* Günlük Karşılama */}
+      {showDailyGreeting && messages.length <= 2 && (
+        <div style={{ padding:"0 14px 8px", flexShrink:0 }}>
+          <div style={{ background:"rgba(13,155,126,.1)", border:"1px solid rgba(13,155,126,.2)", borderRadius:14, padding:"12px 14px" }}>
+            <div style={{ color:"rgba(255,255,255,.5)", fontSize:10, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase", marginBottom:8 }}>BUGÜN NE ÇALIŞALIM?</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              {[
+                {icon:"📐",label:"Matematik",msg:"Bugün matematik çalışmak istiyorum!"},
+                {icon:"🔬",label:"Fen",msg:"Fen bilimleri hakkında konuşalım!"},
+                {icon:"📚",label:"Ödev",msg:"Ödevime yardım eder misin?"},
+                {icon:"💬",label:"Sohbet",msg:"Bugün sadece sohbet etmek istiyorum."},
+              ].map(function(item){return(
+                <button key={item.label} onClick={function(){setShowDailyGreeting(false);sendMessage(item.msg)}}
+                  style={{padding:"6px 12px",borderRadius:20,border:"1px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.08)",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Nunito,sans-serif",display:"flex",alignItems:"center",gap:5}}>
+                  <span>{item.icon}</span>{item.label}
+                </button>
+              )})}
+            </div>
+            <button onClick={function(){setShowDailyGreeting(false)}} style={{background:"none",border:"none",color:"rgba(255,255,255,.25)",fontSize:10,cursor:"pointer",marginTop:8,fontFamily:"Nunito,sans-serif"}}>Kapat</button>
+          </div>
+        </div>
+      )}
+
+      {/* Hızlı Cevaplar */}
+      {quickReplies.length > 0 && !isTyping && (
+        <div style={{padding:"0 14px 8px",display:"flex",gap:6,flexWrap:"wrap",flexShrink:0}}>
+          {quickReplies.map(function(qr){return(
+            <button key={qr} onClick={function(){setQuickReplies([]);sendMessage(qr)}}
+              style={{padding:"6px 14px",borderRadius:20,border:"1.5px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.8)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Nunito,sans-serif"}}>
+              {qr}
+            </button>
+          )})}
+        </div>
+      )}
+
       {currentAudio && (
         <div style={{ padding:'6px 14px',background:'rgba(124,58,237,.2)',borderTop:'1px solid rgba(124,58,237,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
           <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>{speechPaused ? '⏸ Duraklatıldı' : '🔊 Konuşuyor...'}</div>
@@ -830,7 +865,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           { icon:'💬', label:'Sohbet', active:true },
           { icon:'🧩', label:'Oyna & Öğren', action:()=>{ stopAudio(); setScreen('projectSelect') } },
           { icon:'📖', label:'Hikayeler', action:()=>{ stopAudio(); setScreen('story') } },
-          { icon:'👤', label:'Profil', action:()=>{ stopAudio(); setScreen('children') } },
+          { icon:'👤', label:'Profil', action:()=>{ stopAudio(); setShowExitPin(true) } },
         ].map((item,i)=>(
           <button key={i} onClick={item.action||null} style={{ flex:1,padding:'8px 4px 10px',background:'transparent',border:'none',cursor:item.action?'pointer':'default',display:'flex',flexDirection:'column',alignItems:'center',gap:2,opacity:item.active?1:0.55,fontFamily:'Nunito,sans-serif' }}>
             <span style={{ fontSize:20 }}>{item.icon}</span>
