@@ -1023,7 +1023,6 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
         </div>
       )}
 
-      {/* Streak Kutlama */}
       {showStreakCelebration && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
           <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, textAlign:'center' }}>
