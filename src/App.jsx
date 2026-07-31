@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { sb } from './lib/supabase'
+import { seedStories } from './lib/seedStories'
 import { useApp } from './lib/store'
 import LoadingScreen from './screens/LoadingScreen'
 import AuthScreen from './screens/AuthScreen'
@@ -36,7 +37,7 @@ export default function App() {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
         const saved = sessionStorage.getItem('bibi_screen')
-        const safeScreens = ['chat', 'children', 'report', 'friends', 'subscription', 'story']
+        const safeScreens = ['chat', 'children', 'report', 'friends', 'subscription', 'story', 'projectSelect', 'project']
         if (saved && safeScreens.includes(saved)) setScreen(saved)
         else setScreen('children')
       } else {

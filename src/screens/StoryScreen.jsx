@@ -205,7 +205,7 @@ export default function StoryScreen() {
     <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#0a0f1e,#0d1f2d,#0a1a12)', fontFamily:'Nunito,sans-serif' }}>
       {/* Header */}
       <div style={{ padding:'20px 20px 0', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <button onClick={() => setScreen('children')} style={{ width:38, height:38, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.12)', cursor:'pointer', color:'white', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
+        <button onClick={() => setScreen('chat')} style={{ width:38, height:38, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.12)', cursor:'pointer', color:'white', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
         <div style={{ textAlign:'center' }}>
           <div style={{ color:'white', fontSize:20, fontWeight:900 }}>📖 Hikaye Zamanı</div>
           <div style={{ color:'rgba(255,255,255,.4)', fontSize:12, marginTop:2 }}>Hangi hikayeyi dinlemek istersin?</div>

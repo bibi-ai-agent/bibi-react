@@ -105,7 +105,7 @@ export default function ProjectSelectScreen() {
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               {MAIN_TYPES.map(t => (
-                <button key={t.id} onClick={() => t.id === 'games' ? setShowGames(true) : (friend ? startWithFriend(t.id) : setScreen('friends'))}
+                <button key={t.id} onClick={() => t.id === 'games' ? setShowGames(true) : friend ? startWithFriend(t.id) : (setProjectType(t.id), setProjectFriend(null), setIsProjectHost(true), setScreen('project'))}
                   style={{ background:t.bg, border:`1.5px solid ${t.border}`, borderRadius:16, padding:18, cursor:'pointer', textAlign:'left', width:'100%', fontFamily:'Nunito,sans-serif' }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                     <div>
@@ -118,7 +118,7 @@ export default function ProjectSelectScreen() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setScreen(friend ? 'friends' : 'children')} style={{ width:'100%', marginTop:16, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'transparent', color:'rgba(255,255,255,.5)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
+            <button onClick={() => setScreen(friend ? 'friends' : 'chat')} style={{ width:'100%', marginTop:16, padding:12, borderRadius:12, border:'1.5px solid rgba(255,255,255,.15)', background:'transparent', color:'rgba(255,255,255,.5)', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
           </>
         ) : (
           <>
