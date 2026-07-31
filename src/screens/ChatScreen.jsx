@@ -226,20 +226,37 @@ export default function ChatScreen() {
     }
     showOpening()
 
-    function showOpening() {
-    const opening = currentChild.profile_completed
-      ? (isYoung
-          ? `Heyyyy ${currentChild.name}! 🎉 Tekrar görüştük! Bugün ne keşfediyoruz?`
-          : currentChild.age<=12
-          ? `Merhaba ${currentChild.name}! Bugün ne konuşacağız?`
-          : `Selam ${currentChild.name}. Bugün ne var?`)
-      : (isYoung
-          ? `Heyyyy! Ben Bibi! 🎉 Seninle tanışmak çok güzel! Adın ne?`
-          : currentChild.age<=12
-          ? `Merhaba! Ben Bibi, senin öğrenme arkadaşın! Seni tanımak istiyorum, biraz kendinden bahseder misin?`
-          : `Selam! Ben Bibi. Seninle tanışmak istiyorum — kendinden biraz bahseder misin?`)
-    addMsg('bibi', opening)
-    if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
+    async function showOpening() {
+      // Kişiselleştirilmiş açılış mesajı dene
+      if (currentChild.profile_completed) {
+        try {
+          const ctxRes = await fetch('https://bibi-app-rho.vercel.app/api/session-context', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ child_id: currentChild.id, child: { name: currentChild.name, age: currentChild.age } })
+          })
+          const ctx = await ctxRes.json()
+          if (ctx.opening_message) {
+            addMsg('bibi', ctx.opening_message)
+            if (isYoung) setTimeout(() => speakMsg(ctx.opening_message, autoVoice), 500)
+            return
+          }
+        } catch(e) {}
+      }
+      // Fallback
+      const opening = currentChild.profile_completed
+        ? (isYoung
+            ? 'Heyyyy ' + currentChild.name + '! 🎉 Tekrar görüştük! Bugün ne keşfediyoruz?'
+            : currentChild.age<=12
+            ? 'Merhaba ' + currentChild.name + '! Bugün ne konuşacağız?'
+            : 'Selam ' + currentChild.name + '. Bugün ne var?')
+        : (isYoung
+            ? 'Heyyyy! Ben Bibi! 🎉 Seninle tanışmak çok güzel! Adın ne?'
+            : currentChild.age<=12
+            ? 'Merhaba! Ben Bibi, senin öğrenme arkadaşın! Seni tanımak istiyorum, biraz kendinden bahseder misin?'
+            : 'Selam! Ben Bibi. Seninle tanışmak istiyorum — kendinden biraz bahseder misin?')
+      addMsg('bibi', opening)
+      if (isYoung) setTimeout(() => speakMsg(opening, autoVoice), 500)
     } // showOpening end
     const channel = sb.channel(`project-invites-${currentChild.id}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
