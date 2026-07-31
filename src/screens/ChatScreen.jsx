@@ -247,7 +247,7 @@ export default function ChatScreen() {
       })
       .subscribe()
     return () => sb.removeChannel(channel)
-  }, [])
+  }, [currentChild?.id])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, isTyping])
 
