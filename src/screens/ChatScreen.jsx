@@ -157,6 +157,11 @@ export default function ChatScreen() {
   const [usage, setUsage] = useState({ message_count:0, image_count:0, slide_count:0 })
   const [showLimitModal, setShowLimitModal] = useState(null)
   const [showNewChatConfirm, setShowNewChatConfirm] = useState(false)
+  const [streak, setStreak] = useState(0)
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false)
+  const [quickReplies, setQuickReplies] = useState([])
+  const [sessionTitle, setSessionTitle] = useState(null)
+  const [showDailyGreeting, setShowDailyGreeting] = useState(false)
   const messagesEndRef = useRef(null)
   const recognitionRef = useRef(null)
   let msgCounter = useRef(0)
@@ -166,6 +171,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentChild) return
     loadUsage()
+    updateStreak()
 
     // Cleanup: bu effect temizlenince (çocuk değişince) oturumu kapat
     return () => {
@@ -249,6 +255,22 @@ export default function ChatScreen() {
     document.addEventListener('click', handleGlobalClick)
     return () => document.removeEventListener('click', handleGlobalClick)
   }, [])
+
+  async function updateStreak() {
+    if (!currentChild?.id) return
+    const today = new Date().toISOString().split('T')[0]
+    const lastActive = currentChild.last_active_date
+    if (lastActive === today) { setStreak(currentChild.streak_days || 0); return }
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    const newStreak = lastActive === yesterday ? (currentChild.streak_days || 0) + 1 : 1
+    setStreak(newStreak)
+    await sb.from('children').update({ streak_days: newStreak, last_active_date: today, streak_updated_at: new Date().toISOString() }).eq('id', currentChild.id)
+    currentChild.streak_days = newStreak
+    currentChild.last_active_date = today
+    if (newStreak % 5 === 0) setShowStreakCelebration(true)
+    // Bugün ilk giriş mü? Günlük karşılama göster
+    if (lastActive !== today) setShowDailyGreeting(true)
+  }
 
   async function loadUsage() {
     const today = new Date().toISOString().split('T')[0]
@@ -387,6 +409,7 @@ export default function ChatScreen() {
     const t = text.trim(); if(!t) return
     if (!checkLimit('messages')) return
     setInput('')
+    setQuickReplies([])
     addMsg('user', t)
     setExpr('thinking'); setStatus('Düşünüyor...'); setIsTyping(true)
     if (currentChild?.age<=8) { if(fromVoice) setVoiceOn(true); else setVoiceOn(false) }
@@ -433,6 +456,16 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
       addMsg('bibi', reply)
       await incrementUsage('message_count')
+
+      // Hızlı cevap önerileri üret
+      const age = currentChild?.age || 9
+      if (age <= 8) {
+        setQuickReplies(['👍 Anladım!', '🤔 Tekrar anlat', '➕ Devam et'])
+      } else if (age <= 12) {
+        setQuickReplies(['✅ Anladım', '🤔 Daha detaylı?', '🔄 Başka örnek ver'])
+      } else {
+        setQuickReplies(['Anladım', 'Daha derine in', 'Farklı açıdan anlat'])
+      }
       if ((currentChild?.age<=8 && fromVoice) || (voiceOn && currentChild?.age>8)) speakMsg(reply)
       if (sid) {
         await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'assistant', content:reply, language:'tr'})
@@ -627,21 +660,35 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
         </div>
       )}
 
-      <div style={{ background:theme.header, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, flexShrink:0 }}>
-        <button onClick={()=>{stopAudio();setShowExitPin(true)}} style={{ width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'none',cursor:'pointer',color:'white',fontSize:18 }}>←</button>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ position:'relative' }}>
-            <BibiFace expr={expr} size={44}/>
-            <div style={{ position:'absolute', bottom:0, right:0, width:10, height:10, borderRadius:'50%', background:'#4ade80', border:'2px solid rgba(0,0,0,.3)' }}/>
+      {/* HEADER */}
+      <div style={{ background:theme.header, padding:'10px 14px', position:'sticky', top:0, zIndex:10, flexShrink:0, borderBottom:'1px solid rgba(255,255,255,.06)' }}>
+        {/* Üst satır */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+          <button onClick={()=>{stopAudio();setShowExitPin(true)}} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'none',cursor:'pointer',color:'white',fontSize:16 }}>←</button>
+
+          {/* Bibi kimliği */}
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <div style={{ position:'relative' }}>
+              <BibiFace expr={expr} size={40}/>
+              <div style={{ position:'absolute', bottom:0, right:0, width:9, height:9, borderRadius:'50%', background:'#4ade80', border:'2px solid rgba(0,0,0,.3)' }}/>
+            </div>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <div style={{ color:'white', fontSize:14, fontWeight:900 }}>bibi</div>
+                {streak > 0 && (
+                  <div style={{ background:'rgba(251,191,36,.2)', border:'1px solid rgba(251,191,36,.4)', borderRadius:10, padding:'1px 7px', fontSize:10, fontWeight:800, color:'#fbbf24', display:'flex', alignItems:'center', gap:3 }}>
+                    🔥{streak}
+                  </div>
+                )}
+              </div>
+              <div style={{ color:'rgba(255,255,255,.5)', fontSize:10 }}>● {status}</div>
+            </div>
           </div>
-          <div>
-            <div style={{ color:'white', fontSize:15, fontWeight:900 }}>bibi</div>
-            <div style={{ color:'rgba(255,255,255,.6)', fontSize:11 }}>● {status}</div>
-          </div>
-        </div>
-        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          <button onClick={()=>setShowNewChatConfirm(true)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>✏️</button>
-          <button onClick={()=>setShowHistory(!showHistory)} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',color:'white',fontSize:14 }}>🕐</button>
+
+          {/* Sağ butonlar */}
+          <div style={{ display:'flex', gap:5, alignItems:'center' }}>
+            <button onClick={()=>setShowNewChatConfirm(true)} style={{ width:32,height:32,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1.5px solid rgba(255,255,255,.15)',cursor:'pointer',color:'white',fontSize:13 }}>✏️</button>
+            <button onClick={()=>setShowHistory(!showHistory)} style={{ width:32,height:32,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1.5px solid rgba(255,255,255,.15)',cursor:'pointer',color:'white',fontSize:13 }}>🕐</button>
           <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
               {isSpeaking ? '⏸' : voiceOn ? '🔊' : '🔇'}
@@ -722,12 +769,32 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               </div>
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
-                <div style={{ padding:'10px 14px 6px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px',background:m.role==='user'?theme.bubble:'rgba(255,255,255,.92)',color:m.role==='user'?'white':'#1A2E2A',fontSize:15,lineHeight:1.5 }}>
-                  {m.text}
-                  {m.ts && <div style={{fontSize:9,marginTop:4,textAlign:'right',opacity:.45,color:m.role==='user'?'rgba(255,255,255,.8)':'#1A2E2A',letterSpacing:0.2}}>
-                    {`${m.ts.getDate().toString().padStart(2,'0')}.${(m.ts.getMonth()+1).toString().padStart(2,'0')} ${m.ts.getHours().toString().padStart(2,'0')}:${m.ts.getMinutes().toString().padStart(2,'0')}`}
-                  </div>}
-                </div>
+                {(() => {
+                  // Mesaj tipine göre renk belirle
+                  const text = m.text || ''
+                  let bubbleBg = m.role==='user' ? theme.bubble : 'rgba(255,255,255,.92)'
+                  let bubbleBorder = 'none'
+                  let bubbleColor = m.role==='user' ? 'white' : '#1A2E2A'
+                  if (m.role === 'bibi') {
+                    if (/harika|bravo|mükemmel|süper|aferin|tebrik/i.test(text)) {
+                      bubbleBg = 'rgba(220,252,231,.95)'; bubbleBorder = '1.5px solid rgba(74,222,128,.4)'
+                    } else if (/üzgün|yalnız|kötü|endişe|korku/i.test(text)) {
+                      bubbleBg = 'rgba(253,242,248,.95)'; bubbleBorder = '1.5px solid rgba(236,72,153,.3)'
+                    } else if (/ödev|problem|soru|hesapla|çöz/i.test(text)) {
+                      bubbleBg = 'rgba(254,252,232,.95)'; bubbleBorder = '1.5px solid rgba(234,179,8,.3)'
+                    } else if (/deney|fen|bilim|keşfet/i.test(text)) {
+                      bubbleBg = 'rgba(239,246,255,.95)'; bubbleBorder = '1.5px solid rgba(59,130,246,.3)'
+                    }
+                  }
+                  return (
+                    <div style={{ padding:'10px 14px 6px', borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px', background:bubbleBg, border:bubbleBorder, color:bubbleColor, fontSize:15, lineHeight:1.5 }}>
+                      {m.text}
+                      {m.ts && <div style={{fontSize:9,marginTop:4,textAlign:'right',opacity:.45,color:m.role==='user'?'rgba(255,255,255,.8)':bubbleColor,letterSpacing:0.2}}>
+                        {m.ts.getDate().toString().padStart(2,'0')+'.'+(m.ts.getMonth()+1).toString().padStart(2,'0')+' '+m.ts.getHours().toString().padStart(2,'0')+':'+m.ts.getMinutes().toString().padStart(2,'0')}
+                      </div>}
+                    </div>
+                  )
+                })()}
                 {m.role==='bibi' && (
                   <button onClick={()=>{
                     if(audioRef.current){stopAudio()}
@@ -952,6 +1019,19 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               ))}
             </div>
             <button onClick={() => setShowEmotionPicker(false)} style={{ width:'100%', padding:10, borderRadius:12, border:'none', background:'rgba(255,255,255,.06)', color:'rgba(255,255,255,.4)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>Şimdi değil</button>
+          </div>
+        </div>
+      )}
+
+      {/* Streak Kutlama */}
+      {showStreakCelebration && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
+          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, textAlign:'center' }}>
+            <div style={{ fontSize:56, marginBottom:12 }}>🔥</div>
+            <div style={{ color:'#fbbf24', fontSize:28, fontWeight:900, marginBottom:8 }}>{streak} Gün!</div>
+            <div style={{ color:'white', fontSize:16, fontWeight:700, marginBottom:8 }}>Muhteşem bir seri!</div>
+            <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:20 }}>Her gün Bibi ile buluşmaya devam ediyorsun. Bu kararlılık seni çok özel kılıyor!</div>
+            <button onClick={function(){setShowStreakCelebration(false)}} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#fbbf24', color:'#1A2E2A', fontWeight:900, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:15 }}>Teşekkürler! 🚀</button>
           </div>
         </div>
       )}
