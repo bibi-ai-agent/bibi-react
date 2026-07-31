@@ -107,7 +107,7 @@ export default function ReportScreen() {
       statusText = currentChild.name + " son günlerde duygusal olarak zorlanıyor görünüyor. Yakından ilgilenmeniz faydalı olabilir."
     } else if (activeDays <= 2) {
       statusColor = '#d97706'; statusEmoji = '🟡'
-      statusText = currentChild.name + " bu hafta Bibi ile az vakit geçirdi. Birlikte giriş yapmak motivasyonunu artırabilir."
+      statusText = currentChild.name + " bu hafta Bibi'ye yalnızca birkaç kez uğradı. Düzenli kullanım, öğrenme alışkanlığını güçlendirmek için kritik öneme sahiptir."
     } else if (activeDays >= 5 && negCount === 0) {
       statusColor = '#16a34a'; statusEmoji = '🟢'
       statusText = currentChild.name + " bu hafta çok aktif ve istekliydi. Öğrenme motivasyonu yüksek görünüyor."
