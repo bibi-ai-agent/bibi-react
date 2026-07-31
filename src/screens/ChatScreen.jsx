@@ -120,6 +120,26 @@ function getImageStyle(age) {
 const TYPE_NAMES = { homework:'Birlikte Ödev', experiment:'Deney/Proje', quiz:'Bilgi Yarışması' }
 const TYPE_ICONS = { homework:'📚', experiment:'🔬', quiz:'🎯' }
 
+function BubbleContent({ m, theme }) {
+  const text = m.text || ''
+  let bg = m.role==='user' ? theme.bubble : 'rgba(255,255,255,.92)'
+  let border = 'none'
+  let color = m.role==='user' ? 'white' : '#1A2E2A'
+  if (m.role === 'bibi') {
+    if (/harika|bravo|aferin|tebrik/i.test(text)) { bg='rgba(220,252,231,.95)'; border='1.5px solid rgba(74,222,128,.4)' }
+    else if (/uzgun|yalniz|kotu|endise|korku/i.test(text)) { bg='rgba(253,242,248,.95)'; border='1.5px solid rgba(236,72,153,.3)' }
+    else if (/odev|problem|hesapla|coz/i.test(text)) { bg='rgba(254,252,232,.95)'; border='1.5px solid rgba(234,179,8,.3)' }
+    else if (/deney|fen|bilim|kesfet/i.test(text)) { bg='rgba(239,246,255,.95)'; border='1.5px solid rgba(59,130,246,.3)' }
+  }
+  const ts = m.ts ? (m.ts.getDate().toString().padStart(2,'0')+'.'+(m.ts.getMonth()+1).toString().padStart(2,'0')+' '+m.ts.getHours().toString().padStart(2,'0')+':'+m.ts.getMinutes().toString().padStart(2,'0')) : null
+  return (
+    <div style={{ padding:'10px 14px 6px', borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px', background:bg, border, color, fontSize:15, lineHeight:1.5 }}>
+      {m.text}
+      {ts && <div style={{fontSize:9,marginTop:4,textAlign:'right',opacity:.45,color:m.role==='user'?'rgba(255,255,255,.8)':color,letterSpacing:0.2}}>{ts}</div>}
+    </div>
+  )
+}
+
 export default function ChatScreen() {
   const { currentChild, currentUser, setScreen, setProjectFriend, setProjectType, voiceOn, setVoiceOn, selectedVoiceId, setSelectedVoiceId, elevenLabsEnabled, subscription } = useApp()
   const [messages, setMessages] = useState([])
@@ -769,32 +789,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               </div>
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
-                {(() => {
-                  // Mesaj tipine göre renk belirle
-                  const text = m.text || ''
-                  let bubbleBg = m.role==='user' ? theme.bubble : 'rgba(255,255,255,.92)'
-                  let bubbleBorder = 'none'
-                  let bubbleColor = m.role==='user' ? 'white' : '#1A2E2A'
-                  if (m.role === 'bibi') {
-                    if (/harika|bravo|mükemmel|süper|aferin|tebrik/i.test(text)) {
-                      bubbleBg = 'rgba(220,252,231,.95)'; bubbleBorder = '1.5px solid rgba(74,222,128,.4)'
-                    } else if (/üzgün|yalnız|kötü|endişe|korku/i.test(text)) {
-                      bubbleBg = 'rgba(253,242,248,.95)'; bubbleBorder = '1.5px solid rgba(236,72,153,.3)'
-                    } else if (/ödev|problem|soru|hesapla|çöz/i.test(text)) {
-                      bubbleBg = 'rgba(254,252,232,.95)'; bubbleBorder = '1.5px solid rgba(234,179,8,.3)'
-                    } else if (/deney|fen|bilim|keşfet/i.test(text)) {
-                      bubbleBg = 'rgba(239,246,255,.95)'; bubbleBorder = '1.5px solid rgba(59,130,246,.3)'
-                    }
-                  }
-                  return (
-                    <div style={{ padding:'10px 14px 6px', borderRadius:m.role==='user'?'18px 18px 4px 18px':'4px 18px 18px 18px', background:bubbleBg, border:bubbleBorder, color:bubbleColor, fontSize:15, lineHeight:1.5 }}>
-                      {m.text}
-                      {m.ts && <div style={{fontSize:9,marginTop:4,textAlign:'right',opacity:.45,color:m.role==='user'?'rgba(255,255,255,.8)':bubbleColor,letterSpacing:0.2}}>
-                        {m.ts.getDate().toString().padStart(2,'0')+'.'+(m.ts.getMonth()+1).toString().padStart(2,'0')+' '+m.ts.getHours().toString().padStart(2,'0')+':'+m.ts.getMinutes().toString().padStart(2,'0')}
-                      </div>}
-                    </div>
-                  )
-                })()}
+                <BubbleContent m={m} theme={theme} />
                 {m.role==='bibi' && (
                   <button onClick={()=>{
                     if(audioRef.current){stopAudio()}
