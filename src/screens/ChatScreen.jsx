@@ -865,7 +865,6 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           { icon:'💬', label:'Sohbet', active:true },
           { icon:'🧩', label:'Oyna & Öğren', action:()=>{ stopAudio(); setScreen('projectSelect') } },
           { icon:'📖', label:'Hikayeler', action:()=>{ stopAudio(); setScreen('story') } },
-          { icon:'👤', label:'Profil', action:()=>{ stopAudio(); setShowExitPin(true) } },
         ].map((item,i)=>(
           <button key={i} onClick={item.action||null} style={{ flex:1,padding:'8px 4px 10px',background:'transparent',border:'none',cursor:item.action?'pointer':'default',display:'flex',flexDirection:'column',alignItems:'center',gap:2,opacity:item.active?1:0.55,fontFamily:'Nunito,sans-serif' }}>
             <span style={{ fontSize:20 }}>{item.icon}</span>
