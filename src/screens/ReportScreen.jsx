@@ -325,6 +325,14 @@ export default function ReportScreen() {
             {/* DUYGU SEKMESİ */}
             {activeSection === 'duygu' && (
               <>
+                {!isPro ? (
+                  <Card>{                  <div style={{ textAlign:'center', padding:'20px 0' }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>🔒</div>
+                    <div style={{ color:'white', fontSize:15, fontWeight:700, marginBottom:8 }}>Pro Plan Gerekli</div>
+                    <div style={{ color:'rgba(255,255,255,.45)', fontSize:13 }}>Bu bölümü görüntülemek için Pro plana geçin.</div>
+                  </div>}</Card>
+                ) : (
+                  <>
                 <Card>
                   <SectionTitle icon="😊" title="HAFTALIK DUYGU DAĞILIMI" />
                   {emotions.length === 0 ? (
@@ -369,12 +377,22 @@ export default function ReportScreen() {
                     })}
                   </Card>
                 )}
+                  </>
+                )}
               </>
             )}
 
             {/* ÖĞRENME SEKMESİ */}
             {activeSection === 'ogrenme' && (
               <>
+                {!isPro ? (
+                  <Card>{                  <div style={{ textAlign:'center', padding:'20px 0' }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>🔒</div>
+                    <div style={{ color:'white', fontSize:15, fontWeight:700, marginBottom:8 }}>Pro Plan Gerekli</div>
+                    <div style={{ color:'rgba(255,255,255,.45)', fontSize:13 }}>Bu bölümü görüntülemek için Pro plana geçin.</div>
+                  </div>}</Card>
+                ) : (
+                  <>
                 {memory?.strong_topics?.length > 0 && (
                   <Card>
                     <SectionTitle icon="💪" title="GÜÇLÜ KONULAR" color="#4ade80" />
@@ -450,6 +468,8 @@ export default function ReportScreen() {
                       )
                     })}
                   </Card>
+                )}
+                  </>
                 )}
               </>
             )}
@@ -573,7 +593,13 @@ export default function ReportScreen() {
             {/* MEKTUP SEKMESİ */}
             {activeSection === 'mektup' && (
               <>
-                {weeklyLetter ? (
+                {!isPro ? (
+                  <Card>{                  <div style={{ textAlign:'center', padding:'20px 0' }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>🔒</div>
+                    <div style={{ color:'white', fontSize:15, fontWeight:700, marginBottom:8 }}>Pro Plan Gerekli</div>
+                    <div style={{ color:'rgba(255,255,255,.45)', fontSize:13 }}>Bu bölümü görüntülemek için Pro plana geçin.</div>
+                  </div>}</Card>
+                ) : weeklyLetter ? (
                   <Card>
                     <SectionTitle icon="✉️" title={'HAFTALIK MEKTUP — ' + weeklyLetter.week} />
                     <div style={{ color:'rgba(255,255,255,.8)', fontSize:13, lineHeight:1.8, whiteSpace:'pre-wrap' }}>{weeklyLetter.letter}</div>
