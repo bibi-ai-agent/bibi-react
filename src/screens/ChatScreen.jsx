@@ -210,21 +210,22 @@ export default function ChatScreen() {
     setVoiceOn(isYoung)
 
     // Yenilenince son sohbeti yükle
+    ;(async () => {
     const sessionKey = 'bibi_last_session_' + currentChild.id
     const lastSid = sessionStorage.getItem(sessionKey)
     if (lastSid) {
-      sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true }).then(({ data: msgs }) => {
-        if (msgs?.length > 0) {
-          setSessionId(lastSid)
-          msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
-        } else {
-          sessionStorage.removeItem(sessionKey)
-          showOpening()
-        }
-      })
+      const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true })
+      if (msgs?.length > 0) {
+        setSessionId(lastSid)
+        msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
+      } else {
+        sessionStorage.removeItem(sessionKey)
+        await showOpening()
+      }
       return
     }
-    showOpening()
+    await showOpening()
+    })()
 
     async function showOpening() {
       // Kişiselleştirilmiş açılış mesajı dene

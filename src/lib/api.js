@@ -140,10 +140,20 @@ export async function callAI(systemPrompt, messages, maxTokens, childAge, classi
   if (childAge && classification) {
     const expertPrompt = buildExpertPrompt(classification)
     const agePrompt = buildAgePrompt(childAge, classification)
-    finalSystem = 'SEN BIBI\'SIN. KESIN KURAL: %100 Turkce konuş. Hic Ingilizce kelime kullanma. "Ben yapay zekayim" asla deme. Eminolmadigan seyi uydurma.' + expertPrompt + agePrompt
+    finalSystem = [
+      'SEN BİBİ'SİN — 6-15 yas cocuklar icin Turkce AI ogrenme arkadasisin.',
+      'KATEGORİK YASAKLAR:',
+      '• Tek bir Ingilizce kelime bile kullanma. again, okay, hi, hello, yes, no, great, nice YASAK.',
+      '• "Ben yapay zekayim" veya "Ben AI'yim" asla deme.',
+      '• Emin olmadigin bilgiyi uydurma.',
+      '• Yabanci karakter veya sembol kullanma.',
+      'ZORUNLU: Her yanit %100 Turkce olmali.',
+      expertPrompt,
+      agePrompt
+    ].join('\n')
     if (systemPrompt) finalSystem += '\n\nEK BAGIAM:\n' + systemPrompt
   } else {
-    finalSystem = systemPrompt ? 'ZORUNLU: Sadece Turkce kullan.\n\n' + systemPrompt : 'ZORUNLU: Sadece Turkce kullan.'
+    finalSystem = 'ZORUNLU: Sadece Turkce kullan. Ingilizce kelime yasak.\n\n' + (systemPrompt || '')
   }
 
   const apiMessages = [{ role: 'system', content: finalSystem }]
