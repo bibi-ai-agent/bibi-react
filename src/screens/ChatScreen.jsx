@@ -216,13 +216,28 @@ export default function ChatScreen() {
     showOpening()
     })()
 
-    function showOpening() {
-      const msg = isYoung
+    async function showOpening() {
+      // Önce fallback göster
+      const fallback = isYoung
         ? 'Heyyyy ' + currentChild.name + '! 🎉 Bugün ne öğreniyoruz?'
         : currentChild.age <= 12
         ? 'Merhaba ' + currentChild.name + '! Bugün ne konuşacağız? 😊'
         : 'Selam ' + currentChild.name + '! Bugün ne var?'
-      setTimeout(() => addMsg('bibi', msg), 300)
+      addMsg('bibi', fallback)
+
+      // Arka planda kişisel mesaj dene
+      try {
+        const ctxRes = await fetch('https://bibi-app-rho.vercel.app/api/session-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ child_id: currentChild.id, child: { name: currentChild.name, age: currentChild.age } })
+        })
+        const ctx = await ctxRes.json()
+        if (ctx.opening_message && ctx.recent_sessions?.length > 0) {
+          setMessages([])
+          setTimeout(() => addMsg('bibi', ctx.opening_message), 100)
+        }
+      } catch(e) {}
     } // showOpening end
     const channel = sb.channel(`project-invites-${currentChild.id}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'project_invites' }, async payload => {
