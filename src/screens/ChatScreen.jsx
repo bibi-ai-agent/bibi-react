@@ -709,7 +709,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           <div style={{ display:'flex', gap:5, alignItems:'center' }}>
             <button onClick={()=>setShowNewChatConfirm(true)} style={{ width:32,height:32,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1.5px solid rgba(255,255,255,.15)',cursor:'pointer',color:'white',fontSize:13 }}>✏️</button>
             <button onClick={()=>setShowHistory(!showHistory)} style={{ width:32,height:32,borderRadius:'50%',background:'rgba(255,255,255,.1)',border:'1.5px solid rgba(255,255,255,.15)',cursor:'pointer',color:'white',fontSize:13 }}>🕐</button>
-          <div style={{ position:'relative' }}>
+            <div style={{ position:'relative' }}>
             <button onClick={()=>setShowVoiceMenu(!showVoiceMenu)} style={{ borderRadius:20,background:voiceOn?'rgba(255,255,255,.15)':'rgba(0,0,0,.25)',border:'1.5px solid rgba(255,255,255,.2)',cursor:'pointer',padding:'6px 10px',color:voiceOn?'white':'rgba(255,255,255,.5)',fontSize:11,fontWeight:700,display:'flex',alignItems:'center',gap:4 }}>
               {isSpeaking ? '⏸' : voiceOn ? '🔊' : '🔇'}
             </button>
@@ -733,6 +733,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               </>
             )}
           </div>
+            </div>
         </div>
       </div>
 
