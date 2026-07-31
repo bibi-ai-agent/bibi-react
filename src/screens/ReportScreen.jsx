@@ -104,16 +104,16 @@ export default function ReportScreen() {
     let statusColor, statusEmoji, statusText
     if (negCount >= 3) {
       statusColor = '#dc2626'; statusEmoji = '🔴'
-      statusText = currentChild.name + " son günlerde duygusal olarak zorlanıyor görünüyor. Yakından ilgilenmeniz faydalı olabilir."
+      statusText = currentChild.name + " son günlerde duygusal açıdan zorlu bir süreçten geçiyor. Bilinçli bir ilgi ve sıcak bir konuşma büyük fark yaratabilir."
     } else if (activeDays <= 2) {
       statusColor = '#d97706'; statusEmoji = '🟡'
       statusText = currentChild.name + " bu hafta Bibi'ye yalnızca birkaç kez uğradı. Düzenli kullanım, öğrenme alışkanlığını güçlendirmek için kritik öneme sahiptir."
     } else if (activeDays >= 5 && negCount === 0) {
       statusColor = '#16a34a'; statusEmoji = '🟢'
-      statusText = currentChild.name + " bu hafta çok aktif ve istekliydi. Öğrenme motivasyonu yüksek görünüyor."
+      statusText = currentChild.name + " bu hafta Bibi ile güçlü bir performans sergiledi. Merak ve motivasyonu yüksek; bu ivmeyi korumak büyük fark yaratır."
     } else {
       statusColor = '#d97706'; statusEmoji = '🟡'
-      statusText = currentChild.name + " bu hafta düzenli bir şekilde devam etti. Genel gidişatı olumlu."
+      statusText = currentChild.name + " bu hafta istikrarlı bir ilerleme kaydetti. Tutarlılık, uzun vadeli öğrenmede en güçlü unsurdur."
     }
     setGeneralStatus({ color: statusColor, emoji: statusEmoji, text: statusText })
     setLoading(false)
