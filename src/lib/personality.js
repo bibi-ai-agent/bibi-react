@@ -76,13 +76,14 @@ export function getNextQuestion(progress) {
 
 export function shouldAskPersonality(messageCount, progress, lastAskedDate) {
   if (progress >= 50) return false
-  // Günde maksimum 1 soru, en az 2 gün arayla
+  // Günde maksimum 1 soru — aynı gün tekrar sorma
   if (lastAskedDate) {
-    const daysSince = Math.floor((Date.now() - new Date(lastAskedDate)) / 1000 / 60 / 60 / 24)
-    if (daysSince < 2) return false
+    const lastDate = new Date(lastAskedDate).toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
+    if (lastDate === today) return false
   }
-  // Her 10 mesajda bir kontrol et ama günlük limit var
-  return messageCount > 0 && messageCount % 10 === 0
+  // Her 15 mesajda bir kontrol et
+  return messageCount > 0 && messageCount % 15 === 0
 }
 
 export function calculatePersonalityScores(answers) {
