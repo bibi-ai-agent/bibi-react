@@ -746,8 +746,6 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             setShowHistory(false)
             setHomeworkMode(false)
             setHomeworkStep(null)
-            setQuestionMode(false)
-            setCurrentQuestion(null)
             setInput('')
             setQuickReplies([])
             setMessages([])
@@ -1095,9 +1093,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setInput('')
                 setHomeworkMode(false)
                 setHomeworkStep(null)
-                setQuestionMode(false)
-                setCurrentQuestion(null)
-                sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
+                        sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
                 sessionStorage.removeItem('bibi_session_start')
 
                 // Kişiselleştirilmiş açılış mesajı al
