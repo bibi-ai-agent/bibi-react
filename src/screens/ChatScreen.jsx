@@ -124,7 +124,7 @@ function BubbleContent({ m, theme }) {
   const text = m.text || ''
   let bg = m.role==='user' ? theme.bubble : 'rgba(255,255,255,.92)'
   let border = 'none'
-  let color = m.role==='user' ? 'white' : '#1A2E2A'
+  let color = m.role==='user' ? 'white' : '#1C1410'
   if (m.role === 'dai') {
     if (/harika|bravo|aferin|tebrik/i.test(text)) { bg='rgba(220,252,231,.95)'; border='1.5px solid rgba(74,222,128,.4)' }
     else if (/uzgun|yalniz|kotu|endise|korku/i.test(text)) { bg='rgba(253,242,248,.95)'; border='1.5px solid rgba(236,72,153,.3)' }
@@ -593,7 +593,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
     addMsg('dai', `📄 "${topic}" için ${contentType} hazırlanıyor...`)
     const content = await callAI(null,[{role:'user',content:`"${topic}" konusunda Türkçe ${contentType} yaz. Yaş: ${age} — ${agePrompt} Format: Başlık, giriş, 3-5 bölüm (## ile), sonuç. 400-600 kelime.`}],1500)
     if(!content){addMsg('dai','İçerik üretilemedi 🙈');return}
-    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#0D9B7E;border-bottom:2px solid #0D9B7E;padding-bottom:8px}h2{color:#1A2E2A;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Dai ile öğrenmek eğlenceli!</div></body></html>`
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#F59E0B;border-bottom:2px solid #F59E0B;padding-bottom:8px}h2{color:#1C1410;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Dai ile öğrenmek eğlenceli!</div></body></html>`
     const blob=new Blob([html],{type:'text/html;charset=utf-8'})
     const url=URL.createObjectURL(blob)
     const w=window.open(url,'_blank')
@@ -608,7 +608,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
     const result = await callAI(null,[{role:'user',content:`"${topic}" hakkında ${slideCount} slaytlık detaylı Türkçe sunu. ${age<=8?'Basit, emoji kullan.':age<=12?'Açıklayıcı.':'Akademik.'}\nJSON (başka hiçbir şey yazma): {"title":"...","slides":[{"title":"...","points":["...","...","..."],"fun_fact":"..."}],"ending":"..."}`}],2000)
     let parsed={title:topic,slides:[],ending:''}
     try{parsed=JSON.parse(result.replace(/```json|```/g,'').trim())}catch(e){addMsg('dai','Sunu oluşturulamadı 🙈');return}
-    const colors=age<=8?['#c0392b','#e67e22','#27ae60','#2980b9','#8e44ad']:age<=12?['#1a3a5c','#1a4a2a','#3d1a5c','#1a3a4a','#4a2a1a']:['#0f1f35','#0f2818','#1f0f35','#0f2535','#2a1208']
+    const colors=age<=8?['#c0392b','#e67e22','#27ae60','#2980b9','#8e44ad']:age<=12?['#1a3a5c','#1a4a2a','#3d1a5c','#1a3a4a','#4a2a1a']:['#0f1f35','#0f2818','#1f0f35','#1C1008','#2a1208']
     const slideHTML=parsed.slides.map((s,i)=>`<div class="slide" style="background:${colors[i%colors.length]}"><div class="slide-num">${parsed.title} — ${i+1}/${parsed.slides.length}</div><h2>${s.title||''}</h2><ul>${(s.points||[]).map(p=>`<li>${p}</li>`).join('')}</ul>${s.fun_fact?`<div class="fun-fact">💡 ${s.fun_fact}</div>`:''}</div>`).join('')
     const sc='<'+'/script>'
     const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${parsed.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}.slide{display:none;height:100vh;padding:50px 60px;flex-direction:column;justify-content:center}.slide.active{display:flex}.slide-num{font-size:10px;opacity:.4;margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}h2{font-size:${age<=8?'28px':'22px'};font-weight:900;margin-bottom:18px;border-bottom:2px solid rgba(255,255,255,.2);padding-bottom:12px}ul{list-style:none;display:flex;flex-direction:column;gap:12px}li{font-size:${age<=8?'19px':'16px'};line-height:1.5;display:flex;gap:8px}li::before{content:"▸";opacity:.6;flex-shrink:0}.fun-fact{margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:10px;font-size:13px}.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:20px}button{padding:7px 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.counter{color:rgba(255,255,255,.5);font-size:12px;min-width:70px;text-align:center}</style></head><body><div class="slide active" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none;font-size:36px">${parsed.title}</h2><p style="opacity:.5;margin-top:12px">${currentChild?.name||''} • Dai ile hazırlandı</p></div>${slideHTML}<div class="slide" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none">✅ Sunum Tamamlandı</h2><p style="opacity:.5;margin-top:8px">${parsed.ending||''}</p></div><div class="nav"><button onclick="p()">← Önceki</button><span class="counter" id="c">1 / ${parsed.slides.length+2}</span><button onclick="n()">Sonraki →</button></div><script>var i=0,sl=document.querySelectorAll('.slide');function show(x){sl.forEach(function(e){e.classList.remove('active')});sl[x].classList.add('active');document.getElementById('c').textContent=(x+1)+' / '+sl.length;}function n(){if(i<sl.length-1){i++;show(i);}}function p(){if(i>0){i--;show(i);}}document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')n();if(e.key==='ArrowLeft')p();});${sc}</body></html>`
@@ -660,7 +660,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
     ?{bg:'linear-gradient(135deg,#2d1b3d,#1a1040)',header:'linear-gradient(135deg,#b5449a,#7c2d8e)',bubble:'#b5449a'}
     :currentChild?.age<=8
     ?{bg:'linear-gradient(135deg,#0c2340,#1a3a5c)',header:'linear-gradient(135deg,#2563eb,#1d4ed8)',bubble:'#2563eb'}
-    :{bg:'linear-gradient(135deg,#1a2e2a,#0f2535)',header:'linear-gradient(135deg,#0D9B7E,#0369a1)',bubble:'#0D9B7E'}
+    :{bg:'linear-gradient(135deg,#1C1410,#1C1008)',header:'linear-gradient(135deg,#F59E0B,#B45309)',bubble:'#F59E0B'}
 
   const isSpeaking = !!currentAudio && !speechPaused
   const limitLabels = {
@@ -684,7 +684,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
               <span style={{ color: item.used >= item.limit ? '#fca88a' : 'rgba(255,255,255,.5)' }}>{item.used}/{item.limit}</span>
             </div>
           ))}
-          <button onClick={()=>setScreen('subscription')} style={{ marginLeft:'auto', padding:'3px 10px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontSize:10, fontWeight:800, cursor:'pointer' }}>⭐ Yükselt</button>
+          <button onClick={()=>setScreen('subscription')} style={{ marginLeft:'auto', padding:'3px 10px', borderRadius:10, border:'none', background:'linear-gradient(135deg,#7C3AED,#F59E0B)', color:'white', fontSize:10, fontWeight:800, cursor:'pointer' }}>⭐ Yükselt</button>
         </div>
       )}
 
@@ -698,7 +698,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ position:'relative' }}>
               <BibiFace expr={expr} size={40}/>
-              <div style={{ position:'absolute', bottom:0, right:0, width:9, height:9, borderRadius:'50%', background:'#4ade80', border:'2px solid rgba(0,0,0,.3)' }}/>
+              <div style={{ position:'absolute', bottom:0, right:0, width:9, height:9, borderRadius:'50%', background:'#FCD34D', border:'2px solid rgba(0,0,0,.3)' }}/>
             </div>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -726,15 +726,15 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 <div style={{position:'fixed',inset:0,zIndex:98}} onClick={()=>setShowVoiceMenu(false)}/>
                 <div style={{ position:'absolute',top:44,right:0,zIndex:99,background:'rgba(20,30,28,.97)',backdropFilter:'blur(20px)',border:'1.5px solid rgba(255,255,255,.12)',borderRadius:16,padding:12,minWidth:220,boxShadow:'0 8px 32px rgba(0,0,0,.4)' }}>
                   <div style={{ color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',marginBottom:10 }}>SES AYARLARI</div>
-                  <button onClick={()=>{setVoiceOn(!voiceOn);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:'none',background:voiceOn?'rgba(13,155,126,.2)':'rgba(255,255,255,.05)',color:'white',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:8,fontFamily:'Nunito,sans-serif' }}>
+                  <button onClick={()=>{setVoiceOn(!voiceOn);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:'none',background:voiceOn?'rgba(245,158,11,.2)':'rgba(255,255,255,.05)',color:'white',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:8,fontFamily:'Nunito,sans-serif' }}>
                     {voiceOn?'🔊 Ses Açık — Kapat':'🔇 Ses Kapalı — Aç'}
                   </button>
                   <div style={{ color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',marginBottom:8 }}>SES SEÇ</div>
                   {ELEVENLABS_VOICES.map(v=>(
-                    <button key={v.id} onClick={()=>{setSelectedVoiceId(v.id);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:`1.5px solid ${selectedVoiceId===v.id?'rgba(13,155,126,.5)':'rgba(255,255,255,.1)'}`,background:selectedVoiceId===v.id?'rgba(13,155,126,.2)':'transparent',color:selectedVoiceId===v.id?'#4ade80':'rgba(255,255,255,.7)',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:6,fontFamily:'Nunito,sans-serif',display:'flex',alignItems:'center',gap:8 }}>
+                    <button key={v.id} onClick={()=>{setSelectedVoiceId(v.id);setShowVoiceMenu(false)}} style={{ width:'100%',padding:'9px 12px',border:`1.5px solid ${selectedVoiceId===v.id?'rgba(245,158,11,.5)':'rgba(255,255,255,.1)'}`,background:selectedVoiceId===v.id?'rgba(245,158,11,.2)':'transparent',color:selectedVoiceId===v.id?'#FCD34D':'rgba(255,255,255,.7)',fontSize:13,fontWeight:700,cursor:'pointer',borderRadius:10,textAlign:'left',marginBottom:6,fontFamily:'Nunito,sans-serif',display:'flex',alignItems:'center',gap:8 }}>
                       <span>{v.gender==='female'?'👩':'👨'}</span>
                       <div><div>{v.name}</div><div style={{fontSize:10,opacity:.5}}>{v.label}</div></div>
-                      {selectedVoiceId===v.id&&<span style={{marginLeft:'auto',color:'#4ade80'}}>✓</span>}
+                      {selectedVoiceId===v.id&&<span style={{marginLeft:'auto',color:'#FCD34D'}}>✓</span>}
                     </button>
                   ))}
                 </div>
@@ -765,7 +765,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       )}
 
       {homeworkMode && (
-        <div style={{ padding:'8px 14px',background:'rgba(13,155,126,.15)',borderBottom:'1px solid rgba(13,155,126,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
+        <div style={{ padding:'8px 14px',background:'rgba(245,158,11,.15)',borderBottom:'1px solid rgba(245,158,11,.3)',display:'flex',alignItems:'center',gap:10,flexShrink:0 }}>
           <div style={{ flex:1,color:'rgba(255,255,255,.7)',fontSize:12,fontWeight:600 }}>
             📚 {homeworkStep==='analyzing'?'Analiz ediliyor...':homeworkStep==='waiting_solution'?'Çözümünü gönder':homeworkStep==='checking'?'Kontrol ediliyor...':homeworkStep==='practice'?'Pratik soru':'Ödev modu'}
           </div>
@@ -779,7 +779,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 reader.readAsDataURL(file)
               }
               inp.click()
-            }} style={{ padding:'6px 12px',borderRadius:8,border:'none',background:'#0D9B7E',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
+            }} style={{ padding:'6px 12px',borderRadius:8,border:'none',background:'#F59E0B',color:'white',fontSize:12,fontWeight:700,cursor:'pointer' }}>
               📸 {homeworkStep==='practice'?'Pratik Cevabı Gönder':'Çözümü Gönder'}
             </button>
           )}
@@ -794,7 +794,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             {m.role==='image'?(
               <div style={{maxWidth:'85%'}}>
                 <img src={m.url} style={{borderRadius:12,maxWidth:'100%',display:'block',marginBottom:6}} alt={m.title} onError={e=>e.target.style.display='none'}/>
-                <a href={m.url} download="dai-gorsel.jpg" target="_blank" style={{display:'inline-block',padding:'5px 12px',borderRadius:8,background:'rgba(255,255,255,.9)',color:'#0D9B7E',fontSize:12,fontWeight:700,textDecoration:'none'}}>⬇️ JPG İndir</a>
+                <a href={m.url} download="dai-gorsel.jpg" target="_blank" style={{display:'inline-block',padding:'5px 12px',borderRadius:8,background:'rgba(255,255,255,.9)',color:'#F59E0B',fontSize:12,fontWeight:700,textDecoration:'none'}}>⬇️ JPG İndir</a>
               </div>
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
@@ -814,7 +814,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             <BibiFace expr="thinking" size={36}/>
             <div style={{padding:'12px 16px',borderRadius:'4px 18px 18px 18px',background:'rgba(255,255,255,.92)'}}>
               <div style={{display:'flex',gap:4}}>
-                {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',background:'#0D9B7E',animation:`dotPulse 1.2s ease ${i*0.2}s infinite`}}/>)}
+                {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:'50%',background:'#F59E0B',animation:`dotPulse 1.2s ease ${i*0.2}s infinite`}}/>)}
               </div>
             </div>
           </div>
@@ -825,7 +825,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       {/* Günlük Karşılama */}
       {showDailyGreeting && messages.length <= 2 && (
         <div style={{ padding:"0 14px 8px", flexShrink:0 }}>
-          <div style={{ background:"rgba(13,155,126,.1)", border:"1px solid rgba(13,155,126,.2)", borderRadius:14, padding:"12px 14px" }}>
+          <div style={{ background:"rgba(245,158,11,.1)", border:"1px solid rgba(245,158,11,.2)", borderRadius:14, padding:"12px 14px" }}>
             <div style={{ color:"rgba(255,255,255,.5)", fontSize:10, fontWeight:700, letterSpacing:1.2, textTransform:"uppercase", marginBottom:8 }}>BUGÜN NE ÇALIŞALIM?</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {[
@@ -909,13 +909,13 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
 
       {showLimitModal && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
             <div style={{ fontSize:48,marginBottom:12 }}>🔒</div>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>Günlük Limit Doldu!</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>
               {limitLabels[showLimitModal]?.icon} {limitLabels[showLimitModal]?.label} hakkın ({limitLabels[showLimitModal]?.limit}) doldu.
             </div>
-            <button onClick={()=>{setShowLimitModal(null);setScreen('subscription')}} style={{ width:'100%',padding:13,borderRadius:14,border:'none',background:'linear-gradient(135deg,#7C3AED,#0D9B7E)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10 }}>⭐ Planımı Yükselt</button>
+            <button onClick={()=>{setShowLimitModal(null);setScreen('subscription')}} style={{ width:'100%',padding:13,borderRadius:14,border:'none',background:'linear-gradient(135deg,#7C3AED,#F59E0B)',color:'white',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:10 }}>⭐ Planımı Yükselt</button>
             <button onClick={()=>setShowLimitModal(null)} style={{ background:'none',border:'none',color:'rgba(255,255,255,.35)',fontSize:13,cursor:'pointer' }}>Kapat</button>
           </div>
         </div>
@@ -923,13 +923,13 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
 
       {projectInvite && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)',borderRadius:24,padding:'28px 24px',maxWidth:320,width:'100%',textAlign:'center' }}>
             <div style={{ fontSize:48,marginBottom:12 }}>{TYPE_ICONS[projectInvite.project_type]||'🚀'}</div>
             <div style={{ color:'white',fontSize:18,fontWeight:900,marginBottom:8 }}>{projectInvite.sender?.name} seni davet etti!</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:14,marginBottom:24 }}>{TYPE_NAMES[projectInvite.project_type]||'Proje'} yapmak istiyor</div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={rejectProjectInvite} style={{ flex:1,padding:12,borderRadius:12,border:'1.5px solid rgba(255,255,255,.15)',background:'transparent',color:'rgba(255,255,255,.5)',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>Reddet</button>
-              <button onClick={acceptProjectInvite} style={{ flex:2,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Kabul Et</button>
+              <button onClick={acceptProjectInvite} style={{ flex:2,padding:12,borderRadius:12,border:'none',background:'#F59E0B',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Kabul Et</button>
             </div>
           </div>
         </div>
@@ -937,9 +937,9 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
 
       {showForgotPin && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.85)',backdropFilter:'blur(8px)',zIndex:201,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'32px 28px',width:300,textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)',borderRadius:24,padding:'32px 28px',width:300,textAlign:'center' }}>
             {forgotSuccess ? (
-              <><div style={{fontSize:48,marginBottom:12}}>✅</div><div style={{color:'#4ade80',fontSize:16,fontWeight:900}}>PIN güncellendi!</div></>
+              <><div style={{fontSize:48,marginBottom:12}}>✅</div><div style={{color:'#FCD34D',fontSize:16,fontWeight:900}}>PIN güncellendi!</div></>
             ) : forgotStep===1 ? (
               <>
                 <div style={{fontSize:40,marginBottom:12}}>🔑</div>
@@ -951,7 +951,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                   const {error}=await sb.auth.signInWithPassword({email:currentUser.email,password:forgotPassword})
                   if(error){setForgotError('Şifre hatalı!');return}
                   setForgotError('');setForgotStep(2)
-                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Devam →</button>
+                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#F59E0B',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Devam →</button>
                 <button onClick={()=>{setShowForgotPin(false);setForgotStep(1);setForgotPassword('');setForgotError('')}} style={{background:'none',border:'none',color:'rgba(255,255,255,.3)',fontSize:12,cursor:'pointer'}}>İptal</button>
               </>
             ) : (
@@ -967,7 +967,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                   await sb.from('parents').update({pin:newPin}).eq('id',currentUser.id)
                   setForgotSuccess(true)
                   setTimeout(()=>{setShowForgotPin(false);setForgotStep(1);setForgotPassword('');setNewPin('');setNewPinConfirm('');setForgotError('');setForgotSuccess(false)},2000)
-                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Kaydet ✓</button>
+                }} style={{width:'100%',padding:11,borderRadius:10,border:'none',background:'#F59E0B',color:'white',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'Nunito,sans-serif',marginBottom:8}}>Kaydet ✓</button>
                 <button onClick={()=>setForgotStep(1)} style={{background:'none',border:'none',color:'rgba(255,255,255,.3)',fontSize:12,cursor:'pointer'}}>← Geri</button>
               </>
             )}
@@ -1011,7 +1011,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       {/* Kişilik Sorusu Rating */}
       {personalityQ && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
             <div style={{ color:'rgba(255,255,255,.4)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase', marginBottom:8 }}>
               💭 Seni Tanıyorum — {(currentChild?.personality_progress||0)+1}/50
             </div>
@@ -1039,7 +1039,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       {/* Günlük Duygu Picker */}
       {showEmotionPicker && !todayEmotion && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)', borderRadius:'24px 24px 0 0', padding:'24px 20px 36px', width:'100%', maxWidth:480 }}>
             <div style={{ color:'white', fontSize:18, fontWeight:900, marginBottom:6, textAlign:'center' }}>Bugün nasıl hissediyorsun? 💙</div>
             <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:24, textAlign:'center' }}>Hislerini benimle paylaş</div>
             <div style={{ display:'flex', justifyContent:'space-around', marginBottom:16 }}>
@@ -1063,19 +1063,19 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
 
       {showStreakCelebration && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', backdropFilter:'blur(8px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', borderRadius:24, padding:'32px 28px', width:300, textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)', borderRadius:24, padding:'32px 28px', width:300, textAlign:'center' }}>
             <div style={{ fontSize:56, marginBottom:12 }}>🔥</div>
             <div style={{ color:'#fbbf24', fontSize:28, fontWeight:900, marginBottom:8 }}>{streak} Gün!</div>
             <div style={{ color:'white', fontSize:16, fontWeight:700, marginBottom:8 }}>Muhteşem bir seri!</div>
             <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:20 }}>Her gün Dai ile buluşmaya devam ediyorsun. Bu kararlılık seni çok özel kılıyor!</div>
-            <button onClick={function(){setShowStreakCelebration(false)}} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#fbbf24', color:'#1A2E2A', fontWeight:900, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:15 }}>Teşekkürler! 🚀</button>
+            <button onClick={function(){setShowStreakCelebration(false)}} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#fbbf24', color:'#1C1410', fontWeight:900, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:15 }}>Teşekkürler! 🚀</button>
           </div>
         </div>
       )}
 
       {showNewChatConfirm && (
         <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,.7)',backdropFilter:'blur(8px)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:'Nunito,sans-serif' }}>
-          <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)',borderRadius:24,padding:'28px 24px',maxWidth:300,width:'100%',textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)',borderRadius:24,padding:'28px 24px',maxWidth:300,width:'100%',textAlign:'center' }}>
             <div style={{ fontSize:40,marginBottom:12 }}>✏️</div>
             <div style={{ color:'white',fontSize:16,fontWeight:900,marginBottom:8 }}>Yeni Sohbet</div>
             <div style={{ color:'rgba(255,255,255,.5)',fontSize:13,marginBottom:20 }}>Mevcut sohbet kapanacak. Devam etmek istiyor musun?</div>
@@ -1123,7 +1123,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 // Fallback açılış
                 const opening = currentChild.age<=8 ? 'Heyyyy ' + currentChild.name + '! 🎉 Yeni sohbet başlıyor!' : 'Merhaba ' + currentChild.name + '! Yeni bir sohbet başlatalım.'
                 setTimeout(() => addMsg('dai', opening), 50)
-              }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
+              }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#F59E0B',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ const GENRES = [
   { id:'bilimkurgu', icon:'🚀', name:'Uzay & Bilim',  desc:'Uzay, robotlar ve geleceğin dünyası',    color:'#06b6d4', bg:'linear-gradient(135deg,#164e63,#0c4a6e)' },
   { id:'komik',      icon:'😂', name:'Komedi',        desc:'Güldüren ve neşe veren hikayeler',       color:'#84cc16', bg:'linear-gradient(135deg,#365314,#1a2e05)' },
   { id:'gizem',      icon:'🔎', name:'Gizem',         desc:'Bulmacalar ve dedektif maceraları',      color:'#6366f1', bg:'linear-gradient(135deg,#312e81,#1e1b4b)' },
-  { id:'macera',     icon:'⚔️', name:'Macera',        desc:'Heyecanlı yolculuklar ve kahramanlar',   color:'#0D9B7E', bg:'linear-gradient(135deg,#064e3b,#022c22)' },
+  { id:'macera',     icon:'⚔️', name:'Macera',        desc:'Heyecanlı yolculuklar ve kahramanlar',   color:'#F59E0B', bg:'linear-gradient(135deg,#064e3b,#022c22)' },
 ]
 
 const STORY_PROMPTS = {
@@ -216,8 +216,8 @@ export default function StoryScreen() {
       <div style={{ padding:'24px 16px 40px' }}>
         {/* Kendi yaz butonu */}
         <div onClick={() => setPhase('write')}
-          style={{ background:'linear-gradient(135deg,rgba(124,58,237,.3),rgba(13,155,126,.3))', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:20, padding:'18px 20px', marginBottom:20, cursor:'pointer', display:'flex', alignItems:'center', gap:14 }}>
-          <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>✍️</div>
+          style={{ background:'linear-gradient(135deg,rgba(124,58,237,.3),rgba(245,158,11,.3))', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:20, padding:'18px 20px', marginBottom:20, cursor:'pointer', display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,#7C3AED,#F59E0B)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>✍️</div>
           <div>
             <div style={{ color:'white', fontSize:16, fontWeight:900 }}>Kendi Hikayeni Yaz</div>
             <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginTop:3 }}>Bibi hikayeni güzelleştirsin ✨</div>
@@ -398,7 +398,7 @@ export default function StoryScreen() {
               placeholder="Bir gün ormanda yürürken garip bir ses duydum..."
               style={{ flex:1, minHeight:220, padding:'16px', borderRadius:16, border:'1.5px solid rgba(255,255,255,.12)', background:'rgba(255,255,255,.05)', color:'white', fontSize:15, fontFamily:'Nunito,sans-serif', lineHeight:1.8, resize:'none', outline:'none' }}/>
             <button onClick={improveUserStory} disabled={!userStory.trim() || generating}
-              style={{ marginTop:14, padding:15, borderRadius:16, border:'none', background: generating ? 'rgba(124,58,237,.4)' : 'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontWeight:800, fontSize:15, cursor: generating ? 'default' : 'pointer', fontFamily:'Nunito,sans-serif', opacity: !userStory.trim() ? 0.4 : 1 }}>
+              style={{ marginTop:14, padding:15, borderRadius:16, border:'none', background: generating ? 'rgba(124,58,237,.4)' : 'linear-gradient(135deg,#7C3AED,#F59E0B)', color:'white', fontWeight:800, fontSize:15, cursor: generating ? 'default' : 'pointer', fontFamily:'Nunito,sans-serif', opacity: !userStory.trim() ? 0.4 : 1 }}>
               {generating ? '✨ Bibi yazıyor...' : '✨ Bibi Güzelleştirsin!'}
             </button>
           </>
@@ -406,7 +406,7 @@ export default function StoryScreen() {
           <>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
               <div style={{ fontSize:20 }}>✨</div>
-              <div style={{ color:'#4ade80', fontSize:14, fontWeight:700 }}>Bibi hikayen güzelleştirdi!</div>
+              <div style={{ color:'#FCD34D', fontSize:14, fontWeight:700 }}>Bibi hikayen güzelleştirdi!</div>
             </div>
             {userStoryImage && (
               <div style={{ borderRadius:16, overflow:'hidden', marginBottom:12, aspectRatio:'16/9', position:'relative', background:'rgba(255,255,255,.04)' }}>
@@ -425,11 +425,11 @@ export default function StoryScreen() {
             </div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={() => isPlaying ? stopAudio() : speakParagraph(userStoryResult)}
-                style={{ flex:1, padding:13, borderRadius:14, border:'1.5px solid #0D9B7E', background:'rgba(13,155,126,.12)', color:'#4ade80', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:14 }}>
+                style={{ flex:1, padding:13, borderRadius:14, border:'1.5px solid #F59E0B', background:'rgba(245,158,11,.12)', color:'#FCD34D', fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:14 }}>
                 {isPlaying ? '⏸ Duraklat' : '🔊 Dinle'}
               </button>
               <button onClick={() => { stopAudio(); setUserStory(''); setUserStoryResult(null) }}
-                style={{ flex:1, padding:13, borderRadius:14, border:'none', background:'linear-gradient(135deg,#7C3AED,#0D9B7E)', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:14 }}>
+                style={{ flex:1, padding:13, borderRadius:14, border:'none', background:'linear-gradient(135deg,#7C3AED,#F59E0B)', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:14 }}>
                 🔄 Yeni Yaz
               </button>
             </div>

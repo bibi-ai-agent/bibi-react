@@ -121,7 +121,7 @@ export default function SubscriptionScreen() {
           <div style={{ textAlign:'center' }}>
             <div style={{ color:'white', fontSize:18, fontWeight:900 }}>Bibi Planları</div>
             <div style={{ color:'rgba(255,255,255,.4)', fontSize:11, marginTop:1 }}>
-              Aktif: <span style={{ color:'#4ade80', fontWeight:700 }}>{PLANS.find(p=>p.id===currentPlan)?.name}</span>
+              Aktif: <span style={{ color:'#FCD34D', fontWeight:700 }}>{PLANS.find(p=>p.id===currentPlan)?.name}</span>
             </div>
           </div>
           <div style={{ width:70 }}/>
@@ -134,7 +134,7 @@ export default function SubscriptionScreen() {
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ fontSize:40, marginBottom:10 }}>🌟</div>
           <div style={{ color:'white', fontSize:22, fontWeight:900, marginBottom:6 }}>Çocuğunuz için en iyisini seçin</div>
-          <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, lineHeight:1.6 }}>Bibi, yapay zeka destekli kişisel öğrenme arkadaşı.<br/>Her plan 7 gün ücretsiz deneme ile başlar.</div>
+          <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, lineHeight:1.6 }}>Dai, yapay zeka destekli kişisel öğrenme arkadaşı.<br/>Her plan 7 gün ücretsiz deneme ile başlar.</div>
         </div>
 
         {/* Plan kartları */}
@@ -156,7 +156,7 @@ export default function SubscriptionScreen() {
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <div style={{ color:'white', fontSize:17, fontWeight:900 }}>{plan.name}</div>
                         {plan.popular && !isCurrent && <div style={{ background:'#7C3AED', color:'white', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:10, letterSpacing:.5 }}>POPÜLER</div>}
-                        {isCurrent && <div style={{ background:'#0D9B7E', color:'white', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:10 }}>AKTİF</div>}
+                        {isCurrent && <div style={{ background:'#F59E0B', color:'white', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:10 }}>AKTİF</div>}
                       </div>
                       <div style={{ color:'rgba(255,255,255,.45)', fontSize:11, marginTop:2 }}>{plan.tagline}</div>
                     </div>
@@ -174,7 +174,7 @@ export default function SubscriptionScreen() {
                       <div key={i} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
                         <span style={{ fontSize:14 }}>{f.icon}</span>
                         <span style={{ color:'rgba(255,255,255,.8)', fontSize:13 }}>{f.text}</span>
-                        <span style={{ marginLeft:'auto', color:'#4ade80', fontSize:13, fontWeight:700 }}>✓</span>
+                        <span style={{ marginLeft:'auto', color:'#FCD34D', fontSize:13, fontWeight:700 }}>✓</span>
                       </div>
                     ))}
                     {plan.disabled.map((f,i) => (
@@ -194,7 +194,7 @@ export default function SubscriptionScreen() {
                     </button>
                   )}
                   {isCurrent && plan.id !== 'free' && (
-                    <div style={{ textAlign:'center', color:'#4ade80', fontSize:13, fontWeight:700, padding:'10px 0 0' }}>✓ Aktif Planınız</div>
+                    <div style={{ textAlign:'center', color:'#FCD34D', fontSize:13, fontWeight:700, padding:'10px 0 0' }}>✓ Aktif Planınız</div>
                   )}
                   {plan.id === 'free' && isCurrent && (
                     <div style={{ textAlign:'center', color:'rgba(255,255,255,.25)', fontSize:12, padding:'10px 0 0' }}>Daha fazlası için yukarıdaki planları inceleyin</div>
@@ -209,10 +209,10 @@ export default function SubscriptionScreen() {
         <div style={{ marginTop:28, background:'rgba(255,255,255,.04)', borderRadius:16, padding:'16px 18px' }}>
           <div style={{ color:'rgba(255,255,255,.6)', fontSize:12, lineHeight:1.8 }}>
             <div style={{ color:'white', fontSize:13, fontWeight:800, marginBottom:8 }}>📋 Sık Sorulan Sorular</div>
-            <div style={{ marginBottom:6 }}><span style={{ color:'#4ade80' }}>•</span> İstediğiniz zaman iptal edebilirsiniz</div>
-            <div style={{ marginBottom:6 }}><span style={{ color:'#4ade80' }}>•</span> İlk 7 gün ücretsiz deneme</div>
-            <div style={{ marginBottom:6 }}><span style={{ color:'#4ade80' }}>•</span> Plan değişikliği anında aktif olur</div>
-            <div><span style={{ color:'#4ade80' }}>•</span> Güvenli ödeme Stripe ile sağlanır 🔒</div>
+            <div style={{ marginBottom:6 }}><span style={{ color:'#FCD34D' }}>•</span> İstediğiniz zaman iptal edebilirsiniz</div>
+            <div style={{ marginBottom:6 }}><span style={{ color:'#FCD34D' }}>•</span> İlk 7 gün ücretsiz deneme</div>
+            <div style={{ marginBottom:6 }}><span style={{ color:'#FCD34D' }}>•</span> Plan değişikliği anında aktif olur</div>
+            <div><span style={{ color:'#FCD34D' }}>•</span> Güvenli ödeme Stripe ile sağlanır 🔒</div>
           </div>
         </div>
       </div>

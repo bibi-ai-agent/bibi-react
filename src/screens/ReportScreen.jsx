@@ -4,11 +4,11 @@ import { useApp } from '../lib/store'
 import { getPersonalityProfile, DIMENSION_NAMES, DIMENSION_ICONS, calculatePersonalityScores } from '../lib/personality'
 import { getWeeklyEmotions, EMOTIONS } from '../lib/emotion'
 
-const DARK    = '#1A2E2A'
-const GREEN   = '#0D9B7E'
+const DARK    = '#1C1410'
+const GREEN   = '#F59E0B'
 const WHITE   = 'white'
 
-function ps(n) { return n >= 70 ? '#16a34a' : n >= 50 ? '#d97706' : '#dc2626' }
+function ps(n) { return n >= 70 ? '#D97706' : n >= 50 ? '#d97706' : '#dc2626' }
 
 function Card({ children, style }) {
   return <div style={{ background:'rgba(255,255,255,.06)', borderRadius:16, padding:'16px', marginBottom:12, border:'1px solid rgba(255,255,255,.08)', ...style }}>{children}</div>
@@ -107,10 +107,10 @@ export default function ReportScreen() {
       statusText = currentChild.name + " son günlerde duygusal açıdan zorlu bir süreçten geçiyor. Bilinçli bir ilgi ve sıcak bir konuşma büyük fark yaratabilir."
     } else if (activeDays <= 2) {
       statusColor = '#d97706'; statusEmoji = '🟡'
-      statusText = currentChild.name + " bu hafta Bibi'ye yalnızca birkaç kez uğradı. Düzenli kullanım, öğrenme alışkanlığını güçlendirmek için kritik öneme sahiptir."
+      statusText = currentChild.name + " bu hafta Dai'ye yalnızca birkaç kez uğradı. Düzenli kullanım, öğrenme alışkanlığını güçlendirmek için kritik öneme sahiptir."
     } else if (activeDays >= 5 && negCount === 0) {
-      statusColor = '#16a34a'; statusEmoji = '🟢'
-      statusText = currentChild.name + " bu hafta Bibi ile güçlü bir performans sergiledi. Merak ve motivasyonu yüksek; bu ivmeyi korumak büyük fark yaratır."
+      statusColor = '#D97706'; statusEmoji = '🟢'
+      statusText = currentChild.name + " bu hafta Dai ile güçlü bir performans sergiledi. Merak ve motivasyonu yüksek; bu ivmeyi korumak büyük fark yaratır."
     } else {
       statusColor = '#d97706'; statusEmoji = '🟡'
       statusText = currentChild.name + " bu hafta istikrarlı bir ilerleme kaydetti. Tutarlılık, uzun vadeli öğrenmede en güçlü unsurdur."
@@ -159,7 +159,7 @@ export default function ReportScreen() {
           <div style={{ width:'100%', maxWidth:340 }}>
             <div style={{ color:WHITE, fontSize:18, fontWeight:900, marginBottom:16, textAlign:'center' }}>🔑 PIN Sıfırla</div>
             {forgotSuccess ? (
-              <div style={{ color:'#4ade80', textAlign:'center', padding:20 }}>✅ PIN güncellendi!</div>
+              <div style={{ color:'#FCD34D', textAlign:'center', padding:20 }}>✅ PIN güncellendi!</div>
             ) : forgotStep===1 ? (
               <>
                 <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:12 }}>Hesap şifrenizi girin:</div>
@@ -218,7 +218,7 @@ export default function ReportScreen() {
         ].map(function(tab) {
           return (
             <button key={tab.id} onClick={function(){setActiveSection(tab.id)}}
-              style={{ flexShrink:0, padding:'7px 14px', borderRadius:20, border:'1.5px solid '+(activeSection===tab.id?GREEN:'rgba(255,255,255,.1)'), background:activeSection===tab.id?'rgba(13,155,126,.2)':'transparent', color:activeSection===tab.id?'#4ade80':'rgba(255,255,255,.5)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+              style={{ flexShrink:0, padding:'7px 14px', borderRadius:20, border:'1.5px solid '+(activeSection===tab.id?GREEN:'rgba(255,255,255,.1)'), background:activeSection===tab.id?'rgba(245,158,11,.2)':'transparent', color:activeSection===tab.id?'#FCD34D':'rgba(255,255,255,.5)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
               {tab.label}
             </button>
           )
@@ -264,7 +264,7 @@ export default function ReportScreen() {
                   <SectionTitle icon="📊" title="BU HAFTA" />
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                     {[
-                      { label:'Aktif Gün', value:(weekStats?.activeDays||0)+'/7', color:'#4ade80' },
+                      { label:'Aktif Gün', value:(weekStats?.activeDays||0)+'/7', color:'#FCD34D' },
                       { label:'Mesaj', value:weekStats?.messageCount||0, color:'#60a5fa' },
                       { label:'Sohbet', value:sessions.length, color:'#a78bfa' },
                       { label:'Genel Duygu', value:emotions.length>0?'😊':'—', color:'#fbbf24' },
@@ -395,10 +395,10 @@ export default function ReportScreen() {
                   <>
                 {memory?.strong_topics?.length > 0 && (
                   <Card>
-                    <SectionTitle icon="💪" title="GÜÇLÜ KONULAR" color="#4ade80" />
+                    <SectionTitle icon="💪" title="GÜÇLÜ KONULAR" color="#FCD34D" />
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                       {memory.strong_topics.map(function(t) {
-                        return <span key={t} style={{ padding:'6px 12px', borderRadius:20, background:'rgba(74,222,128,.15)', border:'1px solid rgba(74,222,128,.3)', color:'#4ade80', fontSize:12, fontWeight:700 }}>{t}</span>
+                        return <span key={t} style={{ padding:'6px 12px', borderRadius:20, background:'rgba(74,222,128,.15)', border:'1px solid rgba(74,222,128,.3)', color:'#FCD34D', fontSize:12, fontWeight:700 }}>{t}</span>
                       })}
                     </div>
                   </Card>
@@ -527,7 +527,7 @@ export default function ReportScreen() {
                 ) : (
                   <Card>
                     <div style={{ textAlign:'center', padding:'20px 0', color:'rgba(255,255,255,.4)', fontSize:13 }}>
-                      Henüz yeterli kişilik verisi yok. Bibi ile daha fazla konuşuldukça analiz oluşacak.
+                      Henüz yeterli kişilik verisi yok. Dai ile daha fazla konuşuldukça analiz oluşacak.
                     </div>
                   </Card>
                 )}
@@ -566,7 +566,7 @@ export default function ReportScreen() {
 
                     {memory.career_analysis.strong_skills && (
                       <Card>
-                        <SectionTitle icon="💪" title="GÜÇLÜ BECERİLER" color="#4ade80" />
+                        <SectionTitle icon="💪" title="GÜÇLÜ BECERİLER" color="#FCD34D" />
                         {memory.career_analysis.strong_skills.map(function(s) {
                           return <div key={s} style={{ padding:'6px 0', borderBottom:'1px solid rgba(255,255,255,.05)', color:'rgba(255,255,255,.8)', fontSize:13 }}>✅ {s}</div>
                         })}
@@ -574,8 +574,8 @@ export default function ReportScreen() {
                     )}
 
                     {memory.career_analysis.parent_tip && (
-                      <Card style={{ background:'rgba(13,155,126,.1)', border:'1px solid rgba(13,155,126,.3)' }}>
-                        <SectionTitle icon="💡" title="EBEVEYNLERİN İÇİN ÖNERİ" color="#4ade80" />
+                      <Card style={{ background:'rgba(245,158,11,.1)', border:'1px solid rgba(245,158,11,.3)' }}>
+                        <SectionTitle icon="💡" title="EBEVEYNLERİN İÇİN ÖNERİ" color="#FCD34D" />
                         <div style={{ color:'rgba(255,255,255,.8)', fontSize:13, lineHeight:1.6 }}>{memory.career_analysis.parent_tip}</div>
                       </Card>
                     )}

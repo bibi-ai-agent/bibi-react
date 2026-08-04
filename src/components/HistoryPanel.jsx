@@ -113,7 +113,7 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.6)', backdropFilter:'blur(8px)', zIndex:150, display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       {/* Header */}
-      <div style={{ background:'linear-gradient(135deg,#1A2E2A,#243d38)', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,.08)' }}>
+      <div style={{ background:'linear-gradient(135deg,#1C1410,#2C1E0F)', padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid rgba(255,255,255,.08)' }}>
         <div>
           <div style={{ color:'rgba(255,255,255,.45)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase' }}>Sohbet Geçmişi</div>
           <div style={{ color:'white', fontSize:17, fontWeight:900 }}>{child.name}</div>
@@ -138,7 +138,7 @@ export default function HistoryPanel({ child, onClose, onLoadSession }) {
           const active = filterTopic === t
           return (
             <button key={t} onClick={function() { setFilterTopic(t) }}
-              style={{ flexShrink:0, padding:'5px 12px', borderRadius:20, border:'1.5px solid ' + (active ? '#0D9B7E' : 'rgba(255,255,255,.15)'), background: active ? 'rgba(13,155,126,.2)' : 'transparent', color: active ? '#4ade80' : 'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
+              style={{ flexShrink:0, padding:'5px 12px', borderRadius:20, border:'1.5px solid ' + (active ? '#F59E0B' : 'rgba(255,255,255,.15)'), background: active ? 'rgba(245,158,11,.2)' : 'transparent', color: active ? '#FCD34D' : 'rgba(255,255,255,.5)', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>
               {t === 'tumu' ? '📋 Tümü' : (info ? info.label : t)}
             </button>
           )
