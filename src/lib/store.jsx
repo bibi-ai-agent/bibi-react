@@ -5,11 +5,11 @@ const AppContext = createContext(null)
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [currentChild, setCurrentChildRaw] = useState(() => {
-    try { const s = sessionStorage.getItem('bibi_child'); return s ? JSON.parse(s) : null } catch { return null }
+    try { const s = sessionStorage.getItem('dai_child'); return s ? JSON.parse(s) : null } catch { return null }
   })
-  function setCurrentChild(c) { setCurrentChildRaw(c); if(c) sessionStorage.setItem('bibi_child', JSON.stringify(c)); else sessionStorage.removeItem('bibi_child') }
+  function setCurrentChild(c) { setCurrentChildRaw(c); if(c) sessionStorage.setItem('dai_child', JSON.stringify(c)); else sessionStorage.removeItem('dai_child') }
   const [screen, setScreenRaw] = useState('loading')
-  function setScreen(s) { setScreenRaw(s); sessionStorage.setItem('bibi_screen', s) }
+  function setScreen(s) { setScreenRaw(s); sessionStorage.setItem('dai_screen', s) }
   const [voiceOn, setVoiceOn] = useState(false)
   const [selectedVoiceId, setSelectedVoiceId] = useState("HllA1j2zLOqUQ4kLjMmK")
   const [elevenLabsEnabled, setElevenLabsEnabled] = useState(true)

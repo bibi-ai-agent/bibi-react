@@ -36,7 +36,7 @@ export default function App() {
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        const saved = sessionStorage.getItem('bibi_screen')
+        const saved = sessionStorage.getItem('dai_screen')
         const safeScreens = ['chat', 'children', 'report', 'friends', 'subscription', 'story', 'projectSelect', 'project']
         if (saved && safeScreens.includes(saved)) setScreen(saved)
         else setScreen('children')

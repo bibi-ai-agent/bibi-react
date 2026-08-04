@@ -139,8 +139,8 @@ export default function ChessGame({ currentChild, onFinish }) {
     try {
       const reply = await callAI(`Sen Bibi'sin, ${currentChild.name}'e satranç öğretiyorsun. Kısa, eğlenceli, Türkçe.`,
         msgs.map(m => ({ role:m.role==='user'?'user':'assistant', content:m.text })), 400)
-      setLearnMessages(p => [...p, { role:'bibi', text:reply }])
-    } catch { setLearnMessages(p => [...p, { role:'bibi', text:'Bir sorun oldu 😅' }]) }
+      setLearnMessages(p => [...p, { role:'dai', text:reply }])
+    } catch { setLearnMessages(p => [...p, { role:'dai', text:'Bir sorun oldu 😅' }]) }
     setLearnTyping(false)
   }
 
@@ -241,7 +241,7 @@ export default function ChessGame({ currentChild, onFinish }) {
         <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:24 }}>Dürüst olabilirsin, Bibi sana öğretir! 😊</div>
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           <button onClick={() => { setKnowsChess(true); startPractice() }} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(74,222,128,.4)', background:'rgba(74,222,128,.15)', color:'#4ade80', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>✅ Evet, biliyorum!</button>
-          <button onClick={() => { setKnowsChess(false); setLearnMessages([{ role:'bibi', text:LEARN_STEPS[0].msg }]) }} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(167,139,250,.4)', background:'rgba(167,139,250,.15)', color:'#a78bfa', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>📚 Öğrenmek istiyorum</button>
+          <button onClick={() => { setKnowsChess(false); setLearnMessages([{ role:'dai', text:LEARN_STEPS[0].msg }]) }} style={{ padding:'15px 20px', borderRadius:14, border:'1.5px solid rgba(167,139,250,.4)', background:'rgba(167,139,250,.15)', color:'#a78bfa', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>📚 Öğrenmek istiyorum</button>
         </div>
       </div>
     </div>
@@ -286,7 +286,7 @@ export default function ChessGame({ currentChild, onFinish }) {
     <div style={{ flex:1, display:'flex', flexDirection:'column', fontFamily:'Nunito,sans-serif' }}>
       <div style={{ display:'flex', gap:6, padding:'10px 14px' }}>
         {LEARN_STEPS.map((s,i) => (
-          <div key={i} onClick={() => { setLearnStep(i); setLearnMessages([{ role:'bibi', text:s.msg }]) }}
+          <div key={i} onClick={() => { setLearnStep(i); setLearnMessages([{ role:'dai', text:s.msg }]) }}
             style={{ flex:1, padding:'7px 4px', borderRadius:10, background:learnStep===i?'rgba(167,139,250,.3)':'rgba(255,255,255,.06)', border:learnStep===i?'1.5px solid #a78bfa':'1.5px solid transparent', textAlign:'center', cursor:'pointer' }}>
             <div style={{ fontSize:14 }}>{s.icon}</div>
             <div style={{ color:learnStep===i?'#a78bfa':'rgba(255,255,255,.4)', fontSize:9, fontWeight:700, marginTop:2 }}>{s.title}</div>
@@ -306,7 +306,7 @@ export default function ChessGame({ currentChild, onFinish }) {
       </div>
       <div style={{ padding:'8px 14px 12px', background:'rgba(0,0,0,.3)' }}>
         {learnStep < LEARN_STEPS.length-1
-          ? <button onClick={() => { const n=learnStep+1; setLearnStep(n); setLearnMessages([{ role:'bibi', text:LEARN_STEPS[n].msg }]) }} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#7C3AED', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>Sonraki Konu →</button>
+          ? <button onClick={() => { const n=learnStep+1; setLearnStep(n); setLearnMessages([{ role:'dai', text:LEARN_STEPS[n].msg }]) }} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#7C3AED', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>Sonraki Konu →</button>
           : <button onClick={startPractice} style={{ width:'100%', padding:11, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', marginBottom:8 }}>🎮 Pratik Yap!</button>
         }
         <div style={{ display:'flex', gap:8 }}>

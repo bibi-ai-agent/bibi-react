@@ -200,7 +200,7 @@ export default function ChatScreen() {
 
     // Yenilenince son sohbeti yükle
     ;(async () => {
-    const sessionKey = 'bibi_last_session_' + currentChild.id
+    const sessionKey = 'dai_last_session_' + currentChild.id
     const lastSid = sessionStorage.getItem(sessionKey)
     if (lastSid) {
       const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true })
@@ -252,12 +252,12 @@ export default function ChatScreen() {
       .subscribe()
     return () => {
       sb.removeChannel(channel)
-      const prevSession = sessionStorage.getItem('bibi_last_session_' + currentChild.id)
+      const prevSession = sessionStorage.getItem('dai_last_session_' + currentChild.id)
       if (prevSession) {
         fetch('https://bibi-app-rho.vercel.app/api/session-close', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: prevSession, started_at: sessionStorage.getItem('bibi_session_start') })
+          body: JSON.stringify({ session_id: prevSession, started_at: sessionStorage.getItem('dai_session_start') })
         }).catch(function() {})
       }
     }
@@ -378,7 +378,7 @@ export default function ChatScreen() {
     if (sessionId) return sessionId
     const { data } = await sb.from('sessions').insert({child_id:currentChild.id, started_at:new Date().toISOString()}).select().maybeSingle()
     setSessionId(data?.id)
-    if (data?.id) { sessionStorage.setItem('bibi_last_session_' + currentChild.id, data.id); sessionStorage.setItem('bibi_session_start', new Date().toISOString()) }
+    if (data?.id) { sessionStorage.setItem('dai_last_session_' + currentChild.id, data.id); sessionStorage.setItem('dai_session_start', new Date().toISOString()) }
     return data?.id
   }
 
@@ -758,7 +758,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             setQuickReplies([])
             setMessages([])
             setSessionId(sid)
-            sessionStorage.setItem('bibi_last_session_' + currentChild.id, sid)
+            sessionStorage.setItem('dai_last_session_' + currentChild.id, sid)
             msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'dai', m.content, { ts: m.created_at ? new Date(m.created_at) : new Date() }))
           }}
         />
@@ -794,7 +794,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             {m.role==='image'?(
               <div style={{maxWidth:'85%'}}>
                 <img src={m.url} style={{borderRadius:12,maxWidth:'100%',display:'block',marginBottom:6}} alt={m.title} onError={e=>e.target.style.display='none'}/>
-                <a href={m.url} download="bibi-gorsel.jpg" target="_blank" style={{display:'inline-block',padding:'5px 12px',borderRadius:8,background:'rgba(255,255,255,.9)',color:'#0D9B7E',fontSize:12,fontWeight:700,textDecoration:'none'}}>⬇️ JPG İndir</a>
+                <a href={m.url} download="dai-gorsel.jpg" target="_blank" style={{display:'inline-block',padding:'5px 12px',borderRadius:8,background:'rgba(255,255,255,.9)',color:'#0D9B7E',fontSize:12,fontWeight:700,textDecoration:'none'}}>⬇️ JPG İndir</a>
               </div>
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
@@ -1091,7 +1091,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                     await fetch('https://bibi-app-rho.vercel.app/api/session-close', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ session_id: sessionId, started_at: sessionStorage.getItem('bibi_session_start') })
+                      body: JSON.stringify({ session_id: sessionId, started_at: sessionStorage.getItem('dai_session_start') })
                     })
                   } catch(e) { console.log('Session close hata:', e) }
                 }
@@ -1103,8 +1103,8 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                 setHomeworkStep(null)
                 setQuickReplies([])
                 setShowDailyGreeting(false)
-                sessionStorage.removeItem('bibi_last_session_' + currentChild.id)
-                sessionStorage.removeItem('bibi_session_start')
+                sessionStorage.removeItem('dai_last_session_' + currentChild.id)
+                sessionStorage.removeItem('dai_session_start')
 
                 // Kişiselleştirilmiş açılış mesajı al
                 try {
