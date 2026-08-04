@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { sb } from '../lib/supabase'
 import { useApp } from '../lib/store'
 import BibiFace from '../components/BibiFace'
-
 export default function AuthScreen() {
   const { setCurrentUser, setScreen } = useApp()
   const [tab, setTab] = useState('login')
@@ -19,7 +18,6 @@ export default function AuthScreen() {
   const [forgotSent, setForgotSent] = useState(false)
   const [forgotLoading, setForgotLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-
   async function doLogin() {
     if (!email || !password) return setMsg('E-posta ve şifre gerekli')
     setLoading(true)
@@ -29,7 +27,6 @@ export default function AuthScreen() {
     setCurrentUser(data.user)
     setScreen('children')
   }
-
   async function doRegister() {
     if (!email || !password || !fullName || !pin || pin.length !== 4) {
       return setMsg('Tüm alanları doldurun, PIN 4 haneli olmalı')
@@ -45,7 +42,6 @@ export default function AuthScreen() {
     setCurrentUser(data.user)
     setScreen('children')
   }
-
   async function doForgotPassword() {
     if (!forgotEmail) return setForgotMsg('E-posta adresinizi girin')
     setForgotLoading(true)
@@ -56,23 +52,23 @@ export default function AuthScreen() {
     if (error) return setForgotMsg(error.message)
     setForgotSent(true)
   }
-
   const inp = {
     width: '100%', padding: '13px 16px', borderRadius: 12,
     border: '1.5px solid rgba(255,255,255,.15)', background: 'rgba(255,255,255,.08)',
     color: 'white', fontSize: 15, fontFamily: 'Nunito, sans-serif', boxSizing: 'border-box'
   }
-
+  const BG = 'linear-gradient(135deg,#1C1410,#1C1008)'
+  const ORANGE = '#F59E0B'
   if (showForgot) return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#0f2535)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:BG, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:'Nunito,sans-serif' }}>
       <div style={{ width:'100%', maxWidth:380, textAlign:'center' }}>
         <BibiFace expr="curious" size={60}/>
         {forgotSent ? (
           <div style={{ marginTop:20 }}>
             <div style={{ fontSize:40, marginBottom:12 }}>📧</div>
-            <div style={{ color:'#4ade80', fontSize:18, fontWeight:900, marginBottom:8 }}>Şifre sıfırlama e-postası gönderildi!</div>
+            <div style={{ color:'#FCD34D', fontSize:18, fontWeight:900, marginBottom:8 }}>Şifre sıfırlama e-postası gönderildi!</div>
             <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:20 }}>E-postanızı kontrol edin ve bağlantıya tıklayın.</div>
-            <button onClick={()=>{setShowForgot(false);setForgotSent(false);setForgotEmail('');setForgotMsg('')}} style={{ padding:'12px 28px', borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, fontSize:14, cursor:'pointer' }}>← Giriş Ekranına Dön</button>
+            <button onClick={()=>{setShowForgot(false);setForgotSent(false);setForgotEmail('');setForgotMsg('')}} style={{ padding:'12px 28px', borderRadius:12, border:'none', background:ORANGE, color:'white', fontWeight:800, fontSize:14, cursor:'pointer' }}>← Giriş Ekranına Dön</button>
           </div>
         ) : (
           <div style={{ marginTop:20 }}>
@@ -80,7 +76,7 @@ export default function AuthScreen() {
             <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:20 }}>E-posta adresinize şifre sıfırlama bağlantısı göndereceğiz.</div>
             <input placeholder="E-posta adresiniz" type="email" value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} style={{...inp, marginBottom:10}}/>
             {forgotMsg && <div style={{ color:'#fca88a', fontSize:13, marginBottom:10 }}>{forgotMsg}</div>}
-            <button onClick={doForgotPassword} disabled={forgotLoading} style={{ width:'100%', padding:14, borderRadius:12, border:'none', background:'#0D9B7E', color:'white', fontWeight:800, fontSize:14, cursor:'pointer', marginBottom:10 }}>
+            <button onClick={doForgotPassword} disabled={forgotLoading} style={{ width:'100%', padding:14, borderRadius:12, border:'none', background:ORANGE, color:'white', fontWeight:800, fontSize:14, cursor:'pointer', marginBottom:10 }}>
               {forgotLoading ? 'Gönderiliyor...' : 'Sıfırlama E-postası Gönder →'}
             </button>
             <button onClick={()=>{setShowForgot(false);setForgotMsg('');setForgotEmail('')}} style={{ background:'none', border:'none', color:'rgba(255,255,255,.4)', fontSize:13, cursor:'pointer' }}>← Geri Dön</button>
@@ -89,16 +85,14 @@ export default function AuthScreen() {
       </div>
     </div>
   )
-
   return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#1A2E2A,#0f2535)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+    <div style={{ minHeight:'100vh', background:BG, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
       <div style={{ width:'100%', maxWidth:380 }}>
         <div style={{ textAlign:'center', marginBottom:28 }}>
-          <BibiFace expr="happy" size={70}/>
-          <div style={{ color:'white', fontSize:26, fontWeight:900, marginTop:12 }}>Bibi</div>
+          <BibiFace expr="happy" size={80}/>
+          <div style={{ color:'white', fontSize:32, fontWeight:900, marginTop:12, letterSpacing:-1 }}>dai</div>
           <div style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginTop:4 }}>Çocuğunun öğrenme arkadaşı</div>
         </div>
-
         <div style={{ display:'flex', background:'rgba(255,255,255,.06)', borderRadius:12, padding:4, marginBottom:20 }}>
           {['login','register'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
@@ -111,7 +105,6 @@ export default function AuthScreen() {
             </button>
           ))}
         </div>
-
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {tab === 'register' && (
             <input placeholder="Ad Soyad" value={fullName} onChange={e=>setFullName(e.target.value)} style={inp}/>
@@ -134,7 +127,7 @@ export default function AuthScreen() {
           {msg && <div style={{ color:'#fca88a', fontSize:13, textAlign:'center' }}>{msg}</div>}
           <button onClick={tab === 'login' ? doLogin : doRegister} disabled={loading} style={{
             width:'100%', padding:14, borderRadius:14, border:'none',
-            background: loading ? 'rgba(13,155,126,.5)' : '#0D9B7E',
+            background: loading ? 'rgba(245,158,11,.5)' : ORANGE,
             color:'white', fontWeight:800, fontSize:15, cursor:'pointer',
             fontFamily:'Nunito, sans-serif', marginTop:4
           }}>
