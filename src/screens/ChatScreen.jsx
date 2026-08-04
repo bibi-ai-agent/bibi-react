@@ -80,13 +80,13 @@ Tüm cevapları alınca artık BU SORULARI TEKRAR SORMA. Normal arkadaş gibi so
     ageProfile = `DİL TARZI (13-15 YAŞ):\n• Akran gibi konuş — samimi\n• Emoji çok az\n• Derin ve analitik açıklamalar\n• Eleştirel düşünmeyi teşvik et`
   }
 
-  return `Sen Bibi'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı ve yol arkadaşısın.
+  return `Sen Dai'sin — ${age} yaşında ${gender} çocuk olan ${name} için özel AI öğrenme arkadaşı ve yol arkadaşısın.
 Sınıfı: ${child.grade || '?'}
 ${specialtyText}
 ${profileText}
 KİMLİĞİN:
 • ${name}'in hem arkadaşı hem öğreticisisin. Samimi, sıcak, destekleyici.
-• "Ben bir yapay zekayım" veya "Ben bir AI'yım" ASLA deme — sen Bibi'sin!
+• "Ben bir yapay zekayım" veya "Ben bir AI'yım" ASLA deme — sen Dai'sin!
 • Her zaman meraklı, enerjik ve pozitif kal.
 ${ageProfile}
 ÖĞRETME TARZI — ÇOK ÖNEMLİ:
@@ -125,7 +125,7 @@ function BubbleContent({ m, theme }) {
   let bg = m.role==='user' ? theme.bubble : 'rgba(255,255,255,.92)'
   let border = 'none'
   let color = m.role==='user' ? 'white' : '#1A2E2A'
-  if (m.role === 'bibi') {
+  if (m.role === 'dai') {
     if (/harika|bravo|aferin|tebrik/i.test(text)) { bg='rgba(220,252,231,.95)'; border='1.5px solid rgba(74,222,128,.4)' }
     else if (/uzgun|yalniz|kotu|endise|korku/i.test(text)) { bg='rgba(253,242,248,.95)'; border='1.5px solid rgba(236,72,153,.3)' }
     else if (/odev|problem|hesapla|coz/i.test(text)) { bg='rgba(254,252,232,.95)'; border='1.5px solid rgba(234,179,8,.3)' }
@@ -206,7 +206,7 @@ export default function ChatScreen() {
       const { data: msgs } = await sb.from('messages').select('role,content').eq('session_id', lastSid).order('created_at', { ascending: true })
       if (msgs?.length > 0) {
         setSessionId(lastSid)
-        msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content))
+        msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'dai', m.content))
       } else {
         sessionStorage.removeItem(sessionKey)
         await showOpening()
@@ -223,7 +223,7 @@ export default function ChatScreen() {
         : currentChild.age <= 12
         ? 'Merhaba ' + currentChild.name + '! Bugün ne konuşacağız? 😊'
         : 'Selam ' + currentChild.name + '! Bugün ne var?'
-      addMsg('bibi', fallback)
+      addMsg('dai', fallback)
 
       // Arka planda kişisel mesaj dene
       try {
@@ -235,7 +235,7 @@ export default function ChatScreen() {
         const ctx = await ctxRes.json()
         if (ctx.opening_message && ctx.recent_sessions?.length > 0) {
           setMessages([])
-          setTimeout(() => addMsg('bibi', ctx.opening_message), 100)
+          setTimeout(() => addMsg('dai', ctx.opening_message), 100)
         }
       } catch(e) {}
     } // showOpening end
@@ -430,7 +430,7 @@ export default function ChatScreen() {
     }).eq('id', currentChild.id)
     Object.assign(currentChild, { personality_progress: progress, personality_scores: scores })
     setPersonalityQ(null)
-    addMsg('bibi', progress >= 50 ? 'Teşekkürler! Seni artık çok daha iyi tanıyorum! 🌟' : 'Teşekkürler! 😊')
+    addMsg('dai', progress >= 50 ? 'Teşekkürler! Seni artık çok daha iyi tanıyorum! 🌟' : 'Teşekkürler! 😊')
   }
 
   async function sendMessage(text, fromVoice=false) {
@@ -449,7 +449,7 @@ export default function ChatScreen() {
     const sid = await ensureSession()
     if (sid) await sb.from('messages').insert({session_id:sid, child_id:currentChild.id, role:'user', content:t, topic:detectTopic(t), language:'tr'})
     try {
-      const chatHistory = messages.slice(-20).map(m=>({role:m.role==='bibi'?'assistant':'user', content:m.text}))
+      const chatHistory = messages.slice(-20).map(m=>({role:m.role==='dai'?'assistant':'user', content:m.text}))
       chatHistory.push({role:'user', content:t})
 
       // Web search gerekiyor mu? Güncel bilgi sorularında ara
@@ -482,7 +482,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       // KATMAN 5 — Hafızayı arka planda güncelle
       updateChildMemory(sb, currentChild?.id, classification, reply, t)
       setIsTyping(false); setExpr('happy'); setStatus('Seninle burada!')
-      addMsg('bibi', reply)
+      addMsg('dai', reply)
       await incrementUsage('message_count')
 
       // Hızlı cevap önerileri üret
@@ -522,21 +522,21 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
           const qText = getQuestionForAge(nextQ, currentChild.age || 9)
           setTimeout(() => {
             setPersonalityQ({ ...nextQ, text: qText })
-            addMsg('bibi', `💭 Sana bir şey sormak istiyorum: ${qText}`)
+            addMsg('dai', `💭 Sana bir şey sormak istiyorum: ${qText}`)
           }, 2000)
         }
       }
 
       setTimeout(() => { setExpr('idle') }, 3000)
     } catch {
-      setIsTyping(false); addMsg('bibi','Bağlantı sorunu 🙈'); setExpr('idle')
+      setIsTyping(false); addMsg('dai','Bağlantı sorunu 🙈'); setExpr('idle')
     }
   }
 
   async function handleImageRequest(prompt) {
     if (!checkLimit('images')) return
-    const desc = await callAI("Sen Bibi'sin, kısa Türkçe yanıt ver.", [{role:'user',content:`"${prompt.slice(0,30)}" için 1 cümle heyecanlı yanıt ver.`}], 80)
-    if(desc) addMsg('bibi', desc)
+    const desc = await callAI("Sen Dai'sin, kısa Türkçe yanıt ver.", [{role:'user',content:`"${prompt.slice(0,30)}" için 1 cümle heyecanlı yanıt ver.`}], 80)
+    if(desc) addMsg('dai', desc)
     try {
       const style = getImageStyle(currentChild?.age||9)
       const tr = await callAI("Translate Turkish to English for image prompt, max 15 words.", [{role:'user',content:prompt}], 50)
@@ -546,15 +546,15 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       await incrementUsage('image_count')
       const sid = await ensureSession()
       if(sid) await sb.from('chat_assets').insert({session_id:sid, child_id:currentChild.id, type:'image', title:prompt.slice(0,40), url})
-    } catch { addMsg('bibi','Görsel üretemedi 🙈') }
+    } catch { addMsg('dai','Görsel üretemedi 🙈') }
   }
 
   const hwLimit = plan === 'pro' ? 10 : plan === 'go' ? 3 : 0
 
   async function startHomework(base64) {
-    if (plan === 'free') { addMsg('bibi', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
+    if (plan === 'free') { addMsg('dai', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
     if (homeworkCount >= hwLimit) { setShowLimitModal('homework'); return }
-    addMsg('bibi', '📸 Ödev fotoğrafın yüklendi, soruları analiz ediyorum...')
+    addMsg('dai', '📸 Ödev fotoğrafın yüklendi, soruları analiz ediyorum...')
     setHomeworkMode(true); setHomeworkStep('analyzing')
     const res = await fetch('https://bibi-app-rho.vercel.app/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -565,14 +565,14 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
     })
     const d = await res.json()
     const reply = d.choices?.[0]?.message?.content || 'Fotoğrafı okuyamadım 🙈'
-    addMsg('bibi', reply); setHomeworkQuestion(reply); setHomeworkStep('waiting_solution')
+    addMsg('dai', reply); setHomeworkQuestion(reply); setHomeworkStep('waiting_solution')
     const today = new Date().toISOString().split('T')[0]
     const newCount = homeworkCount + 1; setHomeworkCount(newCount)
     await sb.from('daily_usage').upsert({ child_id: currentChild.id, date: today, homework_count: newCount }, { onConflict: 'child_id,date', ignoreDuplicates: false })
   }
 
   async function checkHomeworkSolution(base64) {
-    addMsg('user', '📸 Çözümümü gönderdim!'); addMsg('bibi', '🔍 Çözümünü inceliyorum...'); setHomeworkStep('checking')
+    addMsg('user', '📸 Çözümümü gönderdim!'); addMsg('dai', '🔍 Çözümünü inceliyorum...'); setHomeworkStep('checking')
     const res = await fetch('https://bibi-app-rho.vercel.app/api/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ model:'meta-llama/llama-4-scout-17b-16e-instruct', messages:[{role:'user',content:[
@@ -582,7 +582,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
     })
     const d = await res.json()
     const reply = d.choices?.[0]?.message?.content || 'Kontrol edemedim 🙈'
-    addMsg('bibi', reply)
+    addMsg('dai', reply)
     if (reply.includes('Tebrik') || reply.includes('doğru') || reply.includes('Harika') || reply.includes('bravo')) setHomeworkStep('practice')
     else setHomeworkStep('waiting_solution')
   }
@@ -590,34 +590,34 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
   async function generatePDF({topic, contentType}) {
     const age = currentChild?.age||9
     const agePrompt = age<=8?"Çok basit, kısa paragraflar.":age<=12?"Açıklayıcı paragraflar.":"Akademik dil, detaylı."
-    addMsg('bibi', `📄 "${topic}" için ${contentType} hazırlanıyor...`)
+    addMsg('dai', `📄 "${topic}" için ${contentType} hazırlanıyor...`)
     const content = await callAI(null,[{role:'user',content:`"${topic}" konusunda Türkçe ${contentType} yaz. Yaş: ${age} — ${agePrompt} Format: Başlık, giriş, 3-5 bölüm (## ile), sonuç. 400-600 kelime.`}],1500)
-    if(!content){addMsg('bibi','İçerik üretilemedi 🙈');return}
-    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#0D9B7E;border-bottom:2px solid #0D9B7E;padding-bottom:8px}h2{color:#1A2E2A;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Bibi ile öğrenmek eğlenceli!</div></body></html>`
+    if(!content){addMsg('dai','İçerik üretilemedi 🙈');return}
+    const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.7}h1{color:#0D9B7E;border-bottom:2px solid #0D9B7E;padding-bottom:8px}h2{color:#1A2E2A;margin-top:28px}.meta{color:#6B7280;font-size:13px;margin-bottom:24px}.footer{margin-top:40px;padding-top:12px;border-top:1px solid #e0e0e0;color:#9CA3AF;font-size:12px;text-align:center}</style></head><body><h1>${topic}</h1><div class="meta">${contentType} • ${currentChild?.name||''} • ${new Date().toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}</div>${content.split('\n').map(line=>{const t=line.trim();if(!t)return '<br/>';if(t.startsWith('## '))return `<h2>${t.replace('## ','')}</h2>`;if(t.startsWith('# '))return `<h1>${t.replace('# ','')}</h1>`;return `<p>${t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</p>`}).join('')}<div class="footer">Dai ile öğrenmek eğlenceli!</div></body></html>`
     const blob=new Blob([html],{type:'text/html;charset=utf-8'})
     const url=URL.createObjectURL(blob)
     const w=window.open(url,'_blank')
     setTimeout(()=>w?.print(),800)
-    addMsg('bibi',`✅ "${topic}" hazırlandı! Açılan sayfada Ctrl+P → "PDF olarak kaydet" seç.`)
+    addMsg('dai',`✅ "${topic}" hazırlandı! Açılan sayfada Ctrl+P → "PDF olarak kaydet" seç.`)
   }
 
   async function generatePresentation({topic, slideCount}) {
     if (!checkLimit('slides')) return
     const age = currentChild?.age||9
-    addMsg('bibi',`📊 "${topic}" sunusu hazırlanıyor...`)
+    addMsg('dai',`📊 "${topic}" sunusu hazırlanıyor...`)
     const result = await callAI(null,[{role:'user',content:`"${topic}" hakkında ${slideCount} slaytlık detaylı Türkçe sunu. ${age<=8?'Basit, emoji kullan.':age<=12?'Açıklayıcı.':'Akademik.'}\nJSON (başka hiçbir şey yazma): {"title":"...","slides":[{"title":"...","points":["...","...","..."],"fun_fact":"..."}],"ending":"..."}`}],2000)
     let parsed={title:topic,slides:[],ending:''}
-    try{parsed=JSON.parse(result.replace(/```json|```/g,'').trim())}catch(e){addMsg('bibi','Sunu oluşturulamadı 🙈');return}
+    try{parsed=JSON.parse(result.replace(/```json|```/g,'').trim())}catch(e){addMsg('dai','Sunu oluşturulamadı 🙈');return}
     const colors=age<=8?['#c0392b','#e67e22','#27ae60','#2980b9','#8e44ad']:age<=12?['#1a3a5c','#1a4a2a','#3d1a5c','#1a3a4a','#4a2a1a']:['#0f1f35','#0f2818','#1f0f35','#0f2535','#2a1208']
     const slideHTML=parsed.slides.map((s,i)=>`<div class="slide" style="background:${colors[i%colors.length]}"><div class="slide-num">${parsed.title} — ${i+1}/${parsed.slides.length}</div><h2>${s.title||''}</h2><ul>${(s.points||[]).map(p=>`<li>${p}</li>`).join('')}</ul>${s.fun_fact?`<div class="fun-fact">💡 ${s.fun_fact}</div>`:''}</div>`).join('')
     const sc='<'+'/script>'
-    const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${parsed.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}.slide{display:none;height:100vh;padding:50px 60px;flex-direction:column;justify-content:center}.slide.active{display:flex}.slide-num{font-size:10px;opacity:.4;margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}h2{font-size:${age<=8?'28px':'22px'};font-weight:900;margin-bottom:18px;border-bottom:2px solid rgba(255,255,255,.2);padding-bottom:12px}ul{list-style:none;display:flex;flex-direction:column;gap:12px}li{font-size:${age<=8?'19px':'16px'};line-height:1.5;display:flex;gap:8px}li::before{content:"▸";opacity:.6;flex-shrink:0}.fun-fact{margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:10px;font-size:13px}.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:20px}button{padding:7px 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.counter{color:rgba(255,255,255,.5);font-size:12px;min-width:70px;text-align:center}</style></head><body><div class="slide active" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none;font-size:36px">${parsed.title}</h2><p style="opacity:.5;margin-top:12px">${currentChild?.name||''} • Bibi ile hazırlandı</p></div>${slideHTML}<div class="slide" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none">✅ Sunum Tamamlandı</h2><p style="opacity:.5;margin-top:8px">${parsed.ending||''}</p></div><div class="nav"><button onclick="p()">← Önceki</button><span class="counter" id="c">1 / ${parsed.slides.length+2}</span><button onclick="n()">Sonraki →</button></div><script>var i=0,sl=document.querySelectorAll('.slide');function show(x){sl.forEach(function(e){e.classList.remove('active')});sl[x].classList.add('active');document.getElementById('c').textContent=(x+1)+' / '+sl.length;}function n(){if(i<sl.length-1){i++;show(i);}}function p(){if(i>0){i--;show(i);}}document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')n();if(e.key==='ArrowLeft')p();});${sc}</body></html>`
+    const html=`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"/><title>${parsed.title}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;background:#000;color:#fff;height:100vh;overflow:hidden}.slide{display:none;height:100vh;padding:50px 60px;flex-direction:column;justify-content:center}.slide.active{display:flex}.slide-num{font-size:10px;opacity:.4;margin-bottom:12px;letter-spacing:2px;text-transform:uppercase}h2{font-size:${age<=8?'28px':'22px'};font-weight:900;margin-bottom:18px;border-bottom:2px solid rgba(255,255,255,.2);padding-bottom:12px}ul{list-style:none;display:flex;flex-direction:column;gap:12px}li{font-size:${age<=8?'19px':'16px'};line-height:1.5;display:flex;gap:8px}li::before{content:"▸";opacity:.6;flex-shrink:0}.fun-fact{margin-top:16px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:10px;font-size:13px}.nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.5);padding:8px 14px;border-radius:20px}button{padding:7px 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer}.counter{color:rgba(255,255,255,.5);font-size:12px;min-width:70px;text-align:center}</style></head><body><div class="slide active" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none;font-size:36px">${parsed.title}</h2><p style="opacity:.5;margin-top:12px">${currentChild?.name||''} • Dai ile hazırlandı</p></div>${slideHTML}<div class="slide" style="background:${colors[0]};text-align:center;align-items:center;justify-content:center"><h2 style="border:none">✅ Sunum Tamamlandı</h2><p style="opacity:.5;margin-top:8px">${parsed.ending||''}</p></div><div class="nav"><button onclick="p()">← Önceki</button><span class="counter" id="c">1 / ${parsed.slides.length+2}</span><button onclick="n()">Sonraki →</button></div><script>var i=0,sl=document.querySelectorAll('.slide');function show(x){sl.forEach(function(e){e.classList.remove('active')});sl[x].classList.add('active');document.getElementById('c').textContent=(x+1)+' / '+sl.length;}function n(){if(i<sl.length-1){i++;show(i);}}function p(){if(i>0){i--;show(i);}}document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' ')n();if(e.key==='ArrowLeft')p();});${sc}</body></html>`
     const blob=new Blob([html],{type:'text/html;charset=utf-8'})
     const url=URL.createObjectURL(blob)
     const a=document.createElement('a');a.href=url;a.download=`${topic.slice(0,20)}-sunu.html`;a.click()
     URL.revokeObjectURL(url)
     await incrementUsage('slide_count')
-    addMsg('bibi',`✅ "${topic}" sunusu indirildi!`)
+    addMsg('dai',`✅ "${topic}" sunusu indirildi!`)
   }
 
   function toggleMic() {
@@ -702,7 +702,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             </div>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <div style={{ color:'white', fontSize:14, fontWeight:900 }}>bibi</div>
+                <div style={{ color:'white', fontSize:14, fontWeight:900 }}>dai</div>
                 {streak > 0 && (
                   <div style={{ background:'rgba(251,191,36,.2)', border:'1px solid rgba(251,191,36,.4)', borderRadius:10, padding:'1px 7px', fontSize:10, fontWeight:800, color:'#fbbf24', display:'flex', alignItems:'center', gap:3 }}>
                     🔥{streak}
@@ -759,7 +759,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             setMessages([])
             setSessionId(sid)
             sessionStorage.setItem('bibi_last_session_' + currentChild.id, sid)
-            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'bibi', m.content, { ts: m.created_at ? new Date(m.created_at) : new Date() }))
+            msgs.forEach(m => addMsg(m.role === 'user' ? 'user' : 'dai', m.content, { ts: m.created_at ? new Date(m.created_at) : new Date() }))
           }}
         />
       )}
@@ -790,7 +790,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       <div style={{ flex:1,overflowY:'auto',padding:'16px 16px 8px' }}>
         {messages.map(m=>(
           <div key={m.id} style={{ display:'flex',marginBottom:14,justifyContent:m.role==='user'?'flex-end':'flex-start',gap:8,alignItems:'flex-end' }}>
-            {m.role==='bibi'&&<div style={{flexShrink:0}}><BibiFace expr="idle" size={36}/></div>}
+            {m.role==='dai'&&<div style={{flexShrink:0}}><BibiFace expr="idle" size={36}/></div>}
             {m.role==='image'?(
               <div style={{maxWidth:'85%'}}>
                 <img src={m.url} style={{borderRadius:12,maxWidth:'100%',display:'block',marginBottom:6}} alt={m.title} onError={e=>e.target.style.display='none'}/>
@@ -799,7 +799,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             ):(
               <div style={{ display:'flex', alignItems:'flex-end', gap:6, maxWidth:'82%', flexDirection:m.role==='user'?'row-reverse':'row' }}>
                 <BubbleContent m={m} theme={theme} />
-                {m.role==='bibi' && (
+                {m.role==='dai' && (
                   <button onClick={()=>{
                     if(audioRef.current){stopAudio()}
                     else{speakMsg(m.text)}
@@ -885,11 +885,11 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
       <div style={{ padding:'10px 14px 14px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
         <div style={{ display:'flex',gap:8,alignItems:'center' }}>
           <button onClick={toggleMic} style={{ width:46,height:46,borderRadius:'50%',flexShrink:0,cursor:'pointer',background:isListening?'rgba(239,68,68,.4)':currentChild?.age<=8?'rgba(74,222,128,.3)':'rgba(255,255,255,.12)',border:`1.5px solid ${isListening?'rgba(239,68,68,.6)':'rgba(255,255,255,.2)'}`,boxShadow:isListening?'0 0 16px rgba(239,68,68,.5)':'none',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>🎤</button>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Bibi'ye yaz veya konuş..." style={{ flex:1,padding:'13px 18px',borderRadius:28,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:15,color:'white',fontFamily:'Nunito,sans-serif' }}/>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Dai'ye yaz veya konuş..." style={{ flex:1,padding:'13px 18px',borderRadius:28,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:15,color:'white',fontFamily:'Nunito,sans-serif' }}/>
           <ActionMenu
             onImage={()=>setInput('Bana bir görsel çiz: ')}
             onHomework={()=>{
-              if (plan === 'free') { addMsg('bibi', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
+              if (plan === 'free') { addMsg('dai', '🔒 Ödev modu Go ve Pro planlarında kullanılabilir. Planını yükselt! ⭐'); return }
               if (homeworkCount >= hwLimit) { setShowLimitModal('homework'); return }
               const inp=document.createElement('input');inp.type='file';inp.accept='image/*'
               inp.onchange=async e=>{
@@ -1048,7 +1048,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                   setTodayEmotion(e.id)
                   setShowEmotionPicker(false)
                   await saveEmotionLog(currentChild.id, e.id, '')
-                  addMsg('bibi', `${e.emoji} ${e.label} hissediyorsun, anlıyorum. ${e.id === 'üzgün' || e.id === 'sinirli' ? 'Anlatmak istediğin bir şey var mı?' : 'Bu harika! Bugün seninle olmak güzel.'}`)
+                  addMsg('dai', `${e.emoji} ${e.label} hissediyorsun, anlıyorum. ${e.id === 'üzgün' || e.id === 'sinirli' ? 'Anlatmak istediğin bir şey var mı?' : 'Bu harika! Bugün seninle olmak güzel.'}`)
                 }}
                   style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 8px', borderRadius:14, border:`1.5px solid ${e.color}44`, background:`${e.color}18`, cursor:'pointer', minWidth:56 }}>
                   <div style={{ fontSize:32 }}>{e.emoji}</div>
@@ -1067,7 +1067,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             <div style={{ fontSize:56, marginBottom:12 }}>🔥</div>
             <div style={{ color:'#fbbf24', fontSize:28, fontWeight:900, marginBottom:8 }}>{streak} Gün!</div>
             <div style={{ color:'white', fontSize:16, fontWeight:700, marginBottom:8 }}>Muhteşem bir seri!</div>
-            <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:20 }}>Her gün Bibi ile buluşmaya devam ediyorsun. Bu kararlılık seni çok özel kılıyor!</div>
+            <div style={{ color:'rgba(255,255,255,.5)', fontSize:13, marginBottom:20 }}>Her gün Dai ile buluşmaya devam ediyorsun. Bu kararlılık seni çok özel kılıyor!</div>
             <button onClick={function(){setShowStreakCelebration(false)}} style={{ width:'100%', padding:12, borderRadius:12, border:'none', background:'#fbbf24', color:'#1A2E2A', fontWeight:900, cursor:'pointer', fontFamily:'Nunito,sans-serif', fontSize:15 }}>Teşekkürler! 🚀</button>
           </div>
         </div>
@@ -1115,14 +1115,14 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                   })
                   const ctx = await ctxRes.json()
                   if (ctx.opening_message) {
-                    setTimeout(() => addMsg('bibi', ctx.opening_message), 50)
+                    setTimeout(() => addMsg('dai', ctx.opening_message), 50)
                     return
                   }
                 } catch(e) { console.log('Session context hata:', e) }
 
                 // Fallback açılış
                 const opening = currentChild.age<=8 ? 'Heyyyy ' + currentChild.name + '! 🎉 Yeni sohbet başlıyor!' : 'Merhaba ' + currentChild.name + '! Yeni bir sohbet başlatalım.'
-                setTimeout(() => addMsg('bibi', opening), 50)
+                setTimeout(() => addMsg('dai', opening), 50)
               }} style={{ flex:1,padding:12,borderRadius:12,border:'none',background:'#0D9B7E',color:'white',fontWeight:800,cursor:'pointer',fontFamily:'Nunito,sans-serif' }}>✓ Evet</button>
             </div>
           </div>

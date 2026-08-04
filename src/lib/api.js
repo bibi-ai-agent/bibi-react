@@ -141,7 +141,7 @@ export async function callAI(systemPrompt, messages, maxTokens, childAge, classi
     const expertPrompt = buildExpertPrompt(classification)
     const agePrompt = buildAgePrompt(childAge, classification)
     finalSystem = [
-      "SEN BiBi'SIN. 6-15 yas cocuklar icin Turkce AI ogrenme arkadasisin.",
+      "SEN DAİ'SIN. 6-15 yas cocuklar icin Turkce AI ogrenme arkadasisin.",
       "KESiN KURAL: Sadece Turkce yaz. again, okay, hi, hello, yes, no kelimeler YASAK.",
       "Ben yapay zekayim asla deme. Emin olmadigin seyi uydurma.",
       expertPrompt,
