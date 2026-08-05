@@ -18,7 +18,7 @@ export default function LoginScreen({ onBack, onForgot }) {
     setLoading(false)
     if (error) return setMsg(error.message)
     setCurrentUser(data.user)
-    setScreen('children')
+    setScreen('parentDashboard')
   }
 
   const inp = {

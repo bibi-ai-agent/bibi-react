@@ -27,7 +27,7 @@ export default function RegisterScreen({ onBack }) {
     })
     setLoading(false)
     setCurrentUser(data.user)
-    setScreen('children')
+    setScreen('parentDashboard')
   }
 
   const inp = {

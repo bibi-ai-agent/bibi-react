@@ -1,93 +1,113 @@
 import { useEffect, useState } from 'react'
 import { sb } from './lib/supabase'
-import { seedStories } from './lib/seedStories'
 import { useApp } from './lib/store'
-import SplashScreen from './screens/SplashScreen'
+
+// Ortak
+import LoadingScreen from './screens/LoadingScreen'
+import ResetPasswordScreen from './screens/ResetPasswordScreen'
+
+// Auth
 import WelcomeScreen from './screens/WelcomeScreen'
 import LoginScreen from './screens/LoginScreen'
 import RegisterScreen from './screens/RegisterScreen'
+
+// Veli
 import ParentDashboard from './screens/ParentDashboard'
-import ChildHomeScreen from './screens/ChildHomeScreen'
-import ChildSelectScreen from './screens/ChildSelectScreen'
-import LoadingScreen from './screens/LoadingScreen'
-import AuthScreen from './screens/AuthScreen'
-import ChildrenScreen from './screens/ChildrenScreen'
-import ChatScreen from './screens/ChatScreen'
 import ReportScreen from './screens/ReportScreen'
-import FriendsScreen from './screens/FriendsScreen'
-import ProjectScreen from './screens/ProjectScreen'
-import ProjectSelectScreen from './screens/ProjectSelectScreen'
 import SubscriptionScreen from './screens/SubscriptionScreen'
-import ResetPasswordScreen from './screens/ResetPasswordScreen'
+import ChildrenScreen from './screens/ChildrenScreen'
+import FriendsScreen from './screens/FriendsScreen'
+
+// Çocuk
+import ChildHomeScreen from './screens/ChildHomeScreen'
+import ChatScreen from './screens/ChatScreen'
 import StoryScreen from './screens/StoryScreen'
+import ProjectSelectScreen from './screens/ProjectSelectScreen'
+import ProjectScreen from './screens/ProjectScreen'
 
 export default function App() {
-  const [authView, setAuthView] = useState('welcome') // welcome | login | register | childSelect
-  const { screen, setScreen, setCurrentUser, currentUser, setSubscription } = useApp()
+  const { screen, setScreen, setCurrentUser, setSubscription, appMode, setAppMode, currentChild } = useApp()
+  const [authView, setAuthView] = useState('welcome')
   const [resetMode, setResetMode] = useState(false)
+  const [ready, setReady] = useState(false)
 
   async function loadSubscription(userId) {
     const { data } = await sb.from('subscriptions').select('*').eq('parent_id', userId).single()
-    if (data) setSubscription(data)
-    else setSubscription({ plan: 'free', status: 'active' })
+    setSubscription(data || { plan: 'free', status: 'active' })
   }
 
   useEffect(() => {
+    // Şifre sıfırlama kontrolü
     const hash = window.location.hash
     if (hash.includes('type=recovery') || hash.includes('access_token')) {
       setResetMode(true)
+      setReady(true)
       return
     }
-    const timer = setTimeout(() => setScreen('auth'), 5000)
+
+    // Mevcut oturum kontrolü
     sb.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timer)
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        const saved = sessionStorage.getItem('dai_screen')
-        const safeScreens = ['chat', 'children', 'report', 'friends', 'subscription', 'story', 'projectSelect', 'project']
-        if (saved && safeScreens.includes(saved)) setScreen(saved)
-        else setScreen('children')
+        setAppMode('parent')
+        setScreen('parentDashboard')
       } else {
         setScreen('auth')
       }
-    }).catch(() => { clearTimeout(timer); setScreen('auth') })
+      setReady(true)
+    }).catch(() => {
+      setScreen('auth')
+      setReady(true)
+    })
+
+    // Auth state değişikliklerini dinle
     const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') { setResetMode(true); return }
-      if (session?.user) {
+      if (event === 'PASSWORD_RECOVERY') {
+        setResetMode(true)
+        return
+      }
+      if (event === 'SIGNED_IN' && session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        if (screen === 'auth') setScreen('parentDashboard')
-      } else {
+        setAppMode('parent')
+        setScreen('parentDashboard')
+      }
+      if (event === 'SIGNED_OUT') {
         setCurrentUser(null)
+        setAppMode('parent')
         setScreen('auth')
       }
     })
+
     return () => subscription.unsubscribe()
   }, [])
 
+  if (!ready) return <LoadingScreen/>
   if (resetMode) return <ResetPasswordScreen onDone={() => { setResetMode(false); setScreen('auth') }}/>
 
-  const screens = {
-    loading: <LoadingScreen/>,
-    auth: authView === 'login'
-      ? <LoginScreen onBack={() => setAuthView('welcome')} onForgot={() => setAuthView('forgot')} />
-      : authView === 'register'
-      ? <RegisterScreen onBack={() => setAuthView('welcome')} />
-      : authView === 'childSelect'
-      ? <ChildSelectScreen onBack={() => setAuthView('welcome')} />
-      : <WelcomeScreen onParent={() => setAuthView('login')} onChild={() => setAuthView('childSelect')} />,
-    children: <ChildrenScreen/>,
-    parentDashboard: <ParentDashboard/>,
-    childHome: <ChildHomeScreen/>,
-    chat: <ChatScreen/>,
-    report: <ReportScreen/>,
-    friends: <FriendsScreen/>,
-    project: <ProjectScreen/>,
-    projectSelect: <ProjectSelectScreen/>,
-    subscription: <SubscriptionScreen/>,
-    story: <StoryScreen/>,
+  // ── AUTH ──────────────────────────────────────────
+  if (screen === 'auth') {
+    if (authView === 'login') return <LoginScreen onBack={() => setAuthView('welcome')} onForgot={() => setAuthView('forgot')} />
+    if (authView === 'register') return <RegisterScreen onBack={() => setAuthView('welcome')} />
+    return <WelcomeScreen onLogin={() => setAuthView('login')} onRegister={() => setAuthView('register')} />
   }
 
-  return screens[screen] || <LoadingScreen/>
+  // ── ÇOCUK MODU ────────────────────────────────────
+  // Çocuk modunda sadece çocuk ekranlarına izin ver
+  if (appMode === 'child' && currentChild) {
+    if (screen === 'chat') return <ChatScreen/>
+    if (screen === 'story') return <StoryScreen/>
+    if (screen === 'projectSelect') return <ProjectSelectScreen/>
+    if (screen === 'project') return <ProjectScreen/>
+    return <ChildHomeScreen/>
+  }
+
+  // ── VELİ MODU ─────────────────────────────────────
+  if (screen === 'report') return <ReportScreen/>
+  if (screen === 'subscription') return <SubscriptionScreen/>
+  if (screen === 'children') return <ChildrenScreen/>
+  if (screen === 'friends') return <FriendsScreen/>
+  if (screen === 'loading') return <LoadingScreen/>
+  return <ParentDashboard/>
 }

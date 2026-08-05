@@ -152,7 +152,7 @@ export default function ReportScreen() {
             {pinError && <div style={{ color:'#fca88a', fontSize:13, marginBottom:8 }}>{pinError}</div>}
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8 }}>
               <button onClick={function(){setShowForgot(true)}} style={{ background:'none', border:'none', color:'rgba(255,255,255,.4)', fontSize:12, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>PIN'imi Unuttum?</button>
-              <button onClick={function(){setScreen('children')}} style={{ background:'none', border:'none', color:'rgba(255,255,255,.35)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
+              <button onClick={function(){setScreen('parentDashboard')}} style={{ background:'none', border:'none', color:'rgba(255,255,255,.35)', fontSize:13, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}>← Geri</button>
             </div>
           </div>
         ) : (
@@ -203,7 +203,7 @@ export default function ReportScreen() {
           <div style={{ color:'rgba(255,255,255,.45)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase' }}>Veli Raporu</div>
           <div style={{ color:WHITE, fontSize:18, fontWeight:900 }}>{currentChild?.name}</div>
         </div>
-        <button onClick={function(){setScreen('children')}} style={{ background:'rgba(255,255,255,.08)', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:20, padding:'8px 14px', color:WHITE, fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
+        <button onClick={function(){setScreen('parentDashboard')}} style={{ background:'rgba(255,255,255,.08)', border:'1.5px solid rgba(255,255,255,.12)', borderRadius:20, padding:'8px 14px', color:WHITE, fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
       </div>
 
       {/* Tab Menü */}

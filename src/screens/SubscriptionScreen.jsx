@@ -117,7 +117,7 @@ export default function SubscriptionScreen() {
       {/* Header */}
       <div style={{ background:'rgba(255,255,255,.04)', backdropFilter:'blur(12px)', borderBottom:'1px solid rgba(255,255,255,.08)', padding:'16px 20px', position:'sticky', top:0, zIndex:10 }}>
         <div style={{ maxWidth:520, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <button onClick={()=>setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.15)', borderRadius:20, padding:'8px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
+          <button onClick={()=>setScreen('parentDashboard')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.15)', borderRadius:20, padding:'8px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
           <div style={{ textAlign:'center' }}>
             <div style={{ color:'white', fontSize:18, fontWeight:900 }}>Bibi Planları</div>
             <div style={{ color:'rgba(255,255,255,.4)', fontSize:11, marginTop:1 }}>

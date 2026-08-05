@@ -992,7 +992,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
                     const np=exitPin+String(d);setExitPin(np)
                     if(np.length===4){
                       const {data:parent}=await sb.from('parents').select('pin').eq('id',currentUser.id).maybeSingle()
-                      if(String(parent?.pin)===String(np)){setShowExitPin(false);setExitPin('');setScreen('children')}
+                      if(String(parent?.pin)===String(np)){setShowExitPin(false);setExitPin('');setScreen('parentDashboard')}
                       else{setExitPinError('PIN hatalı!');setExitPin('')}
                     }
                   }

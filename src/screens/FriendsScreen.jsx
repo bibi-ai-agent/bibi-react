@@ -99,7 +99,7 @@ export default function FriendsScreen() {
           <div style={{ color:'rgba(255,255,255,.45)', fontSize:11, fontWeight:700, letterSpacing:1.5, textTransform:'uppercase' }}>Arkadaşlar</div>
           <div style={{ color:'white', fontSize:18, fontWeight:900 }}>{currentChild.name}'in Arkadaşları</div>
         </div>
-        <button onClick={()=>setScreen('children')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'8px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
+        <button onClick={()=>setScreen('parentDashboard')} style={{ background:'rgba(255,255,255,.1)', border:'1.5px solid rgba(255,255,255,.2)', borderRadius:20, padding:'8px 14px', color:'white', fontSize:12, fontWeight:700, cursor:'pointer' }}>← Geri</button>
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:'20px 16px 80px', maxWidth:480, margin:'0 auto', width:'100%' }}>
