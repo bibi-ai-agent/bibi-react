@@ -882,10 +882,10 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
         ))}
       </div>
 
-      <div style={{ padding:'10px 14px 14px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
-        <div style={{ display:'flex',gap:8,alignItems:'center' }}>
-          <button onClick={toggleMic} style={{ width:46,height:46,borderRadius:'50%',flexShrink:0,cursor:'pointer',background:isListening?'rgba(239,68,68,.4)':currentChild?.age<=8?'rgba(74,222,128,.3)':'rgba(255,255,255,.12)',border:`1.5px solid ${isListening?'rgba(239,68,68,.6)':'rgba(255,255,255,.2)'}`,boxShadow:isListening?'0 0 16px rgba(239,68,68,.5)':'none',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>🎤</button>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Dai'ye yaz veya konuş..." style={{ flex:1,padding:'13px 18px',borderRadius:28,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:15,color:'white',fontFamily:'Nunito,sans-serif' }}/>
+      <div style={{ padding:'8px 10px 10px',background:'rgba(0,0,0,.25)',backdropFilter:'blur(16px)',borderTop:'1px solid rgba(255,255,255,.08)',flexShrink:0 }}>
+        <div style={{ display:'flex',gap:5,alignItems:'center' }}>
+          <button onClick={toggleMic} style={{ width:36,height:36,borderRadius:'50%',flexShrink:0,cursor:'pointer',background:isListening?'rgba(239,68,68,.4)':currentChild?.age<=8?'rgba(74,222,128,.3)':'rgba(255,255,255,.12)',border:`1.5px solid ${isListening?'rgba(239,68,68,.6)':'rgba(255,255,255,.2)'}`,boxShadow:isListening?'0 0 16px rgba(239,68,68,.5)':'none',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15 }}>🎤</button>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMessage(input)} placeholder="Dai'ye yaz..." style={{ flex:1,padding:'9px 12px',borderRadius:22,border:'1.5px solid rgba(255,255,255,.18)',background:'rgba(255,255,255,.1)',fontSize:13,color:'white',fontFamily:'Nunito,sans-serif' }}/>
           <ActionMenu
             onImage={()=>setInput('Bana bir görsel çiz: ')}
             onHomework={()=>{
@@ -903,7 +903,7 @@ Bu bilgiyi kullan ama "web'den buldum" deme, doğal anlat.`
             onPDF={()=>setContentCreator('pdf')}
             onPresentation={()=>setContentCreator('presentation')}
           />
-          <button onClick={()=>sendMessage(input)} style={{ width:46,height:46,borderRadius:'50%',background:input.trim()?theme.bubble:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:18,transition:'background .2s' }}>➤</button>
+          <button onClick={()=>sendMessage(input)} style={{ width:36,height:36,borderRadius:'50%',background:input.trim()?theme.bubble:'rgba(255,255,255,.22)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:15,transition:'background .2s' }}>➤</button>
         </div>
       </div>
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dai</string>
+    <string name="title_activity_main">Dai</string>
+    <string name="package_name">com.Dai.app</string>
+    <string name="custom_url_scheme">com.Dai.app</string>
+</resources>

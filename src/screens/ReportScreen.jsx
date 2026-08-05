@@ -145,7 +145,7 @@ export default function ReportScreen() {
                       const np = pin+String(d); setPin(np)
                       if (np.length===4) await checkPin(np)
                     }
-                  }} style={{ aspectRatio:'1', borderRadius:'50%', border:'none', background:d===null?'transparent':'rgba(255,255,255,.1)', color:WHITE, fontSize:20, fontWeight:700, cursor:d===null?'default':'pointer', fontFamily:'Nunito,sans-serif' }}>{d}</button>
+                  }} style={{ aspectRatio:'1', borderRadius:'50%', border:'none', background:d===null?'transparent':'rgba(255,255,255,.1)', color:WHITE, fontSize:20, fontWeight:700, cursor:d===null?'default':'pointer', fontFamily:'Nunito,sans-serif', outline:'none', WebkitTapHighlightColor:'transparent' }}>{d}</button>
                 )
               })}
             </div>

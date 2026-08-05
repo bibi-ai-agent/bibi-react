@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react'
 import { sb } from './lib/supabase'
 import { seedStories } from './lib/seedStories'
 import { useApp } from './lib/store'
+import SplashScreen from './screens/SplashScreen'
+import WelcomeScreen from './screens/WelcomeScreen'
+import LoginScreen from './screens/LoginScreen'
+import RegisterScreen from './screens/RegisterScreen'
+import ParentDashboard from './screens/ParentDashboard'
+import ChildHomeScreen from './screens/ChildHomeScreen'
+import ChildSelectScreen from './screens/ChildSelectScreen'
 import LoadingScreen from './screens/LoadingScreen'
 import AuthScreen from './screens/AuthScreen'
 import ChildrenScreen from './screens/ChildrenScreen'
@@ -15,6 +22,7 @@ import ResetPasswordScreen from './screens/ResetPasswordScreen'
 import StoryScreen from './screens/StoryScreen'
 
 export default function App() {
+  const [authView, setAuthView] = useState('welcome') // welcome | login | register | childSelect
   const { screen, setScreen, setCurrentUser, currentUser, setSubscription } = useApp()
   const [resetMode, setResetMode] = useState(false)
 
@@ -49,7 +57,7 @@ export default function App() {
       if (session?.user) {
         setCurrentUser(session.user)
         loadSubscription(session.user.id)
-        if (screen === 'auth') setScreen('children')
+        if (screen === 'auth') setScreen('parentDashboard')
       } else {
         setCurrentUser(null)
         setScreen('auth')
@@ -62,8 +70,16 @@ export default function App() {
 
   const screens = {
     loading: <LoadingScreen/>,
-    auth: <AuthScreen/>,
+    auth: authView === 'login'
+      ? <LoginScreen onBack={() => setAuthView('welcome')} onForgot={() => setAuthView('forgot')} />
+      : authView === 'register'
+      ? <RegisterScreen onBack={() => setAuthView('welcome')} />
+      : authView === 'childSelect'
+      ? <ChildSelectScreen onBack={() => setAuthView('welcome')} />
+      : <WelcomeScreen onParent={() => setAuthView('login')} onChild={() => setAuthView('childSelect')} />,
     children: <ChildrenScreen/>,
+    parentDashboard: <ParentDashboard/>,
+    childHome: <ChildHomeScreen/>,
     chat: <ChatScreen/>,
     report: <ReportScreen/>,
     friends: <FriendsScreen/>,

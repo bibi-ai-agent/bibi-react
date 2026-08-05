@@ -1,0 +1,16 @@
+{
+  "appId": "com.dai.app",
+  "appName": "Dai",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0,
+      "backgroundColor": "#1C1410",
+      "showSpinner": false,
+      "androidSpinnerStyle": "none"
+    }
+  },
+  "android": {
+    "backgroundColor": "#1C1410"
+  }
+}
